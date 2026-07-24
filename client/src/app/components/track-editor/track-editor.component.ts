@@ -20,11 +20,13 @@ import {
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Subscription } from "rxjs";
+import { AcknowledgementModalComponent } from "@app/components/shared/acknowledgement-modal/acknowledgement-modal.component";
 import { ConfirmationModalComponent } from "@app/components/shared/confirmation-modal/confirmation-modal.component";
 import { EditorTitleComponent } from "@app/components/shared/editor-title/editor-title.component";
 import { InputDialogComponent } from "@app/components/shared/input-dialog/input-dialog.component";
 import { UndoManager } from "@app/components/shared/undo-redo-controls/undo-manager";
 import { ArduinoEditorComponent } from "@app/components/track-editor/arduino-editor/arduino-editor.component";
+import { PhidgetEditorComponent } from "@app/components/track-editor/phidget-editor/phidget-editor.component";
 import { TrakmateEditorComponent } from "@app/components/track-editor/trakmate-editor/trakmate-editor.component";
 import { DataService } from "@app/data.service";
 import { DirtyComponent } from "@app/interfaces/dirty-component";
@@ -34,6 +36,7 @@ import {
   LedString,
   MAX_ANALOG_PINS,
   MAX_DIGITAL_PINS,
+  PhidgetConfig,
   Track,
   TrackmateConfig,
 } from "@app/models/track";
@@ -64,9 +67,11 @@ import { deepCopy } from "@app/utils/clone.utils";
     CdkDragHandle,
     ArduinoEditorComponent,
     TrakmateEditorComponent,
+    PhidgetEditorComponent,
     InputDialogComponent,
     TranslatePipe,
     ConfirmationModalComponent,
+    AcknowledgementModalComponent,
   ],
 })
 export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
@@ -83,7 +88,9 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
   editingTrack?: Track;
   arduinoConfigs: ArduinoConfig[] = [];
   trackmateConfigs: TrackmateConfig[] = [];
+  phidgetConfigs: PhidgetConfig[] = [];
   helpSteps: GuideStep[] = [];
+  driverMissingError = false;
 
   scale: number = 1;
   isLoading: boolean = true;
@@ -164,6 +171,17 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
               );
             } else {
               this.trackmateConfigs = [];
+            }
+            // Restore Phidget Configs
+            if (
+              this.editingTrack.phidget_configs &&
+              this.editingTrack.phidget_configs.length > 0
+            ) {
+              this.phidgetConfigs = JSON.parse(
+                JSON.stringify(this.editingTrack.phidget_configs),
+              );
+            } else {
+              this.phidgetConfigs = [];
             }
             this.cdr.detectChanges();
           }
@@ -420,6 +438,7 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
                       factoryTrack.has_per_lane_relays || false,
                     has_main_relay: factoryTrack.has_main_relay || false,
                     trackmate_configs: factoryTrack.trackmate_configs,
+                    phidget_configs: factoryTrack.phidget_configs,
                   });
                   this.initializeEditingState();
                 },
@@ -507,6 +526,18 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
         this.trackmateConfigs = [];
       }
 
+      // Restore Phidget Config
+      if (
+        this.editingTrack.phidget_configs &&
+        this.editingTrack.phidget_configs.length > 0
+      ) {
+        this.phidgetConfigs = JSON.parse(
+          JSON.stringify(this.editingTrack.phidget_configs),
+        );
+      } else {
+        this.phidgetConfigs = [];
+      }
+
       this.trackName = this.editingTrack.name;
       this.numTrackSections = this.editingTrack.num_track_sections;
       this.lanes = [...this.editingTrack.lanes];
@@ -526,6 +557,7 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       this.lanes = [];
       this.arduinoConfigs = [];
       this.trackmateConfigs = [];
+      this.phidgetConfigs = [];
       this.undoManager.initialize(this.editingTrack);
     }
 
@@ -540,11 +572,16 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
   }
 
   private initializeInterfaces() {
-    if (this.arduinoConfigs.length > 0 || this.trackmateConfigs.length > 0) {
+    if (
+      this.arduinoConfigs.length > 0 ||
+      this.trackmateConfigs.length > 0 ||
+      this.phidgetConfigs.length > 0
+    ) {
       this.dataService
         .initializeInterface(
           this.arduinoConfigs,
           this.trackmateConfigs,
+          this.phidgetConfigs,
           this.lanes.length,
         )
         .subscribe({
@@ -585,6 +622,9 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
     const trackmateCopy = track.trackmate_configs
       ? JSON.parse(JSON.stringify(track.trackmate_configs))
       : [];
+    const phidgetCopy = track.phidget_configs
+      ? JSON.parse(JSON.stringify(track.phidget_configs))
+      : [];
     return new Track({
       entity_id: track.entity_id,
       name: track.name,
@@ -595,6 +635,7 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       has_per_lane_relays: track.has_per_lane_relays,
       has_main_relay: track.has_main_relay,
       trackmate_configs: trackmateCopy,
+      phidget_configs: phidgetCopy,
     });
   }
 
@@ -612,6 +653,7 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
     const tmConfigs = this.trackmateConfigs
       ? deepCopy(this.trackmateConfigs)
       : [];
+    const phConfigs = this.phidgetConfigs ? deepCopy(this.phidgetConfigs) : [];
     return new Track({
       entity_id: this.editingTrack.entity_id,
       name: this.trackName,
@@ -630,6 +672,7 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       has_per_lane_relays: this.editingTrack.has_per_lane_relays,
       has_main_relay: this.editingTrack.has_main_relay,
       trackmate_configs: tmConfigs,
+      phidget_configs: phConfigs,
     });
   }
 
@@ -657,8 +700,42 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
     }
 
     // Check Arduino Configs equality
-    const acs1 = t1.arduino_configs || [];
-    const acs2 = t2.arduino_configs || [];
+    if (
+      !this.areArduinoConfigsEqual(
+        t1.arduino_configs || [],
+        t2.arduino_configs || [],
+      )
+    ) {
+      return false;
+    }
+
+    // Check Trackmate Configs equality
+    if (
+      !this.areTrackmateConfigsEqual(
+        t1.trackmate_configs || [],
+        t2.trackmate_configs || [],
+      )
+    ) {
+      return false;
+    }
+
+    // Check Phidget Configs equality
+    if (
+      !this.arePhidgetConfigsEqual(
+        t1.phidget_configs || [],
+        t2.phidget_configs || [],
+      )
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private areArduinoConfigsEqual(
+    acs1: ArduinoConfig[],
+    acs2: ArduinoConfig[],
+  ): boolean {
     if (acs1.length !== acs2.length) {
       return false;
     }
@@ -667,7 +744,6 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       const ac1 = acs1[c];
       const ac2 = acs2[c];
 
-      // Robust comparison of ArduinoConfig fields
       const keys = Object.keys(ac1) as (keyof ArduinoConfig)[];
       for (const key of keys) {
         const v1 = ac1[key];
@@ -709,9 +785,13 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       }
     }
 
-    // Check Trackmate Configs equality
-    const tcs1 = t1.trackmate_configs || [];
-    const tcs2 = t2.trackmate_configs || [];
+    return true;
+  }
+
+  private areTrackmateConfigsEqual(
+    tcs1: TrackmateConfig[],
+    tcs2: TrackmateConfig[],
+  ): boolean {
     if (tcs1.length !== tcs2.length) {
       return false;
     }
@@ -730,6 +810,45 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
           if (v1.length !== v2Arr.length) return false;
           for (let i = 0; i < v1.length; i++) {
             if (v1[i] !== v2Arr[i]) return false;
+          }
+        } else if (v1 !== v2) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  private arePhidgetConfigsEqual(
+    pcs1: PhidgetConfig[],
+    pcs2: PhidgetConfig[],
+  ): boolean {
+    if (pcs1.length !== pcs2.length) return false;
+
+    for (let c = 0; c < pcs1.length; c++) {
+      const pc1 = pcs1[c];
+      const pc2 = pcs2[c];
+
+      const keys = Object.keys(pc1) as (keyof PhidgetConfig)[];
+      for (const key of keys) {
+        const v1 = pc1[key];
+        const v2 = (pc2 as any)[key];
+
+        if (Array.isArray(v1)) {
+          const v2Arr = Array.isArray(v2) ? v2 : [];
+          if (v1.length !== v2Arr.length) return false;
+          for (let i = 0; i < v1.length; i++) {
+            if (v1[i] !== v2Arr[i]) return false;
+          }
+        } else if (key === "voltageConfigs") {
+          const vc1 = (v1 || {}) as { [lane: number]: number };
+          const vc2 = (v2 || {}) as { [lane: number]: number };
+          const entries1 = Object.entries(vc1);
+          const entries2 = Object.entries(vc2);
+          if (entries1.length !== entries2.length) return false;
+          for (const [lane, val] of entries1) {
+            if (vc2[lane as any] !== val) return false;
           }
         } else if (v1 !== v2) {
           return false;
@@ -981,7 +1100,7 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
   removeLane(index: number) {
     this.lanes.splice(index, 1);
     this.lanes = [...this.lanes]; // Trigger change detection
-    this.updateArduinoConfigsOnLaneDeletion(index);
+    this.updateInterfaceConfigsOnLaneDeletion(index);
     this.captureState();
   }
 
@@ -990,8 +1109,8 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       moveItemInArray(this.lanes, event.previousIndex, event.currentIndex);
       this.lanes = [...this.lanes]; // Trigger change detection
 
-      // Update Arduino configs to match new lane order
-      this.updateArduinoConfigsOnLaneOrderChange(
+      // Update Interface configs to match new lane order
+      this.updateInterfaceConfigsOnLaneOrderChange(
         event.previousIndex,
         event.currentIndex,
       );
@@ -1001,100 +1120,99 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
   }
 
   /* eslint-disable max-lines-per-function */
-  private updateArduinoConfigsOnLaneOrderChange(
+  private updateInterfaceConfigsOnLaneOrderChange(
     prevIndex: number,
     currIndex: number,
   ) {
-    /* eslint-disable max-lines-per-function */
-    this.arduinoConfigs.forEach((config) => {
-      // Helper to update pin IDs
-      const updatePinIds = (ids: number[]) => {
-        if (!ids) return;
-        for (let i = 0; i < ids.length; i++) {
-          const val = ids[i];
-          // TODO(aufderheide): Remove the absolute paths here and replace with imports
-          if (
-            val === PinBehavior.BEHAVIOR_UNUSED ||
-            val === PinBehavior.BEHAVIOR_RESERVED ||
-            val === PinBehavior.BEHAVIOR_CALL_BUTTON ||
-            val === PinBehavior.BEHAVIOR_RELAY
-          ) {
-            continue;
-          }
-
-          let base = -1;
-          if (
-            val >= PinBehavior.BEHAVIOR_LAP_BASE &&
-            val < PinBehavior.BEHAVIOR_SEGMENT_BASE
-          ) {
-            base = PinBehavior.BEHAVIOR_LAP_BASE;
-          } else if (
-            val >= PinBehavior.BEHAVIOR_SEGMENT_BASE &&
-            val < PinBehavior.BEHAVIOR_CALL_BUTTON_BASE
-          ) {
-            base = PinBehavior.BEHAVIOR_SEGMENT_BASE;
-          } else if (
-            val >= PinBehavior.BEHAVIOR_CALL_BUTTON_BASE &&
-            val < PinBehavior.BEHAVIOR_RELAY_BASE
-          ) {
-            base = PinBehavior.BEHAVIOR_CALL_BUTTON_BASE;
-          } else if (
-            val >= PinBehavior.BEHAVIOR_RELAY_BASE &&
-            val < PinBehavior.BEHAVIOR_RELAY_BASE + 1000
-          ) {
-            base = PinBehavior.BEHAVIOR_RELAY_BASE;
-          } else if (
-            val >= PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE &&
-            val < PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE + 1000
-          ) {
-            base = PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE;
-          }
-
-          if (base !== -1) {
-            const lane = val - base;
-            if (lane === prevIndex) {
-              ids[i] = base + currIndex;
-            } else if (prevIndex < currIndex) {
-              if (lane > prevIndex && lane <= currIndex) {
-                ids[i] = val - 1;
-              }
-            } else {
-              if (lane >= currIndex && lane < prevIndex) {
-                ids[i] = val + 1;
-              }
-            }
-          }
+    const updatePinIds = (ids: number[]) => {
+      if (!ids) return;
+      for (let i = 0; i < ids.length; i++) {
+        const val = ids[i];
+        if (
+          val === PinBehavior.BEHAVIOR_UNUSED ||
+          val === PinBehavior.BEHAVIOR_RESERVED ||
+          val === PinBehavior.BEHAVIOR_CALL_BUTTON ||
+          val === PinBehavior.BEHAVIOR_RELAY
+        ) {
+          continue;
         }
-      };
 
-      updatePinIds(config.digitalIds);
-      updatePinIds(config.analogIds);
+        let base = -1;
+        if (
+          val >= PinBehavior.BEHAVIOR_LAP_BASE &&
+          val < PinBehavior.BEHAVIOR_SEGMENT_BASE
+        ) {
+          base = PinBehavior.BEHAVIOR_LAP_BASE;
+        } else if (
+          val >= PinBehavior.BEHAVIOR_SEGMENT_BASE &&
+          val < PinBehavior.BEHAVIOR_CALL_BUTTON_BASE
+        ) {
+          base = PinBehavior.BEHAVIOR_SEGMENT_BASE;
+        } else if (
+          val >= PinBehavior.BEHAVIOR_CALL_BUTTON_BASE &&
+          val < PinBehavior.BEHAVIOR_RELAY_BASE
+        ) {
+          base = PinBehavior.BEHAVIOR_CALL_BUTTON_BASE;
+        } else if (
+          val >= PinBehavior.BEHAVIOR_RELAY_BASE &&
+          val < PinBehavior.BEHAVIOR_RELAY_BASE + 1000
+        ) {
+          base = PinBehavior.BEHAVIOR_RELAY_BASE;
+        } else if (
+          val >= PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE &&
+          val < PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE + 1000
+        ) {
+          base = PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE;
+        }
 
-      // Shift voltageConfigs
-      if (config.voltageConfigs) {
-        const newVoltageConfigs: { [lane: number]: number } = {};
-        Object.entries(config.voltageConfigs).forEach(([laneStr, value]) => {
-          const lane = parseInt(laneStr, 10);
+        if (base !== -1) {
+          const lane = val - base;
           if (lane === prevIndex) {
-            newVoltageConfigs[currIndex] = value;
+            ids[i] = base + currIndex;
           } else if (prevIndex < currIndex) {
             if (lane > prevIndex && lane <= currIndex) {
-              newVoltageConfigs[lane - 1] = value;
-            } else {
-              newVoltageConfigs[lane] = value;
+              ids[i] = val - 1;
             }
           } else {
             if (lane >= currIndex && lane < prevIndex) {
-              newVoltageConfigs[lane + 1] = value;
-            } else {
-              newVoltageConfigs[lane] = value;
+              ids[i] = val + 1;
             }
           }
-        });
-        config.voltageConfigs = newVoltageConfigs;
+        }
       }
+    };
 
-      // Shift ledLaneColorOverrides and update behaviors for each LedString
+    const updateVoltageConfigs = (voltageConfigs?: {
+      [lane: number]: number;
+    }) => {
+      if (!voltageConfigs) return voltageConfigs;
+      const newVoltageConfigs: { [lane: number]: number } = {};
+      Object.entries(voltageConfigs).forEach(([laneStr, value]) => {
+        const lane = parseInt(laneStr, 10);
+        if (lane === prevIndex) {
+          newVoltageConfigs[currIndex] = value;
+        } else if (prevIndex < currIndex) {
+          if (lane > prevIndex && lane <= currIndex) {
+            newVoltageConfigs[lane - 1] = value;
+          } else {
+            newVoltageConfigs[lane] = value;
+          }
+        } else {
+          if (lane >= currIndex && lane < prevIndex) {
+            newVoltageConfigs[lane + 1] = value;
+          } else {
+            newVoltageConfigs[lane] = value;
+          }
+        }
+      });
+      return newVoltageConfigs;
+    };
+
+    this.arduinoConfigs?.forEach((config) => {
+      updatePinIds(config.digitalIds);
+      updatePinIds(config.analogIds);
+      config.voltageConfigs = updateVoltageConfigs(config.voltageConfigs);
+
       if (config.ledStrings) {
         config.ledStrings.forEach((ls) => {
           if (ls.ledLaneColorOverrides) {
@@ -1131,84 +1249,91 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
         });
       }
     });
-
     this.arduinoConfigs = [...this.arduinoConfigs];
+
+    this.phidgetConfigs?.forEach((config) => {
+      updatePinIds(config.digitalInIds);
+      updatePinIds(config.digitalOutIds);
+      updatePinIds(config.analogIds);
+      config.voltageConfigs = updateVoltageConfigs(config.voltageConfigs);
+    });
+    this.phidgetConfigs = [...this.phidgetConfigs];
   }
 
-  private updateArduinoConfigsOnLaneDeletion(deletedLaneIndex: number) {
-    this.arduinoConfigs.forEach((config) => {
-      // Helper to update pin IDs
-      const updatePinIds = (ids: number[]) => {
-        if (!ids) return;
-        for (let i = 0; i < ids.length; i++) {
-          const val = ids[i];
-          if (
-            val === PinBehavior.BEHAVIOR_UNUSED ||
-            val === PinBehavior.BEHAVIOR_RESERVED ||
-            val === PinBehavior.BEHAVIOR_CALL_BUTTON ||
-            val === PinBehavior.BEHAVIOR_RELAY
-          ) {
-            continue;
-          }
+  private updateInterfaceConfigsOnLaneDeletion(deletedLaneIndex: number) {
+    const updatePinIds = (ids: number[]) => {
+      if (!ids) return;
+      for (let i = 0; i < ids.length; i++) {
+        const val = ids[i];
+        if (
+          val === PinBehavior.BEHAVIOR_UNUSED ||
+          val === PinBehavior.BEHAVIOR_RESERVED ||
+          val === PinBehavior.BEHAVIOR_CALL_BUTTON ||
+          val === PinBehavior.BEHAVIOR_RELAY
+        ) {
+          continue;
+        }
 
-          let base = -1;
-          if (
-            val >= PinBehavior.BEHAVIOR_LAP_BASE &&
-            val < PinBehavior.BEHAVIOR_SEGMENT_BASE
-          ) {
-            base = PinBehavior.BEHAVIOR_LAP_BASE;
-          } else if (
-            val >= PinBehavior.BEHAVIOR_SEGMENT_BASE &&
-            val < PinBehavior.BEHAVIOR_CALL_BUTTON_BASE
-          ) {
-            base = PinBehavior.BEHAVIOR_SEGMENT_BASE;
-          } else if (
-            val >= PinBehavior.BEHAVIOR_CALL_BUTTON_BASE &&
-            val < PinBehavior.BEHAVIOR_RELAY_BASE
-          ) {
-            base = PinBehavior.BEHAVIOR_CALL_BUTTON_BASE;
-          } else if (
-            val >= PinBehavior.BEHAVIOR_RELAY_BASE &&
-            val < PinBehavior.BEHAVIOR_RELAY_BASE + 1000
-          ) {
-            base = PinBehavior.BEHAVIOR_RELAY_BASE;
-          } else if (
-            val >= PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE &&
-            val < PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE + 1000
-          ) {
-            base = PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE;
-          }
+        let base = -1;
+        if (
+          val >= PinBehavior.BEHAVIOR_LAP_BASE &&
+          val < PinBehavior.BEHAVIOR_SEGMENT_BASE
+        ) {
+          base = PinBehavior.BEHAVIOR_LAP_BASE;
+        } else if (
+          val >= PinBehavior.BEHAVIOR_SEGMENT_BASE &&
+          val < PinBehavior.BEHAVIOR_CALL_BUTTON_BASE
+        ) {
+          base = PinBehavior.BEHAVIOR_SEGMENT_BASE;
+        } else if (
+          val >= PinBehavior.BEHAVIOR_CALL_BUTTON_BASE &&
+          val < PinBehavior.BEHAVIOR_RELAY_BASE
+        ) {
+          base = PinBehavior.BEHAVIOR_CALL_BUTTON_BASE;
+        } else if (
+          val >= PinBehavior.BEHAVIOR_RELAY_BASE &&
+          val < PinBehavior.BEHAVIOR_RELAY_BASE + 1000
+        ) {
+          base = PinBehavior.BEHAVIOR_RELAY_BASE;
+        } else if (
+          val >= PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE &&
+          val < PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE + 1000
+        ) {
+          base = PinBehavior.BEHAVIOR_VOLTAGE_LEVEL_BASE;
+        }
 
-          if (base !== -1) {
-            const lane = val - base;
-            if (lane === deletedLaneIndex) {
-              ids[i] = PinBehavior.BEHAVIOR_UNUSED;
-            } else if (lane > deletedLaneIndex) {
-              ids[i] = val - 1;
-            }
+        if (base !== -1) {
+          const lane = val - base;
+          if (lane === deletedLaneIndex) {
+            ids[i] = PinBehavior.BEHAVIOR_UNUSED;
+          } else if (lane > deletedLaneIndex) {
+            ids[i] = val - 1;
           }
         }
-      };
+      }
+    };
 
+    const updateVoltageConfigs = (voltageConfigs?: {
+      [lane: number]: number;
+    }) => {
+      if (!voltageConfigs) return voltageConfigs;
+      const newVoltageConfigs: { [lane: number]: number } = {};
+      Object.entries(voltageConfigs).forEach(([laneStr, value]) => {
+        const lane = parseInt(laneStr, 10);
+        if (lane < deletedLaneIndex) {
+          newVoltageConfigs[lane] = value;
+        } else if (lane > deletedLaneIndex) {
+          newVoltageConfigs[lane - 1] = value;
+        }
+      });
+      return newVoltageConfigs;
+    };
+
+    this.arduinoConfigs?.forEach((config) => {
       updatePinIds(config.digitalIds);
       updatePinIds(config.analogIds);
+      config.voltageConfigs = updateVoltageConfigs(config.voltageConfigs);
 
-      // Shift voltageConfigs
-      if (config.voltageConfigs) {
-        const newVoltageConfigs: { [lane: number]: number } = {};
-        Object.entries(config.voltageConfigs).forEach(([laneStr, value]) => {
-          const lane = parseInt(laneStr, 10);
-          if (lane < deletedLaneIndex) {
-            newVoltageConfigs[lane] = value;
-          } else if (lane > deletedLaneIndex) {
-            newVoltageConfigs[lane - 1] = value;
-          }
-          // if lane === deletedLaneIndex, it's just omitted
-        });
-        config.voltageConfigs = newVoltageConfigs;
-      }
-
-      // Shift ledLaneColorOverrides and update behaviors for each LedString
       if (config.ledStrings) {
         config.ledStrings.forEach((ls) => {
           if (
@@ -1242,8 +1367,15 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
         });
       }
     });
+    this.arduinoConfigs = [...this.arduinoConfigs];
 
-    this.arduinoConfigs = [...this.arduinoConfigs]; // Trigger change detection
+    this.phidgetConfigs?.forEach((config) => {
+      updatePinIds(config.digitalInIds);
+      updatePinIds(config.digitalOutIds);
+      updatePinIds(config.analogIds);
+      config.voltageConfigs = updateVoltageConfigs(config.voltageConfigs);
+    });
+    this.phidgetConfigs = [...this.phidgetConfigs];
   }
 
   private colorDebounceTimer: any = null;
@@ -1329,8 +1461,6 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       normallyClosedLaneSensors: true,
       normallyClosedRelays: true,
       globalInvertLights: 0,
-      useLapsForPits: 0,
-      useLapsForPitEnd: 0,
       usePitsAsLaps: false,
       useLapsForSegments: false,
       lapPinPitBehavior: 3,
@@ -1394,6 +1524,54 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
   }
 
   trackByTrackmateConfig(index: number, _config: any): number {
+    return index;
+  }
+
+  // --- Phidget Configuration ---
+
+  addPhidgetConfig() {
+    this.phidgetConfigs.push({
+      name: `Phidget ${this.phidgetConfigs.length + 1}`,
+      serialNumber: -1,
+      isHubPort: false,
+      hubPort: 0,
+      normallyClosedLaneSensors: true,
+      normallyClosedRelays: true,
+      useLapsForSegments: false,
+      lapPinPitBehavior: 0,
+      digitalInIds: Array(60).fill(0),
+      digitalOutIds: Array(60).fill(0),
+      analogIds: Array(16).fill(0),
+    });
+    this.phidgetConfigs = [...this.phidgetConfigs];
+    this.captureState();
+    this.initializeInterfaces();
+  }
+
+  removePhidgetConfig(index: number) {
+    this.phidgetConfigs.splice(index, 1);
+    this.phidgetConfigs = [...this.phidgetConfigs];
+    this.captureState();
+    if (!this.isDestroyed) {
+      this.cdr.detectChanges();
+    }
+    this.initializeInterfaces();
+  }
+
+  onPhidgetDriverError() {
+    this.driverMissingError = true;
+  }
+
+  onPhidgetConfigChange() {
+    this.phidgetConfigs = [...this.phidgetConfigs];
+    this.captureState();
+    if (!this.isDestroyed) {
+      this.cdr.detectChanges();
+    }
+    this.initializeInterfaces();
+  }
+
+  trackByPhidgetConfig(index: number, _config: any): number {
     return index;
   }
 
@@ -1482,6 +1660,7 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
             has_per_lane_relays: result.has_per_lane_relays ?? false,
             has_main_relay: result.has_main_relay ?? false,
             trackmate_configs: result.trackmate_configs,
+            phidget_configs: result.phidget_configs,
           });
 
           // Update allTracks cache to ensure name uniqueness checks stay in sync
@@ -1539,6 +1718,22 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
           } else {
             if (this.trackmateConfigs.length > 0) {
               this.trackmateConfigs = [];
+            }
+          }
+
+          if (
+            this.editingTrack.phidget_configs &&
+            this.editingTrack.phidget_configs.length > 0
+          ) {
+            const newPhConfigsJson = JSON.stringify(
+              this.editingTrack.phidget_configs,
+            );
+            if (newPhConfigsJson !== JSON.stringify(this.phidgetConfigs)) {
+              this.phidgetConfigs = JSON.parse(newPhConfigsJson);
+            }
+          } else {
+            if (this.phidgetConfigs.length > 0) {
+              this.phidgetConfigs = [];
             }
           }
 

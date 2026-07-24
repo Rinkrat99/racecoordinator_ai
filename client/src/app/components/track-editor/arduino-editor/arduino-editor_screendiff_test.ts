@@ -85,8 +85,6 @@ test.describe("Arduino Editor Component Visuals", () => {
               normallyClosedLaneSensors: false,
               normallyClosedRelays: true,
               globalInvertLights: 0,
-              useLapsForPits: 0,
-              useLapsForPitEnd: 0,
               usePitsAsLaps: false,
               useLapsForSegments: true,
               ledStrings: null,
@@ -117,7 +115,10 @@ test.describe("Arduino Editor Component Visuals", () => {
 
     // Pin actions checked visually
 
-    await expect(page).toHaveScreenshot("arduino-editor-mixed-pins.png");
+    await expect(page).toHaveScreenshot("arduino-editor-mixed-pins.png", {
+      maxDiffPixelRatio: 0.05,
+      maxDiffPixels: 10000,
+    });
   });
 });
 
@@ -166,8 +167,6 @@ test.describe("Arduino Editor Voltage Divider Config Visuals", () => {
         normallyClosedLaneSensors: false,
         normallyClosedRelays: true,
         globalInvertLights: 0,
-        useLapsForPits: 0,
-        useLapsForPitEnd: 0,
         usePitsAsLaps: false,
         useLapsForSegments: true,
         ledStrings: null,

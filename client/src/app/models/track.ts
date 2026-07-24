@@ -20,6 +20,7 @@ export interface TrackParams {
   has_per_lane_relays?: boolean;
   has_main_relay?: boolean;
   arduino_configs?: ArduinoConfig[];
+  phidget_configs?: PhidgetConfig[];
   trackmate_configs?: TrackmateConfig[];
 }
 
@@ -32,6 +33,7 @@ export class Track implements Model {
   readonly has_per_lane_relays!: boolean;
   readonly has_main_relay!: boolean;
   readonly arduino_configs!: ArduinoConfig[];
+  readonly phidget_configs!: PhidgetConfig[];
   readonly trackmate_configs!: TrackmateConfig[];
 
   constructor(params: TrackParams) {
@@ -43,6 +45,7 @@ export class Track implements Model {
     this.has_per_lane_relays ??= false;
     this.has_main_relay ??= false;
     this.arduino_configs ??= [];
+    this.phidget_configs ??= [];
     this.trackmate_configs ??= [];
   }
 
@@ -54,16 +57,26 @@ export class Track implements Model {
     if (this.has_digital_fuel) {
       return true;
     }
-    if (!this.arduino_configs || this.arduino_configs.length === 0) {
-      return false;
+    // Check Arduino configs
+    if (this.arduino_configs) {
+      for (const config of this.arduino_configs) {
+        if (
+          config.voltageConfigs != null &&
+          Object.keys(config.voltageConfigs).length > 0
+        ) {
+          return true;
+        }
+      }
     }
-    // For now, if any config has digital fuel, track has digital fuel.
-    for (const config of this.arduino_configs) {
-      if (
-        config.voltageConfigs != null &&
-        Object.keys(config.voltageConfigs).length > 0
-      ) {
-        return true;
+    // Check Phidget configs
+    if (this.phidget_configs) {
+      for (const config of this.phidget_configs) {
+        if (
+          config.voltageConfigs != null &&
+          Object.keys(config.voltageConfigs).length > 0
+        ) {
+          return true;
+        }
       }
     }
     return false;
@@ -110,8 +123,6 @@ export interface ArduinoConfig {
   normallyClosedRelays: boolean;
   globalInvertLights: number;
 
-  useLapsForPits: number;
-  useLapsForPitEnd: number;
   usePitsAsLaps: boolean;
   useLapsForSegments: boolean;
   lapPinPitBehavior: number;
@@ -121,5 +132,24 @@ export interface ArduinoConfig {
   analogIds: number[];
 
   ledStrings: LedString[];
+  voltageConfigs?: { [lane: number]: number };
+}
+
+export interface PhidgetConfig {
+  name: string;
+  serialNumber: number;
+  isHubPort: boolean;
+  hubPort: number;
+
+  normallyClosedLaneSensors: boolean;
+  normallyClosedRelays: boolean;
+
+  useLapsForSegments: boolean;
+  lapPinPitBehavior: number;
+
+  digitalInIds: number[];
+  digitalOutIds: number[];
+  analogIds: number[];
+
   voltageConfigs?: { [lane: number]: number };
 }

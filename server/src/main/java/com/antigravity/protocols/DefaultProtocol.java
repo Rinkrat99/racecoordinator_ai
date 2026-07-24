@@ -44,6 +44,8 @@ public abstract class DefaultProtocol implements IProtocol {
   // Hardware state tracking
   protected HwTime[] hwLapTime;
   protected HwTime[] hwSegmentTime;
+  protected final long[] lastLapTimeNanos;
+  protected final long[] lastSegmentTimeNanos;
   protected byte hwReset = 1;
 
   // Input states
@@ -71,6 +73,8 @@ public abstract class DefaultProtocol implements IProtocol {
 
     this.hwLapTime = new HwTime[numLanes];
     this.hwSegmentTime = new HwTime[numLanes];
+    this.lastLapTimeNanos = new long[numLanes];
+    this.lastSegmentTimeNanos = new long[numLanes];
     for (int i = 0; i < numLanes; i++) {
       this.hwLapTime[i] = new HwTime();
       this.hwSegmentTime[i] = new HwTime();
@@ -193,8 +197,8 @@ public abstract class DefaultProtocol implements IProtocol {
                           new CarData(
                               laneIndex,
                               deltaTimeSeconds,
-                              0,
-                              0,
+                              0.0,
+                              0.0,
                               true,
                               CarLocation.PitRow,
                               CarLocation.PitRow,
@@ -518,11 +522,31 @@ public abstract class DefaultProtocol implements IProtocol {
     return true;
   }
 
+  protected void addHardwareTimeDeltaNanos(int laneIndex, long nowNanos) {
+    if (laneIndex >= hwLapTime.length) {
+      return;
+    }
+    if (lastLapTimeNanos[laneIndex] > 0) {
+      long deltaUs = (nowNanos - lastLapTimeNanos[laneIndex]) / 1000;
+      hwLapTime[laneIndex].add(deltaUs);
+    }
+    lastLapTimeNanos[laneIndex] = nowNanos;
+
+    if (lastSegmentTimeNanos[laneIndex] > 0) {
+      long deltaUs = (nowNanos - lastSegmentTimeNanos[laneIndex]) / 1000;
+      hwSegmentTime[laneIndex].add(deltaUs);
+    }
+    lastSegmentTimeNanos[laneIndex] = nowNanos;
+  }
+
   @Override
-  public void startTimer() {
+  public synchronized void startTimer() {
+    long now = System.nanoTime();
     for (int i = 0; i < numLanes; i++) {
       hwLapTime[i].reset();
       hwSegmentTime[i].reset();
+      lastLapTimeNanos[i] = now;
+      lastSegmentTimeNanos[i] = now;
     }
     hwReset = 1;
   }
@@ -581,7 +605,7 @@ public abstract class DefaultProtocol implements IProtocol {
 
   @Override
   public int getInterfaceIndex() {
-    return interfaceIndex;
+    return interfaceIndex >= 0 ? interfaceIndex : 0;
   }
 
   @Override

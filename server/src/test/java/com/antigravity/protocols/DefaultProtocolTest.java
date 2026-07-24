@@ -254,4 +254,31 @@ public class DefaultProtocolTest {
     assertEquals(0, protocol.hwReset);
     assertEquals(2.0, protocol.hwLapTime[0].time(), 0.001);
   }
+
+  @Test
+  public void testAddHardwareTimeDeltaNanos() {
+    protocol.startTimer();
+    long startNanos = protocol.lastLapTimeNanos[0];
+    assertTrue("Start nanos should be > 0", startNanos > 0);
+    assertEquals(0.0, protocol.hwLapTime[0].time(), 0.001);
+
+    // Simulate 1 second passing (1,000,000,000 nanos)
+    long oneSecondNanos = 1_000_000_000L;
+    protocol.addHardwareTimeDeltaNanos(0, startNanos + oneSecondNanos);
+
+    // Time is stored internally in microseconds, so 1 second = 1,000,000 us.
+    // The time() method returns seconds, so we expect 1.0
+    assertEquals(1.0, protocol.hwLapTime[0].time(), 0.001);
+    assertEquals(1.0, protocol.hwSegmentTime[0].time(), 0.001);
+    assertEquals(startNanos + oneSecondNanos, protocol.lastLapTimeNanos[0]);
+    assertEquals(startNanos + oneSecondNanos, protocol.lastSegmentTimeNanos[0]);
+
+    // Simulate another 0.5 seconds passing (500,000,000 nanos)
+    long halfSecondNanos = 500_000_000L;
+    protocol.addHardwareTimeDeltaNanos(0, startNanos + oneSecondNanos + halfSecondNanos);
+
+    // Because we consumed the 1.0 second earlier, the hwLapTime only contains the new 0.5 seconds
+    assertEquals(0.5, protocol.hwLapTime[0].time(), 0.001);
+    assertEquals(0.5, protocol.hwSegmentTime[0].time(), 0.001);
+  }
 }

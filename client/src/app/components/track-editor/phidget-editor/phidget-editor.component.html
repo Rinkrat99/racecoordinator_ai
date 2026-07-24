@@ -1,0 +1,560 @@
+@if (config()) {
+  <div
+    class="arduino-config-container"
+    [id]="'phidget-editor-' + interfaceIndex()"
+  >
+    <div class="config-section">
+      <div class="section-header" (click)="toggleSection('phidget')">
+        <span
+          class="expander-icon"
+          [class.collapsed]="!sectionsExpanded.phidget"
+          >▼</span
+        >
+        <h1>
+          {{ "PHIDGET_HEADER" | translate }}
+        </h1>
+        <div class="spacer"></div>
+        <button
+          class="action-btn danger small"
+          (click)="onRemove()"
+          title="{{ 'PHIDGET_REMOVE_INTERFACE' | translate }}"
+        >
+          X
+        </button>
+      </div>
+
+      @if (sectionsExpanded.phidget) {
+        <div class="section-content">
+          <div class="sections-wrapper">
+            <!-- Main Configuration Section -->
+            <div class="config-section">
+              <div class="section-header" (click)="toggleSection('main')">
+                <span
+                  class="expander-icon"
+                  [class.collapsed]="!sectionsExpanded.main"
+                  >▼</span
+                >
+                <h4>{{ "PHIDGET_MAIN_HEADER" | translate }}</h4>
+              </div>
+
+              @if (sectionsExpanded.main) {
+                <div class="section-content">
+                  <div class="config-top-section">
+                    <div class="board-controls">
+                      <div class="control-group">
+                        <label>{{ "PHIDGET_DEVICE" | translate }}</label>
+                        <div class="com-port-row">
+                          <select
+                            [id]="'device-' + interfaceIndex()"
+                            [ngModel]="selectedDeviceKeyStr"
+                            (ngModelChange)="onDeviceSelectChange($event)"
+                          >
+                            <option value="" disabled>
+                              {{ "PHIDGET_SELECT_DEVICE" | translate }}
+                            </option>
+                            @for (
+                              device of devices;
+                              track getDeviceKey(device)
+                            ) {
+                              <option
+                                [value]="getDeviceKey(device)"
+                                [disabled]="isDeviceSelectedByOther(device)"
+                              >
+                                {{ device.name }} ({{ device.serialNumber }})
+                                @if (device.isHubPort) {
+                                  - Port {{ device.hubPort }}
+                                }
+                                @if (isDeviceSelectedByOther(device)) {
+                                  - ({{ "PHIDGET_DEVICE_IN_USE" | translate }})
+                                }
+                              </option>
+                            }
+                          </select>
+                          <button
+                            type="button"
+                            [id]="'phidget-status-badge-' + interfaceIndex()"
+                            class="status-badge"
+                            [class.connected]="status === 'CONNECTED'"
+                            [title]="'PHIDGET_STATUS_' + status | translate"
+                          >
+                            <div class="status-dot"></div>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="board-preview">
+                      <img
+                        [src]="getBoardImagePath()"
+                        [alt]="config().name || 'Phidget Device'"
+                        class="board-image"
+                      />
+                    </div>
+
+                    <div class="right-controls">
+                      <div class="control-group">
+                        <label class="checkbox-label">
+                          <input
+                            type="checkbox"
+                            [(ngModel)]="config()!.normallyClosedLaneSensors"
+                            (change)="onConfigChange()"
+                          />
+                          {{ "PHIDGET_NORMALLY_CLOSED_SENSORS" | translate }}
+                        </label>
+                      </div>
+
+                      <div class="control-group">
+                        <label class="checkbox-label">
+                          <input
+                            type="checkbox"
+                            [(ngModel)]="config()!.normallyClosedRelays"
+                            (change)="onConfigChange()"
+                          />
+                          {{ "PHIDGET_NORMALLY_CLOSED_RELAYS" | translate }}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Pins / Channel Assignments Section -->
+            <div class="pins-section scrollable">
+              <div class="pins-config">
+                <!-- Digital Inputs Section -->
+                @if (availableDigitalInputPins.length > 0) {
+                  <div class="config-section">
+                    <div
+                      class="section-header"
+                      (click)="toggleSection('digitalIn')"
+                    >
+                      <span
+                        class="expander-icon"
+                        [class.collapsed]="!sectionsExpanded.digitalIn"
+                        >▼</span
+                      >
+                      <h4>{{ "PHIDGET_DIGITAL_INPUTS" | translate }}</h4>
+                    </div>
+                    @if (sectionsExpanded.digitalIn) {
+                      <div class="section-content">
+                        <div class="pin-grid">
+                          @for (pin of availableDigitalInputPins; track pin) {
+                            <div class="pin-item">
+                              <div class="pin-header">
+                                <label>In {{ pin }}</label>
+                                <span
+                                  [id]="'phidget-in-status-' + pin"
+                                  class="status-badge small"
+                                  [class.connected]="isPinActive('in', pin)"
+                                ></span>
+                              </div>
+                              <div
+                                class="custom-dropdown-container pin-selector"
+                              >
+                                <div
+                                  class="dropdown-trigger"
+                                  [class.open]="isPinDropdownOpen('in-' + pin)"
+                                  (click)="
+                                    togglePinDropdown('in-' + pin, $event)
+                                  "
+                                >
+                                  <span class="selected-value">{{
+                                    getCurrentActionLabel("in", pin)
+                                  }}</span>
+                                  <div
+                                    class="dropdown-arrow"
+                                    [class.open]="
+                                      isPinDropdownOpen('in-' + pin)
+                                    "
+                                  >
+                                    ▼
+                                  </div>
+                                </div>
+                                @if (isPinDropdownOpen("in-" + pin)) {
+                                  <div
+                                    class="dropdown-menu"
+                                    [class.open-up]="
+                                      dropdownOpenUp['in-' + pin]
+                                    "
+                                    (click)="$event.stopPropagation()"
+                                  >
+                                    @for (
+                                      group of getFilteredActions("in", pin);
+                                      track group.key
+                                    ) {
+                                      @if (group.label) {
+                                        <div
+                                          class="group-header"
+                                          (click)="
+                                            toggleGroupCollapse(
+                                              group.key,
+                                              $event
+                                            )
+                                          "
+                                        >
+                                          <span
+                                            class="expander-icon"
+                                            [class.collapsed]="
+                                              isGroupCollapsed(group.key)
+                                            "
+                                            >▼</span
+                                          >
+                                          {{ group.label }}
+                                        </div>
+                                        @if (!isGroupCollapsed(group.key)) {
+                                          <div class="group-items">
+                                            @for (
+                                              action of group.actions;
+                                              track action.value
+                                            ) {
+                                              <div
+                                                class="dropdown-item"
+                                                [class.selected]="
+                                                  getPinAction('in', pin) ===
+                                                  action.value
+                                                "
+                                                (click)="
+                                                  selectPinAction(
+                                                    'in',
+                                                    pin,
+                                                    action.value
+                                                  )
+                                                "
+                                              >
+                                                {{ action.label }}
+                                              </div>
+                                            }
+                                          </div>
+                                        }
+                                      } @else {
+                                        @for (
+                                          action of group.actions;
+                                          track action.value
+                                        ) {
+                                          <div
+                                            class="dropdown-item"
+                                            [class.selected]="
+                                              getPinAction('in', pin) ===
+                                              action.value
+                                            "
+                                            (click)="
+                                              selectPinAction(
+                                                'in',
+                                                pin,
+                                                action.value
+                                              )
+                                            "
+                                          >
+                                            {{ action.label }}
+                                          </div>
+                                        }
+                                      }
+                                    }
+                                  </div>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Digital Outputs / Relays Section -->
+                @if (availableDigitalOutputPins.length > 0) {
+                  <div class="config-section">
+                    <div
+                      class="section-header"
+                      (click)="toggleSection('digitalOut')"
+                    >
+                      <span
+                        class="expander-icon"
+                        [class.collapsed]="!sectionsExpanded.digitalOut"
+                        >▼</span
+                      >
+                      <h4>{{ "PHIDGET_DIGITAL_OUTPUTS" | translate }}</h4>
+                    </div>
+                    @if (sectionsExpanded.digitalOut) {
+                      <div class="section-content">
+                        <div class="pin-grid">
+                          @for (pin of availableDigitalOutputPins; track pin) {
+                            <div class="pin-item">
+                              <div class="pin-header">
+                                <label>Out {{ pin }}</label>
+                                <span
+                                  [id]="'phidget-out-status-' + pin"
+                                  class="status-badge small"
+                                  [class.connected]="isPinActive('out', pin)"
+                                  (click)="togglePinState('out', pin)"
+                                  style="cursor: pointer"
+                                ></span>
+                              </div>
+                              <div
+                                class="custom-dropdown-container pin-selector"
+                              >
+                                <div
+                                  class="dropdown-trigger"
+                                  [class.open]="isPinDropdownOpen('out-' + pin)"
+                                  (click)="
+                                    togglePinDropdown('out-' + pin, $event)
+                                  "
+                                >
+                                  <span class="selected-value">{{
+                                    getCurrentActionLabel("out", pin)
+                                  }}</span>
+                                  <div
+                                    class="dropdown-arrow"
+                                    [class.open]="
+                                      isPinDropdownOpen('out-' + pin)
+                                    "
+                                  >
+                                    ▼
+                                  </div>
+                                </div>
+                                @if (isPinDropdownOpen("out-" + pin)) {
+                                  <div
+                                    class="dropdown-menu"
+                                    [class.open-up]="
+                                      dropdownOpenUp['out-' + pin]
+                                    "
+                                    (click)="$event.stopPropagation()"
+                                  >
+                                    @for (
+                                      group of getFilteredActions("out", pin);
+                                      track group.key
+                                    ) {
+                                      @if (group.label) {
+                                        <div
+                                          class="group-header"
+                                          (click)="
+                                            toggleGroupCollapse(
+                                              group.key,
+                                              $event
+                                            )
+                                          "
+                                        >
+                                          <span
+                                            class="expander-icon"
+                                            [class.collapsed]="
+                                              isGroupCollapsed(group.key)
+                                            "
+                                            >▼</span
+                                          >
+                                          {{ group.label }}
+                                        </div>
+                                        @if (!isGroupCollapsed(group.key)) {
+                                          <div class="group-items">
+                                            @for (
+                                              action of group.actions;
+                                              track action.value
+                                            ) {
+                                              <div
+                                                class="dropdown-item"
+                                                [class.selected]="
+                                                  getPinAction('out', pin) ===
+                                                  action.value
+                                                "
+                                                (click)="
+                                                  selectPinAction(
+                                                    'out',
+                                                    pin,
+                                                    action.value
+                                                  )
+                                                "
+                                              >
+                                                {{ action.label }}
+                                              </div>
+                                            }
+                                          </div>
+                                        }
+                                      } @else {
+                                        @for (
+                                          action of group.actions;
+                                          track action.value
+                                        ) {
+                                          <div
+                                            class="dropdown-item"
+                                            [class.selected]="
+                                              getPinAction('out', pin) ===
+                                              action.value
+                                            "
+                                            (click)="
+                                              selectPinAction(
+                                                'out',
+                                                pin,
+                                                action.value
+                                              )
+                                            "
+                                          >
+                                            {{ action.label }}
+                                          </div>
+                                        }
+                                      }
+                                    }
+                                  </div>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Analog Inputs Section -->
+                @if (availableAnalogInputPins.length > 0) {
+                  <div class="config-section">
+                    <div
+                      class="section-header"
+                      (click)="toggleSection('analogIn')"
+                    >
+                      <span
+                        class="expander-icon"
+                        [class.collapsed]="!sectionsExpanded.analogIn"
+                        >▼</span
+                      >
+                      <h4>{{ "PHIDGET_ANALOG_INPUTS" | translate }}</h4>
+                    </div>
+                    @if (sectionsExpanded.analogIn) {
+                      <div class="section-content">
+                        <div class="pin-grid">
+                          @for (pin of availableAnalogInputPins; track pin) {
+                            <div class="pin-item">
+                              <div class="pin-header">
+                                <label>Analog {{ pin }}</label>
+                                <span
+                                  [id]="'phidget-analog-status-' + pin"
+                                  class="status-badge small"
+                                  [class.connected]="isPinActive('analog', pin)"
+                                ></span>
+                              </div>
+                              <div
+                                class="custom-dropdown-container pin-selector"
+                              >
+                                <div
+                                  class="dropdown-trigger"
+                                  [class.open]="
+                                    isPinDropdownOpen('analog-' + pin)
+                                  "
+                                  (click)="
+                                    togglePinDropdown('analog-' + pin, $event)
+                                  "
+                                >
+                                  <span class="selected-value">{{
+                                    getCurrentActionLabel("analog", pin)
+                                  }}</span>
+                                  <div
+                                    class="dropdown-arrow"
+                                    [class.open]="
+                                      isPinDropdownOpen('analog-' + pin)
+                                    "
+                                  >
+                                    ▼
+                                  </div>
+                                </div>
+                                @if (isPinDropdownOpen("analog-" + pin)) {
+                                  <div
+                                    class="dropdown-menu"
+                                    [class.open-up]="
+                                      dropdownOpenUp['analog-' + pin]
+                                    "
+                                    (click)="$event.stopPropagation()"
+                                  >
+                                    @for (
+                                      group of getFilteredActions(
+                                        "analog",
+                                        pin
+                                      );
+                                      track group.key
+                                    ) {
+                                      @if (group.label) {
+                                        <div
+                                          class="group-header"
+                                          (click)="
+                                            toggleGroupCollapse(
+                                              group.key,
+                                              $event
+                                            )
+                                          "
+                                        >
+                                          <span
+                                            class="expander-icon"
+                                            [class.collapsed]="
+                                              isGroupCollapsed(group.key)
+                                            "
+                                            >▼</span
+                                          >
+                                          {{ group.label }}
+                                        </div>
+                                        @if (!isGroupCollapsed(group.key)) {
+                                          <div class="group-items">
+                                            @for (
+                                              action of group.actions;
+                                              track action.value
+                                            ) {
+                                              <div
+                                                class="dropdown-item"
+                                                [class.selected]="
+                                                  getPinAction(
+                                                    'analog',
+                                                    pin
+                                                  ) === action.value
+                                                "
+                                                (click)="
+                                                  selectPinAction(
+                                                    'analog',
+                                                    pin,
+                                                    action.value
+                                                  )
+                                                "
+                                              >
+                                                {{ action.label }}
+                                              </div>
+                                            }
+                                          </div>
+                                        }
+                                      } @else {
+                                        @for (
+                                          action of group.actions;
+                                          track action.value
+                                        ) {
+                                          <div
+                                            class="dropdown-item"
+                                            [class.selected]="
+                                              getPinAction('analog', pin) ===
+                                              action.value
+                                            "
+                                            (click)="
+                                              selectPinAction(
+                                                'analog',
+                                                pin,
+                                                action.value
+                                              )
+                                            "
+                                          >
+                                            {{ action.label }}
+                                          </div>
+                                        }
+                                      }
+                                    }
+                                  </div>
+                                }
+                              </div>
+                            </div>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -43,8 +43,6 @@ describe("DataService", () => {
         normallyClosedLaneSensors: true,
         normallyClosedRelays: true,
         globalInvertLights: 0,
-        useLapsForPits: 0,
-        useLapsForPitEnd: 0,
         usePitsAsLaps: false,
         useLapsForSegments: false,
         lapPinPitBehavior: 0,
@@ -69,7 +67,7 @@ describe("DataService", () => {
     ];
 
     service
-      .initializeInterface(arduinoConfigs, trackmateConfigs, 4)
+      .initializeInterface(arduinoConfigs, trackmateConfigs, [], 4)
       .subscribe((response) => {
         expect(response).toBeTruthy();
         expect(response.success).toBeTrue();
