@@ -42,6 +42,8 @@ Source: "release\RaceCoordinator\install_dependencies.ps1"; DestDir: "{app}"; Fl
 Source: "release\RaceCoordinator\web\*"; DestDir: "{app}\server\web"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Arduino Resources
 Source: "release\RaceCoordinator\arduino\*"; DestDir: "{app}\arduino"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Native Libs
+Source: "release\RaceCoordinator\lib\*"; DestDir: "{app}\lib"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; VC++ Redistributables
 Source: "release\RaceCoordinator\vc_redist.x64.exe"; DestDir: "{tmp}"; Flags: ignoreversion skipifsourcedoesntexist; Check: IsWindows10OrNewer
 Source: "release\RaceCoordinator\vcredist_x86.exe"; DestDir: "{tmp}"; Flags: ignoreversion skipifsourcedoesntexist; Check: not IsWindows10OrNewer

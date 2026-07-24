@@ -308,4 +308,37 @@ public class PhidgetProtocolTest {
     // Now onSegment SHOULD be called
     verify(mockListener).onSegment(eq(0), anyDouble(), eq(0), eq(0));
   }
+
+  @Test
+  public void testGetNativeLibraryPathsForMac() {
+    List<String> paths = PhidgetProtocol.getNativeLibraryPaths("Mac OS X", "x86_64", "/tmp/rc");
+    assertEquals(1, paths.size());
+    assertTrue(paths.get(0).endsWith("libphidget22java.jnilib"));
+    assertTrue(paths.get(0).contains("macos"));
+  }
+
+  @Test
+  public void testGetNativeLibraryPathsForWin64() {
+    List<String> paths = PhidgetProtocol.getNativeLibraryPaths("Windows 10", "amd64", "/tmp/rc");
+    assertEquals(2, paths.size());
+    assertTrue(paths.get(0).endsWith("phidget22.dll"));
+    assertTrue(paths.get(1).endsWith("phidget22java.dll"));
+    assertTrue(paths.get(0).contains("x64"));
+  }
+
+  @Test
+  public void testGetNativeLibraryPathsForWin32() {
+    List<String> paths = PhidgetProtocol.getNativeLibraryPaths("Windows 7", "x86", "/tmp/rc");
+    assertEquals(2, paths.size());
+    assertTrue(paths.get(0).endsWith("phidget22.dll"));
+    assertTrue(paths.get(1).endsWith("phidget22java.dll"));
+    assertTrue(paths.get(0).contains("x86"));
+  }
+
+  @Test
+  public void testGetNativeLibraryPathsForLinux() {
+    List<String> paths = PhidgetProtocol.getNativeLibraryPaths("Linux", "amd64", "/tmp/rc");
+    // Linux is currently not explicitly bundled for zero-install, so it returns empty
+    assertTrue(paths.isEmpty());
+  }
 }

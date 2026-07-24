@@ -138,6 +138,10 @@ if (Test-Path "server\src\main\resources\arduino") {
     Copy-Item "server\src\main\resources\arduino" "release\RaceCoordinator\" -Recurse
     Copy-Item "server\src\main\resources\arduino" "release\RaceCoordinator_Offline\" -Recurse
 }
+if (Test-Path "server\lib") {
+    Copy-Item "server\lib" "release\RaceCoordinator\lib" -Recurse
+    Copy-Item "server\lib" "release\RaceCoordinator_Offline\lib" -Recurse
+}
 
 # Extract and Bundle Dependencies
 function Extract-To-Release {

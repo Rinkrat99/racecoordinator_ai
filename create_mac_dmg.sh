@@ -22,6 +22,9 @@ cp -r release/RaceCoordinator/web/* release/dmg_content/web/
 if [ -d "release/RaceCoordinator/arduino" ]; then
     cp -r release/RaceCoordinator/arduino release/dmg_content/
 fi
+if [ -d "release/RaceCoordinator/lib" ]; then
+    cp -r release/RaceCoordinator/lib release/dmg_content/
+fi
 
 echo "Bundling Mac-specific scripts..."
 cp release/RaceCoordinator/start_mac.command release/dmg_content/

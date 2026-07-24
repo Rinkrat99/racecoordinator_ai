@@ -46,6 +46,7 @@ mkdir -p release/RaceCoordinator_Offline/web
 cp server/$RELEASE_BUILD_DIR/server-1.0-SNAPSHOT.jar release/RaceCoordinator/RaceCoordinator.jar
 cp -r client/dist/client/* release/RaceCoordinator/web/
 cp -r server/src/main/resources/arduino release/RaceCoordinator/
+cp -r server/lib release/RaceCoordinator/lib
 
 echo "Building Server (Legacy - Java 1.8 Profile)..."
 cd server
@@ -58,6 +59,7 @@ cd ..
 cp server/$RELEASE_BUILD_DIR/server-1.0-SNAPSHOT.jar release/RaceCoordinator_Offline/RaceCoordinator.jar
 cp -r client/dist/client/* release/RaceCoordinator_Offline/web/
 cp -r server/src/main/resources/arduino release/RaceCoordinator_Offline/
+cp -r server/lib release/RaceCoordinator_Offline/lib
 
 # 3. Download Dependencies for Offline Installer
 echo "Downloading Dependencies for Offline Installer..."

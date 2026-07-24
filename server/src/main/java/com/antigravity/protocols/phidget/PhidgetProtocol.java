@@ -33,17 +33,35 @@ import org.slf4j.LoggerFactory;
 public class PhidgetProtocol extends DefaultProtocol {
   private static final Logger logger = LoggerFactory.getLogger(PhidgetProtocol.class);
 
+  static List<String> getNativeLibraryPaths(String osName, String osArch, String userDir) {
+    List<String> paths = new ArrayList<>();
+    osName = osName.toLowerCase();
+    if (osName.contains("mac")) {
+      paths.add(
+          java.nio.file.Paths.get(userDir, "lib", "macos", "libphidget22java.jnilib")
+              .toAbsolutePath()
+              .toString());
+    } else if (osName.contains("win")) {
+      String archDir = osArch.toLowerCase().contains("64") ? "x64" : "x86";
+      java.nio.file.Path baseDir =
+          java.nio.file.Paths.get(userDir, "lib", "windows", archDir).toAbsolutePath();
+      paths.add(baseDir.resolve("phidget22.dll").toString());
+      paths.add(baseDir.resolve("phidget22java.dll").toString());
+    }
+    return paths;
+  }
+
   static {
     try {
       if (!"true".equals(System.getProperty("skip.jni.load"))) {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("mac")) {
-          java.nio.file.Path libPath =
-              java.nio.file.Paths.get(
-                      System.getProperty("user.dir"), "lib", "macos", "libphidget22java.jnilib")
-                  .toAbsolutePath();
-          logger.info("Loading Phidget native library from absolute path: {}", libPath);
-          System.load(libPath.toString());
+        List<String> paths =
+            getNativeLibraryPaths(
+                System.getProperty("os.name"),
+                System.getProperty("os.arch"),
+                System.getProperty("user.dir"));
+        for (String path : paths) {
+          logger.info("Loading Phidget native library from absolute path: {}", path);
+          System.load(path);
         }
         String version = com.phidget22.Phidget.getLibraryVersion();
         logger.info("Phidget22 native library initialized successfully. Version: {}", version);
