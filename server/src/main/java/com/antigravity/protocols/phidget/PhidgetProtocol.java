@@ -45,6 +45,7 @@ public class PhidgetProtocol extends DefaultProtocol {
       String archDir = osArch.toLowerCase().contains("64") ? "x64" : "x86";
       java.nio.file.Path baseDir =
           java.nio.file.Paths.get(userDir, "lib", "windows", archDir).toAbsolutePath();
+      paths.add(baseDir.resolve("phidget22extra.dll").toString());
       paths.add(baseDir.resolve("phidget22.dll").toString());
       paths.add(baseDir.resolve("phidget22java.dll").toString());
     }

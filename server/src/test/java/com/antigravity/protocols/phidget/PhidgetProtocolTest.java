@@ -320,18 +320,20 @@ public class PhidgetProtocolTest {
   @Test
   public void testGetNativeLibraryPathsForWin64() {
     List<String> paths = PhidgetProtocol.getNativeLibraryPaths("Windows 10", "amd64", "/tmp/rc");
-    assertEquals(2, paths.size());
-    assertTrue(paths.get(0).endsWith("phidget22.dll"));
-    assertTrue(paths.get(1).endsWith("phidget22java.dll"));
+    assertEquals(3, paths.size());
+    assertTrue(paths.get(0).endsWith("phidget22extra.dll"));
+    assertTrue(paths.get(1).endsWith("phidget22.dll"));
+    assertTrue(paths.get(2).endsWith("phidget22java.dll"));
     assertTrue(paths.get(0).contains("x64"));
   }
 
   @Test
   public void testGetNativeLibraryPathsForWin32() {
     List<String> paths = PhidgetProtocol.getNativeLibraryPaths("Windows 7", "x86", "/tmp/rc");
-    assertEquals(2, paths.size());
-    assertTrue(paths.get(0).endsWith("phidget22.dll"));
-    assertTrue(paths.get(1).endsWith("phidget22java.dll"));
+    assertEquals(3, paths.size());
+    assertTrue(paths.get(0).endsWith("phidget22extra.dll"));
+    assertTrue(paths.get(1).endsWith("phidget22.dll"));
+    assertTrue(paths.get(2).endsWith("phidget22java.dll"));
     assertTrue(paths.get(0).contains("x86"));
   }
 
