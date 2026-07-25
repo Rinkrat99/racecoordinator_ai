@@ -121,9 +121,45 @@ public class CsvExporter {
       appendTable(sb, "Standings", race.getDrivers());
     }
 
-    // Section 5: Heats
-    sb.append("#Section,Heats\n\n");
+    // Section 5: Heat List
+    sb.append("#Section,Heat List\n\n");
     List<Heat> heats = race.getHeats();
+    if (heats != null) {
+      List<HeatListRow> heatListRows = new ArrayList<>();
+      for (int hIdx = 0; hIdx < heats.size(); hIdx++) {
+        Heat heat = heats.get(hIdx);
+        if (heat.getDrivers() != null) {
+          for (int lIdx = 0; lIdx < heat.getDrivers().size(); lIdx++) {
+            DriverHeatData dhd = heat.getDrivers().get(lIdx);
+            if (dhd != null && dhd.getDriver() != null) {
+              HeatListRow row = new HeatListRow();
+              row.heatNumber = heat.getHeatNumber();
+              row.laneNumber = lIdx + 1;
+
+              if (dhd.getActualDriver() != null) {
+                row.driverName = dhd.getActualDriver().getName();
+                row.driverNickname = dhd.getActualDriver().getNickname();
+              } else if (dhd.getDriver().getDriver() != null) {
+                row.driverName = dhd.getDriver().getDriver().getName();
+                row.driverNickname = dhd.getDriver().getDriver().getNickname();
+              }
+
+              if (dhd.getDriver().isTeamParticipant() && dhd.getDriver().getTeam() != null) {
+                row.teamName = dhd.getDriver().getTeam().getName();
+              }
+
+              heatListRows.add(row);
+            }
+          }
+        }
+      }
+      if (!heatListRows.isEmpty()) {
+        appendTable(sb, "Heat List", heatListRows);
+      }
+    }
+
+    // Section 6: Heats
+    sb.append("#Section,Heats\n\n");
     if (heats != null) {
       for (int hIdx = 0; hIdx < heats.size(); hIdx++) {
         Heat heat = heats.get(hIdx);
@@ -336,5 +372,33 @@ public class CsvExporter {
       return "\"" + value.replace("\"", "\"\"") + "\"";
     }
     return value;
+  }
+
+  public static class HeatListRow {
+    public int heatNumber;
+    public int laneNumber;
+    public String driverName;
+    public String driverNickname;
+    public String teamName;
+
+    public int getHeatNumber() {
+      return heatNumber;
+    }
+
+    public int getLaneNumber() {
+      return laneNumber;
+    }
+
+    public String getDriverName() {
+      return driverName;
+    }
+
+    public String getDriverNickname() {
+      return driverNickname;
+    }
+
+    public String getTeamName() {
+      return teamName;
+    }
   }
 }

@@ -133,5 +133,14 @@ public class RaceTeamExportTest {
     org.junit.Assert.assertFalse("CSV should NOT contain lapAudio", csv.contains("lapAudio"));
     org.junit.Assert.assertFalse("CSV should NOT contain avatarUrl", csv.contains("avatarUrl"));
     org.junit.Assert.assertFalse("CSV should NOT contain lapSoundUrl", csv.contains("lapSoundUrl"));
+
+    // 10. Verify Heat List exists and is correctly populated
+    assertTrue("CSV should contain Heat List section", csv.contains("#Section,Heat List"));
+    assertTrue("CSV should contain Heat List table", csv.contains("#Table: Heat List"));
+    assertTrue(
+        "CSV should contain Heat List headers",
+        csv.contains("heatNumber,laneNumber,driverName,driverNickname,teamName"));
+    assertTrue(
+        "CSV Heat List should contain expected row", csv.contains("1,1,Teammate B,TB,The Team"));
   }
 }
