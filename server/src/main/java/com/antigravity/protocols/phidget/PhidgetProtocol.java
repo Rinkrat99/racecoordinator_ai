@@ -233,6 +233,23 @@ public class PhidgetProtocol extends DefaultProtocol {
     return false;
   }
 
+  boolean isAnyChannelAttached() {
+    try {
+      for (DigitalInput di : digitalInputs) {
+        if (di.getAttached()) return true;
+      }
+      for (DigitalOutput out : digitalOutputs) {
+        if (out.getAttached()) return true;
+      }
+      for (VoltageRatioInput vi : analogInputs) {
+        if (vi.getAttached()) return true;
+      }
+    } catch (PhidgetException e) {
+      logger.error("Error querying attachment status", e);
+    }
+    return false;
+  }
+
   private synchronized void checkAttachmentStatus() {
     if (!hasConfiguredPins()) {
       boolean wasAttached = this.attached;
@@ -245,7 +262,7 @@ public class PhidgetProtocol extends DefaultProtocol {
       return;
     }
 
-    boolean anyAttached = attachedChannelCount.get() > 0;
+    boolean anyAttached = isAnyChannelAttached();
 
     boolean wasAttached = this.attached;
     this.attached = anyAttached;

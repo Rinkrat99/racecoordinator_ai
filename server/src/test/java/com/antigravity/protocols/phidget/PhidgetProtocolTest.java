@@ -71,6 +71,36 @@ public class PhidgetProtocolTest {
   }
 
   @Test
+  public void testCheckAttachmentStatus() throws Exception {
+    // Spy on the protocol so we can mock the hardware getAttached() loop
+    PhidgetProtocol spyProtocol = org.mockito.Mockito.spy(protocol);
+
+    // Set opened = true so the listener is notified
+    java.lang.reflect.Field openedField = PhidgetProtocol.class.getDeclaredField("opened");
+    openedField.setAccessible(true);
+    openedField.set(spyProtocol, true);
+
+    ProtocolListener mockListener = mock(ProtocolListener.class);
+    spyProtocol.setListener(mockListener);
+
+    java.lang.reflect.Method checkMethod =
+        PhidgetProtocol.class.getDeclaredMethod("checkAttachmentStatus");
+    checkMethod.setAccessible(true);
+
+    // Test detached
+    org.mockito.Mockito.doReturn(false).when(spyProtocol).isAnyChannelAttached();
+    checkMethod.invoke(spyProtocol);
+    assertFalse(spyProtocol.isHealthy());
+
+    // Test attached
+    org.mockito.Mockito.doReturn(true).when(spyProtocol).isAnyChannelAttached();
+    checkMethod.invoke(spyProtocol);
+    // Since configured pins exist and at least one channel is attached, it should be healthy
+    assertTrue(spyProtocol.isHealthy());
+    verify(mockListener).onInterfaceStatus(InterfaceStatus.CONNECTED, 0);
+  }
+
+  @Test
   public void testOpenFailureWhenNotConnectedOrDriverMissing() {
     // When Phidget device 12345 is not physically attached or native library linkage fails,
     // open() should gracefully return false without throwing uncaught exceptions.
