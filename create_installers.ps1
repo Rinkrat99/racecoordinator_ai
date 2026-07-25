@@ -245,6 +245,11 @@ fi
 @echo off
 setlocal
 pushd "%~dp0"
+if "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
+    set "PATH=%~dp0lib\windows\x64;%PATH%"
+) else (
+    set "PATH=%~dp0lib\windows\x86;%PATH%"
+)
 if exist "%~dp0jre\bin\java.exe" (
     set "JAVA_CMD=%~dp0jre\bin\java.exe"
     goto :RunApp
