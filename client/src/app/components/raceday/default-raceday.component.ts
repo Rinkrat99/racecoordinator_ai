@@ -2987,6 +2987,23 @@ export class DefaultRacedayComponent
       event.preventDefault();
       this.onMenuSelect("DEFER_HEAT");
     }
+
+    // Ctrl+Alt+F1-F4 for Reset Lanes 1-4 (practice mode only)
+    if (isCtrlOrCmd && event.altKey && event.key.startsWith("F")) {
+      const fKey = parseInt(event.key.replace("F", ""), 10);
+      if (fKey >= 1 && fKey <= 4 && this.race?.practice) {
+        event.preventDefault();
+        this.resetLane(fKey - 1, event);
+        return;
+      }
+    }
+
+    // Ctrl+Alt+F12 for Reset All Lanes (practice mode only)
+    if (isCtrlOrCmd && event.altKey && event.key === "F12" && this.race?.practice) {
+      event.preventDefault();
+      this.resetAllLanes(event);
+      return;
+    }
   }
 
   private checkWidgetShortcuts(event: KeyboardEvent): boolean {
