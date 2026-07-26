@@ -1520,4 +1520,108 @@ public class ClientCommandTaskHandlerTest {
     verify(res).setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     verify(res).setHeader("Content-Disposition", "attachment; filename=\"race_export.xlsx\"");
   }
+
+  @Test
+  public void testResetLaneHeatData_SpecificLane_PracticeRace_Success() throws Exception {
+    com.antigravity.race.Race activeRace = mock(com.antigravity.race.Race.class);
+    com.antigravity.models.Race raceModel = mock(com.antigravity.models.Race.class);
+    when(raceModel.isPractice()).thenReturn(true);
+    when(activeRace.getRaceModel()).thenReturn(raceModel);
+
+    com.antigravity.race.Heat currentHeat = mock(com.antigravity.race.Heat.class);
+    when(activeRace.getCurrentHeat()).thenReturn(currentHeat);
+
+    List<DriverHeatData> drivers = new ArrayList<>();
+    DriverHeatData dhd1 = mock(DriverHeatData.class);
+    DriverHeatData dhd2 = mock(DriverHeatData.class);
+    drivers.add(dhd1);
+    drivers.add(dhd2);
+    when(currentHeat.getDrivers()).thenReturn(drivers);
+
+    ClientSubscriptionManager.getInstance().setRace(activeRace);
+
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse resp = mock(HttpServletResponse.class);
+    Context localCtx = spy(new Context(req, resp, new HashMap<>()));
+    doReturn("1").when(localCtx).pathParam("lane");
+
+    Method m = handler.getClass().getDeclaredMethod("resetLaneHeatData", Context.class);
+    m.setAccessible(true);
+    m.invoke(handler, localCtx);
+
+    verify(dhd2).reset();
+    verify(dhd1, never()).reset();
+    verify(localCtx).status(200);
+    verify(activeRace).updateAndBroadcastOverallStandings();
+    verify(activeRace).broadcast(any());
+  }
+
+  @Test
+  public void testResetLaneHeatData_SpecificLane_NonPracticeRace_Forbidden() throws Exception {
+    com.antigravity.race.Race activeRace = mock(com.antigravity.race.Race.class);
+    com.antigravity.models.Race raceModel = mock(com.antigravity.models.Race.class);
+    when(raceModel.isPractice()).thenReturn(false);
+    when(activeRace.getRaceModel()).thenReturn(raceModel);
+
+    com.antigravity.race.Heat currentHeat = mock(com.antigravity.race.Heat.class);
+    when(activeRace.getCurrentHeat()).thenReturn(currentHeat);
+
+    List<DriverHeatData> drivers = new ArrayList<>();
+    DriverHeatData dhd1 = mock(DriverHeatData.class);
+    DriverHeatData dhd2 = mock(DriverHeatData.class);
+    drivers.add(dhd1);
+    drivers.add(dhd2);
+    when(currentHeat.getDrivers()).thenReturn(drivers);
+
+    ClientSubscriptionManager.getInstance().setRace(activeRace);
+
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse resp = mock(HttpServletResponse.class);
+    Context localCtx = spy(new Context(req, resp, new HashMap<>()));
+    doReturn("1").when(localCtx).pathParam("lane");
+
+    Method m = handler.getClass().getDeclaredMethod("resetLaneHeatData", Context.class);
+    m.setAccessible(true);
+    m.invoke(handler, localCtx);
+
+    verify(dhd1, never()).reset();
+    verify(dhd2, never()).reset();
+    verify(localCtx).status(403);
+    verify(localCtx).result("Resetting a specific lane is only allowed in practice races");
+  }
+
+  @Test
+  public void testResetLaneHeatData_AllLanes_NonPracticeRace_Success() throws Exception {
+    com.antigravity.race.Race activeRace = mock(com.antigravity.race.Race.class);
+    com.antigravity.models.Race raceModel = mock(com.antigravity.models.Race.class);
+    when(raceModel.isPractice()).thenReturn(false);
+    when(activeRace.getRaceModel()).thenReturn(raceModel);
+
+    com.antigravity.race.Heat currentHeat = mock(com.antigravity.race.Heat.class);
+    when(activeRace.getCurrentHeat()).thenReturn(currentHeat);
+
+    List<DriverHeatData> drivers = new ArrayList<>();
+    DriverHeatData dhd1 = mock(DriverHeatData.class);
+    DriverHeatData dhd2 = mock(DriverHeatData.class);
+    drivers.add(dhd1);
+    drivers.add(dhd2);
+    when(currentHeat.getDrivers()).thenReturn(drivers);
+
+    ClientSubscriptionManager.getInstance().setRace(activeRace);
+
+    HttpServletRequest req = mock(HttpServletRequest.class);
+    HttpServletResponse resp = mock(HttpServletResponse.class);
+    Context localCtx = spy(new Context(req, resp, new HashMap<>()));
+    doReturn("all").when(localCtx).pathParam("lane");
+
+    Method m = handler.getClass().getDeclaredMethod("resetLaneHeatData", Context.class);
+    m.setAccessible(true);
+    m.invoke(handler, localCtx);
+
+    verify(dhd1).reset();
+    verify(dhd2).reset();
+    verify(localCtx).status(200);
+    verify(activeRace).updateAndBroadcastOverallStandings();
+    verify(activeRace).broadcast(any());
+  }
 }

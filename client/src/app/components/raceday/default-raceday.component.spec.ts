@@ -1024,7 +1024,7 @@ describe("DefaultRacedayComponent", () => {
         const mockEvent = new KeyboardEvent("keydown", {
           ctrlKey: true,
           altKey: true,
-          key: "F5",
+          key: "F7",
         });
         spyOn(mockEvent, "preventDefault");
         mockDataService.resetLaneHeatData.calls.reset();

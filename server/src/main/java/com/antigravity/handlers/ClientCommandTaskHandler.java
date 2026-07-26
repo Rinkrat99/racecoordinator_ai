@@ -1133,6 +1133,10 @@ public class ClientCommandTaskHandler {
           dhd.reset();
         }
       } else if (lane >= 0 && lane < drivers.size()) {
+        if (!race.getRaceModel().isPractice()) {
+          ctx.status(403).result("Resetting a specific lane is only allowed in practice races");
+          return;
+        }
         drivers.get(lane).reset();
       } else {
         ctx.status(400).result("Invalid lane index: " + lane);
