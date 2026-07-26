@@ -227,6 +227,10 @@
 }
 
 
+.template-selector {
+  margin-top: 30px;
+}
+
 .directory-selector {
   display: flex;
   flex-direction: column;

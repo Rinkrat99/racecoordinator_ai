@@ -1406,6 +1406,46 @@
                       </button>
                     </div>
                   </div>
+                  <div
+                    class="directory-selector template-selector"
+                    id="help-export-template"
+                  >
+                    <label>{{ "UE_LABEL_EXPORT_TEMPLATE" | translate }}</label>
+                    <div class="directory-info">
+                      @if (editingSettings.customExportTemplateBase64) {
+                        <span class="directory-path">{{
+                          "UE_TEMPLATE_CUSTOM_UPLOADED" | translate
+                        }}</span>
+                      }
+                      @if (!editingSettings.customExportTemplateBase64) {
+                        <span class="directory-path placeholder">{{
+                          "UE_TEMPLATE_DEFAULT" | translate
+                        }}</span>
+                      }
+                    </div>
+                    <div class="directory-actions">
+                      <input
+                        type="file"
+                        #templateFileInput
+                        accept=".xlsx"
+                        style="display: none"
+                        (change)="onTemplateFileSelected($event)"
+                      />
+                      <button
+                        class="btn btn-secondary"
+                        (click)="templateFileInput.click()"
+                      >
+                        {{ "UE_BTN_SELECT_TEMPLATE" | translate }}
+                      </button>
+                      <button
+                        class="btn btn-danger"
+                        (click)="clearCustomTemplate()"
+                        [disabled]="!editingSettings.customExportTemplateBase64"
+                      >
+                        {{ "UE_BTN_RESET_DEFAULT" | translate }}
+                      </button>
+                    </div>
+                  </div>
                   <div class="transition-selector" id="help-page-transition">
                     <label>{{ "UE_LABEL_PAGE_TRANSITION" | translate }}</label>
                     <div class="select-container">

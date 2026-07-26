@@ -162,6 +162,12 @@ describe("RacedayActionButtonComponent", () => {
         method: "onFileMenuSelect",
       },
       {
+        widgetType: "action-export-xls",
+        label: "RD_MENU_EXPORT_XLS",
+        action: "EXPORT_XLS",
+        method: "onFileMenuSelect",
+      },
+      {
         widgetType: "action-open-heat-results",
         label: "RD_WIN_HEAT_RESULTS",
         action: "HEAT_RESULTS",

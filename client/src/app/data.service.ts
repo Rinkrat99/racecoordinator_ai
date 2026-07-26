@@ -213,6 +213,17 @@ export class DataService {
     });
   }
 
+  exportRaceToXls(base64Template?: string): Observable<Blob> {
+    const body = base64Template ? { templateBase64: base64Template } : {};
+    return this.http.post(
+      `${this.baseUrl}/api/races/current/export-xls`,
+      body,
+      {
+        responseType: "blob",
+      },
+    );
+  }
+
   public getDefaultDemoConfig(): IDemoConfig {
     return {
       minLapTimeMs: 3000,

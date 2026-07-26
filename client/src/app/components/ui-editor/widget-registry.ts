@@ -223,6 +223,15 @@ export const WIDGET_REGISTRY: Record<string, WidgetRegistryEntry> = {
       shortcut: "",
     }),
   },
+  "action-export-xls": {
+    defaultSettings: () => ({
+      fontFamily: "",
+      fontSize: 24,
+      textColor: "",
+      backgroundColor: "",
+      shortcut: "",
+    }),
+  },
   "action-open-heat-results": {
     defaultSettings: () => ({
       fontFamily: "",

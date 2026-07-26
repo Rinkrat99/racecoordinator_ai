@@ -79,6 +79,8 @@ export class RacedayActionButtonComponent {
         return "RD_MENU_EXPORT_PDF";
       case "action-export-csv":
         return "RD_MENU_EXPORT_CSV";
+      case "action-export-xls":
+        return "RD_MENU_EXPORT_XLS";
       case "action-open-heat-results":
         return "RD_WIN_HEAT_RESULTS";
       case "action-open-race-results":
@@ -127,6 +129,9 @@ export class RacedayActionButtonComponent {
       case "action-export-csv":
         actionString = "EXPORT_CSV";
         break;
+      case "action-export-xls":
+        actionString = "EXPORT_XLS";
+        break;
       case "action-open-heat-results":
         actionString = "HEAT_RESULTS";
         break;
@@ -136,7 +141,11 @@ export class RacedayActionButtonComponent {
     }
 
     if (actionString) {
-      if (actionString === "EXPORT_CSV" || actionString === "EXPORT_PDF") {
+      if (
+        actionString === "EXPORT_CSV" ||
+        actionString === "EXPORT_XLS" ||
+        actionString === "EXPORT_PDF"
+      ) {
         this.parent().onFileMenuSelect(actionString);
       } else if (
         actionString === "HEAT_RESULTS" ||

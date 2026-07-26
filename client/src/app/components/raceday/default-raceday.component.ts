@@ -2678,6 +2678,8 @@ export class DefaultRacedayComponent
     this.isFileMenuOpen = false;
     if (action === "EXPORT_CSV") {
       this.exportToCsv();
+    } else if (action === "EXPORT_XLS") {
+      this.exportToXls();
     } else if (action === "EXPORT_PDF") {
       this.exportToPdf();
     } else if (action === "CUSTOMIZE_UI") {
@@ -2789,6 +2791,47 @@ export class DefaultRacedayComponent
         return;
       }
       this.logger.error("Save error", err);
+    }
+  }
+
+  async exportToXls() {
+    try {
+      const timestamp = this.getExportTimestamp();
+      const timeStr = this.printService.formatExportTimestamp(timestamp);
+      const raceName = this.race?.name || "Race";
+      const suggestedName = `${raceName}-RaceDay${timeStr}.xlsx`;
+      const handle = await (window as any).showSaveFilePicker({
+        suggestedName: suggestedName,
+        types: [
+          {
+            description: "Excel Files",
+            accept: {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                [".xlsx"],
+            },
+          },
+        ],
+      });
+
+      const template =
+        this.settingsService.getSettings()?.customExportTemplateBase64;
+      this.dataService.exportRaceToXls(template).subscribe({
+        next: async (xlsData: Blob) => {
+          const writable = await handle.createWritable();
+          await writable.write(xlsData);
+          await writable.close();
+          this.logger.debug("XLS Exported successfully");
+        },
+        error: (err: any) => {
+          this.logger.error("Failed to export XLS", err);
+        },
+      });
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        this.logger.debug("User cancelled save");
+        return;
+      }
+      this.logger.error("Error with file picker", err);
     }
   }
 
@@ -4329,6 +4372,7 @@ export class DefaultRacedayComponent
       "action-modify-heats",
       "action-export-pdf",
       "action-export-csv",
+      "action-export-xls",
       "action-open-heat-results",
       "action-open-race-results",
     ];

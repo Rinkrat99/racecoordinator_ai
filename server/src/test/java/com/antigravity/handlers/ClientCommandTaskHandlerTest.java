@@ -1494,4 +1494,30 @@ public class ClientCommandTaskHandlerTest {
     }
     directory.delete();
   }
+
+  @Test
+  public void testExportRaceXls_NoCurrentRace() throws Exception {
+    ClientSubscriptionManager.getInstance().setRace(null);
+    handler.exportRaceXls(ctx);
+    verify(res).setStatus(404);
+  }
+
+  @Test
+  public void testExportRaceXls_Success() throws Exception {
+    com.antigravity.race.Race activeRace = mock(com.antigravity.race.Race.class);
+    com.antigravity.models.Race raceModel = mock(com.antigravity.models.Race.class);
+    when(raceModel.getId()).thenReturn(new org.bson.types.ObjectId());
+    when(activeRace.getRaceModel()).thenReturn(raceModel);
+    when(activeRace.getHeats()).thenReturn(new java.util.ArrayList<>());
+
+    ClientSubscriptionManager.getInstance().setRace(activeRace);
+
+    javax.servlet.ServletOutputStream outStream = mock(javax.servlet.ServletOutputStream.class);
+    when(res.getOutputStream()).thenReturn(outStream);
+
+    handler.exportRaceXls(ctx);
+
+    verify(res).setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    verify(res).setHeader("Content-Disposition", "attachment; filename=\"race_export.xlsx\"");
+  }
 }

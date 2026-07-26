@@ -221,4 +221,18 @@ describe("DataService", () => {
     expect(req.request.method).toBe("POST");
     req.flush({});
   });
+
+  it("should call exportRaceXls endpoint", (done) => {
+    service.exportRaceToXls().subscribe((response: any) => {
+      expect(response).toBeTruthy();
+      done();
+    });
+
+    const req = httpMock.expectOne((request) =>
+      request.url.endsWith("/api/races/current/export-xls"),
+    );
+    expect(req.request.method).toBe("POST");
+    expect(req.request.responseType).toBe("blob");
+    req.flush(new Blob(["mock data"]));
+  });
 });

@@ -34,6 +34,7 @@ export type WidgetType =
   | "action-modify-heats"
   | "action-export-pdf"
   | "action-export-csv"
+  | "action-export-xls"
   | "action-open-heat-results"
   | "action-open-race-results";
 
@@ -116,6 +117,8 @@ export class Settings {
   flagBlack?: string;
   flagYellowGreen?: string;
   flagCheckered?: string;
+
+  customExportTemplateBase64?: string;
 
   // Theme system
   activeThemeId?: string; // entity_id of the active theme (server-side)

@@ -170,6 +170,13 @@
       (change)="onSettingsChange()"
     ></app-action-button-inspector>
   }
+  @case ("action-export-xls") {
+    <app-action-button-inspector
+      [widget]="widget()"
+      [disableFontSizes]="widget().scaleMode === 'auto'"
+      (change)="onSettingsChange()"
+    ></app-action-button-inspector>
+  }
   @case ("action-open-heat-results") {
     <app-action-button-inspector
       [widget]="widget()"

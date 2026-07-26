@@ -50,6 +50,8 @@ export class ActionButtonInspectorComponent {
         return "RD_MENU_EXPORT_PDF";
       case "action-export-csv":
         return "RD_MENU_EXPORT_CSV";
+      case "action-export-xls":
+        return "RD_MENU_EXPORT_XLS";
       case "action-open-heat-results":
         return "RD_WIN_HEAT_RESULTS";
       case "action-open-race-results":

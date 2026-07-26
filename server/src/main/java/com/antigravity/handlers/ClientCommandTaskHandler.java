@@ -75,10 +75,14 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -158,6 +162,7 @@ public class ClientCommandTaskHandler {
     app.get("/api/serial-ports", this::getSerialPorts, Role.VIEWER);
     app.get("/api/phidgets", this::getPhidgetDevices, Role.VIEWER);
     app.get("/api/races/current/export-csv", this::exportRaceCsv, Role.VIEWER);
+    app.post("/api/races/current/export-xls", this::exportRaceXls, Role.VIEWER);
     app.post("/api/save-race", this::saveRace, Role.DIRECTOR);
     app.get("/api/saved-races", this::getSavedRaces, Role.VIEWER);
     app.delete("/api/saved-races/{filename}", this::deleteSavedRace, Role.DIRECTOR);
@@ -1542,6 +1547,88 @@ public class ClientCommandTaskHandler {
           .result(csv);
     } catch (Exception e) {
       logger.error("Error exporting CSV", e);
+      ctx.status(500).result("Internal Server Error: " + e.getMessage());
+    }
+  }
+
+  void exportRaceXls(Context ctx) {
+    try {
+      com.antigravity.race.Race race = // fqn-collision
+          ClientSubscriptionManager.getInstance().getRace();
+      if (race == null) {
+        ctx.status(404).result("No active race found");
+        return;
+      }
+
+      String base64Template = null;
+      try {
+        Map<String, Object> body = ctx.bodyAsClass(Map.class);
+        if (body != null) {
+          base64Template = (String) body.get("templateBase64");
+        }
+      } catch (Exception ignored) {
+        // Body might be empty
+      }
+
+      InputStream is;
+      if (base64Template != null && !base64Template.isEmpty()) {
+        // Strip data URL prefix if present (e.g.
+        // "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,")
+        if (base64Template.contains(",")) {
+          base64Template = base64Template.substring(base64Template.indexOf(",") + 1);
+        }
+        byte[] decoded = Base64.getDecoder().decode(base64Template);
+        is = new ByteArrayInputStream(decoded);
+      } else {
+        is = getClass().getClassLoader().getResourceAsStream("race_export_template.xlsx");
+        if (is == null) {
+          ctx.status(500).result("Default template not found");
+          return;
+        }
+      }
+
+      ByteArrayOutputStream os = new ByteArrayOutputStream();
+
+      synchronized (race) {
+        List<RaceParticipant> driversCopy = new ArrayList<>(race.getDrivers());
+        OverallStandings standings =
+            new OverallStandings(
+                race.getRaceModel().getHeatScoring(),
+                race.getRaceModel().getOverallScoring(),
+                race.getRaceModel().getGroupOptions(),
+                race.getRaceModel().isPractice());
+        standings.recalculate(driversCopy, race.getHeats());
+
+        org.jxls.common.Context jxlsContext = new org.jxls.common.Context();
+        jxlsContext.putVar("race", race);
+        jxlsContext.putVar("standings", driversCopy);
+
+        List<Heat> runHeats = new ArrayList<>();
+        List<String> heatSheetNames = new ArrayList<>();
+        for (Heat h : race.getHeats()) {
+          if (h.isStarted()
+              || race.getCurrentHeat() != null
+                  && h.getHeatNumber() <= race.getCurrentHeat().getHeatNumber()) {
+            runHeats.add(h);
+            heatSheetNames.add("Heat " + h.getHeatNumber());
+          }
+        }
+        if (runHeats.isEmpty()) {
+          // Just in case, to prevent Jxls multisheet failing with empty list
+          runHeats.add(new Heat());
+          heatSheetNames.add("Heat 1");
+        }
+        jxlsContext.putVar("heats", runHeats);
+        jxlsContext.putVar("heatSheetNames", heatSheetNames);
+
+        org.jxls.util.JxlsHelper.getInstance().processTemplate(is, os, jxlsContext);
+      }
+
+      ctx.contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+          .header("Content-Disposition", "attachment; filename=\"race_export.xlsx\"")
+          .result(os.toByteArray());
+    } catch (Exception e) {
+      logger.error("Error exporting XLS", e);
       ctx.status(500).result("Internal Server Error: " + e.getMessage());
     }
   }

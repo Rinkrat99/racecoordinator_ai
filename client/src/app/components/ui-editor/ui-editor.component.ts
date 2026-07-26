@@ -1403,6 +1403,31 @@ export class UIEditorComponent implements OnInit, OnDestroy, DirtyComponent {
     );
   }
 
+  onTemplateFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        if (this.editingSettings) {
+          this.editingSettings.customExportTemplateBase64 = base64;
+          this.captureState();
+          this.cdr.markForCheck();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  clearCustomTemplate() {
+    if (this.editingSettings) {
+      delete this.editingSettings.customExportTemplateBase64;
+      this.captureState();
+      this.cdr.markForCheck();
+    }
+  }
+
   onPageTransitionChange(transition: string) {
     if (this.editingSettings) {
       this.editingSettings.pageTransition = transition;
@@ -2202,6 +2227,15 @@ export class UIEditorComponent implements OnInit, OnDestroy, DirtyComponent {
         selector: "#help-custom-ui-dir",
         title: this.translationService.translate("UE_DIRECTORY_LABEL"),
         content: this.translationService.translate("UE_HELP_CUSTOM_UI_DIR"),
+        position: "bottom",
+        onEnter: () => {
+          this.sectionsExpanded["config"] = true;
+        },
+      },
+      {
+        selector: "#help-export-template",
+        title: this.translationService.translate("UE_LABEL_EXPORT_TEMPLATE"),
+        content: this.translationService.translate("UE_HELP_EXPORT_TEMPLATE"),
         position: "bottom",
         onEnter: () => {
           this.sectionsExpanded["config"] = true;

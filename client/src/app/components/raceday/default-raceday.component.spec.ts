@@ -2423,6 +2423,47 @@ describe("DefaultRacedayComponent", () => {
       );
     }));
 
+    it("should trigger XLS export when EXPORT_XLS is selected", fakeAsync(() => {
+      const printService = TestBed.inject(
+        PrintService,
+      ) as jasmine.SpyObj<PrintService>;
+      printService.formatExportTimestamp.and.returnValue(
+        "--2024-06-15--02-30-45_PM",
+      );
+
+      mockDataService.exportRaceToXls = jasmine
+        .createSpy("exportRaceToXls")
+        .and.returnValue(of(new Blob(["xls data"])));
+
+      const mockFileHandle = {
+        createWritable: jasmine.createSpy("createWritable").and.returnValue(
+          Promise.resolve({
+            write: jasmine
+              .createSpy("write")
+              .and.returnValue(Promise.resolve()),
+            close: jasmine
+              .createSpy("close")
+              .and.returnValue(Promise.resolve()),
+          }),
+        ),
+      };
+      (window as any).showSaveFilePicker = jasmine
+        .createSpy("showSaveFilePicker")
+        .and.returnValue(Promise.resolve(mockFileHandle));
+
+      component.onFileMenuSelect("EXPORT_XLS");
+      tick(); // Let async file handler execute
+
+      expect(mockDataService.exportRaceToXls).toHaveBeenCalled();
+      expect((window as any).showSaveFilePicker).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          suggestedName: jasmine.stringMatching(
+            /Grand Prix-RaceDay--\d{4}-\d{2}-\d{2}--\d{2}-\d{2}-\d{2}_(AM|PM)\.xlsx/,
+          ),
+        }),
+      );
+    }));
+
     it("should trigger PDF export when EXPORT_PDF is selected", () => {
       const printService = TestBed.inject(
         PrintService,

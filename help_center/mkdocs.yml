@@ -74,6 +74,7 @@ nav:
     - Themes: themes.md
     - Custom Rotations: custom-rotations.md
     - Custom Raceday: custom-raceday.md
+    - Custom XLS Export: custom-xls-export.md
   - Data Management:
     - Database Manager: database-manager.md
     - Saving & Loading Races: saving-loading.md
