@@ -122,6 +122,7 @@ message RaceModel {
   GroupOptions group_options = 30;
   bool start_behind_sensor = 31;
   bool practice = 32;
+  bool start_at_current = 33;
 }
 
 // CustomRotation and CustomHeat moved to rotation_model.proto

@@ -946,6 +946,7 @@
   "RE_ROTATION_SINGLE_HEAT": "Einzelner Lauf",
   "RE_ROTATION_SINGLE_HEAT_SOLO": "Einzelner Lauf (Solo)",
   "RE_SELECT_CUSTOM_ROTATION": "Wählen Sie eine benutzerdefinierte Rotation",
+  "RE_START_AT_CURRENT": "Am aktuellen Punkt starten",
   "RE_START_BEHIND_SENSOR": "Hinter Sensor starten",
   "RE_START_METHOD_HEADER": "Startmethode",
   "RE_START_RANDOMIZER": "Start-Randomizer (s)",

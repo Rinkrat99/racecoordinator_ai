@@ -119,6 +119,11 @@ public class Race extends Model {
   @JsonAlias("hotStart")
   private final boolean hotStart;
 
+  @BsonProperty("start_at_current")
+  @JsonProperty("start_at_current")
+  @JsonAlias("startAtCurrent")
+  private final boolean startAtCurrent;
+
   @BsonProperty("restart_on_false_start")
   @JsonProperty("restart_on_false_start")
   @JsonAlias("restartOnFalseStart")
@@ -222,6 +227,10 @@ public class Race extends Model {
       @BsonProperty("reverse_heats") @JsonProperty("reverse_heats") @JsonAlias("reverseHeats")
           Boolean reverseHeats,
       @BsonProperty("hot_start") @JsonProperty("hot_start") @JsonAlias("hotStart") Boolean hotStart,
+      @BsonProperty("start_at_current")
+          @JsonProperty("start_at_current")
+          @JsonAlias("startAtCurrent")
+          Boolean startAtCurrent,
       @BsonProperty("restart_on_false_start")
           @JsonProperty("restart_on_false_start")
           @JsonAlias("restartOnFalseStart")
@@ -274,6 +283,7 @@ public class Race extends Model {
     this.heatTimesThrough = heatTimesThrough != null ? heatTimesThrough : 1;
     this.reverseHeats = reverseHeats != null ? reverseHeats : false;
     this.hotStart = hotStart != null ? hotStart : false;
+    this.startAtCurrent = startAtCurrent != null ? startAtCurrent : false;
     this.restartOnFalseStart = restartOnFalseStart != null ? restartOnFalseStart : false;
     this.falseStartLapPenalty = falseStartLapPenalty != null ? falseStartLapPenalty : 0.0;
     this.falseStartTimePenalty = falseStartTimePenalty != null ? falseStartTimePenalty : 0.0;
@@ -309,6 +319,7 @@ public class Race extends Model {
     private int heatTimesThrough = 1;
     private boolean reverseHeats = false;
     private boolean hotStart = false;
+    private boolean startAtCurrent = false;
     private boolean restartOnFalseStart = false;
     private double falseStartLapPenalty = 0.0;
     private double falseStartTimePenalty = 0.0;
@@ -344,6 +355,7 @@ public class Race extends Model {
       this.heatTimesThrough = other.getHeatTimesThrough();
       this.reverseHeats = other.isReverseHeats();
       this.hotStart = other.isHotStart();
+      this.startAtCurrent = other.isStartAtCurrent();
       this.restartOnFalseStart = other.isRestartOnFalseStart();
       this.falseStartLapPenalty = other.getFalseStartLapPenalty();
       this.falseStartTimePenalty = other.getFalseStartTimePenalty();
@@ -480,6 +492,11 @@ public class Race extends Model {
       return this;
     }
 
+    public Builder withStartAtCurrent(boolean startAtCurrent) {
+      this.startAtCurrent = startAtCurrent;
+      return this;
+    }
+
     public Builder withRestartOnFalseStart(boolean restartOnFalseStart) {
       this.restartOnFalseStart = restartOnFalseStart;
       return this;
@@ -548,6 +565,7 @@ public class Race extends Model {
           heatTimesThrough,
           reverseHeats,
           hotStart,
+          startAtCurrent,
           restartOnFalseStart,
           falseStartLapPenalty,
           falseStartTimePenalty,
@@ -663,6 +681,10 @@ public class Race extends Model {
   @BsonProperty("hot_start")
   public boolean isHotStart() {
     return hotStart;
+  }
+
+  public boolean isStartAtCurrent() {
+    return startAtCurrent;
   }
 
   @BsonProperty("restart_on_false_start")

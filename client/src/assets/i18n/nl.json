@@ -946,6 +946,7 @@
   "RE_ROTATION_SINGLE_HEAT": "Enkele Heat",
   "RE_ROTATION_SINGLE_HEAT_SOLO": "Enkele Heat (Solo)",
   "RE_SELECT_CUSTOM_ROTATION": "Selecteer aangepaste rotatie",
+  "RE_START_AT_CURRENT": "Starten op Huidige Positie",
   "RE_START_BEHIND_SENSOR": "Starten Achter de Sensor",
   "RE_START_METHOD_HEADER": "Startmethode",
   "RE_START_RANDOMIZER": "Start-randomizer (s)",

@@ -747,6 +747,48 @@ public class Race implements ProtocolListener {
     return executionManager;
   }
 
+  public boolean isFirstHeatForDriver(String stableId, Heat currentHeat) {
+    if (heats == null || heats.isEmpty()) return true;
+    for (Heat heat : heats) {
+      if (heat == currentHeat) {
+        break;
+      }
+      if (heat.isStarted()) {
+        for (DriverHeatData dhd : heat.getDrivers()) {
+          if (dhd != null
+              && dhd.getDriver() != null
+              && dhd.getDriver().getStableId() != null
+              && dhd.getDriver().getStableId().equals(stableId)) {
+            return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  public Heat getLastHeatForDriver(String stableId, Heat currentHeat) {
+    if (heats == null || heats.isEmpty()) return null;
+    Heat lastFound = null;
+    for (Heat heat : heats) {
+      if (heat == currentHeat) {
+        break;
+      }
+      if (heat.isStarted()) {
+        for (DriverHeatData dhd : heat.getDrivers()) {
+          if (dhd != null
+              && dhd.getDriver() != null
+              && dhd.getDriver().getStableId() != null
+              && dhd.getDriver().getStableId().equals(stableId)) {
+            lastFound = heat;
+            break;
+          }
+        }
+      }
+    }
+    return lastFound;
+  }
+
   public void prepareHeat() {
     this.hasRacedInCurrentHeat = false;
     initializeHeatExecutionState();

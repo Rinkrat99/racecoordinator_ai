@@ -946,6 +946,7 @@
   "RE_ROTATION_SINGLE_HEAT": "Bateria Única",
   "RE_ROTATION_SINGLE_HEAT_SOLO": "Bateria Única (Solo)",
   "RE_SELECT_CUSTOM_ROTATION": "Selecionar rotação personalizada",
+  "RE_START_AT_CURRENT": "Iniciar na Posição Atual",
   "RE_START_BEHIND_SENSOR": "Iniciar Atrás do Sensor",
   "RE_START_METHOD_HEADER": "Método de Início",
   "RE_START_RANDOMIZER": "Aleatorizador de início (s)",

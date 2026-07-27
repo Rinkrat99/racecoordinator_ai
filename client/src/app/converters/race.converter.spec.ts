@@ -96,6 +96,29 @@ describe("RaceConverter", () => {
     expect(result.start_behind_sensor).toBeTrue();
   });
 
+  it("should map start_at_current from proto", () => {
+    const mockProto: IRaceModel = {
+      model: { entityId: "r8" },
+      name: "Test Race",
+      track: { model: { entityId: "t1" }, name: "Track", lanes: [] },
+      startAtCurrent: true,
+    };
+
+    const result = RaceConverter.fromProto(mockProto);
+    expect(result.start_at_current).toBeTrue();
+  });
+
+  it("should default start_at_current to false if missing in proto", () => {
+    const mockProto: IRaceModel = {
+      model: { entityId: "r9" },
+      name: "Test Race",
+      track: { model: { entityId: "t1" }, name: "Track", lanes: [] },
+    };
+
+    const result = RaceConverter.fromProto(mockProto);
+    expect(result.start_at_current).toBeFalse();
+  });
+
   it("should map practice from proto", () => {
     const mockProto: IRaceModel = {
       model: { entityId: "r8" },

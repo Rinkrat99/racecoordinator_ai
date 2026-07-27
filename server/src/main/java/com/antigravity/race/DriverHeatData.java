@@ -86,6 +86,7 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
   private boolean isRefueling = false;
   private double remainingFalseStartTimePenalty = 0.0;
   private RaceFlag flag = RaceFlag.UNKNOWN_FLAG;
+  private double carryOverTime = 0.0;
 
   public DriverHeatData(RaceParticipant driver, Driver actualDriver) {
     super();
@@ -146,6 +147,16 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
       bestLapTime = lapTime;
     }
     segments.clear();
+  }
+
+  @BsonProperty("carryOverTime")
+  public double getCarryOverTime() {
+    return carryOverTime;
+  }
+
+  @BsonProperty("carryOverTime")
+  public void setCarryOverTime(double carryOverTime) {
+    this.carryOverTime = carryOverTime;
   }
 
   public void addSegment(double segmentTime) {

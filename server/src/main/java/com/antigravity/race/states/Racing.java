@@ -307,6 +307,22 @@ public class Racing implements IRaceState {
       scheduler.shutdown();
       scheduler = null;
     }
+
+    if (race.getRaceModel().isStartAtCurrent() && race.getCurrentHeat() != null) {
+      List<DriverHeatData> drivers = race.getCurrentHeat().getDrivers();
+      HeatExecutionManager em = race.getHeatExecutionManager();
+      if (drivers != null && em != null && em.getTimeSinceLastLap() != null) {
+        for (int i = 0; i < drivers.size(); i++) {
+          DriverHeatData dhd = drivers.get(i);
+          if (dhd != null
+              && !em.getFinishedLanes().contains(i)
+              && i < em.getTimeSinceLastLap().length) {
+            dhd.setCarryOverTime(em.getTimeSinceLastLap()[i]);
+          }
+        }
+      }
+    }
+
     race.stopProtocols();
     logger.info("Racing state exited.");
   }

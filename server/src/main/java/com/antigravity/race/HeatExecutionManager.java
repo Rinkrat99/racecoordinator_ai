@@ -70,6 +70,38 @@ public class HeatExecutionManager {
       this.timeSinceLastLap[i] = 0.0;
       this.excludedPendingLapTime[i] = 0.0;
       this.stutterAccumulatedTime[i] = 0.0;
+      this.stutterAccumulatedTime[i] = 0.0;
+
+      if (race.getRaceModel().isStartAtCurrent() && race.getCurrentHeat() != null) {
+        List<DriverHeatData> drivers = race.getCurrentHeat().getDrivers();
+        if (i < drivers.size()) {
+          DriverHeatData dhd = drivers.get(i);
+          if (dhd != null
+              && dhd.getDriver() != null
+              && !race.isFirstHeatForDriver(dhd.getDriver().getStableId(), race.getCurrentHeat())) {
+            Heat lastHeat =
+                race.getLastHeatForDriver(dhd.getDriver().getStableId(), race.getCurrentHeat());
+            if (lastHeat != null) {
+              DriverHeatData lastDhd = null;
+              if (lastHeat.getDrivers() != null) {
+                for (DriverHeatData lDhd : lastHeat.getDrivers()) {
+                  if (lDhd != null
+                      && lDhd.getDriver() != null
+                      && lDhd.getDriver().getStableId().equals(dhd.getDriver().getStableId())) {
+                    lastDhd = lDhd;
+                    break;
+                  }
+                }
+              }
+              if (lastDhd != null) {
+                double carry = lastDhd.getCarryOverTime();
+                this.timeSinceLastLap[i] = carry;
+                dhd.setPendingLapTime(carry);
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -694,7 +726,16 @@ public class HeatExecutionManager {
 
   private boolean handleReactionTime(
       DriverHeatData driverData, double lapTime, int lane, int interfaceId) {
-    if (!race.getRaceModel().isStartBehindSensor()) {
+    boolean useStartBehindSensor = race.getRaceModel().isStartBehindSensor();
+    if (race.getRaceModel().isStartAtCurrent()
+        && driverData != null
+        && driverData.getDriver() != null
+        && !race.isFirstHeatForDriver(
+            driverData.getDriver().getStableId(), race.getCurrentHeat())) {
+      useStartBehindSensor = false;
+    }
+
+    if (!useStartBehindSensor) {
       if (driverData.getReactionTime() < 0) {
         driverData.setReactionTime(0.0);
       }

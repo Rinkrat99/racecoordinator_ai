@@ -31,6 +31,7 @@ export class Race implements Model {
   readonly hot_start: boolean;
   readonly restart_on_false_start: boolean;
   readonly start_behind_sensor: boolean;
+  readonly start_at_current: boolean;
   readonly false_start_lap_penalty: number;
   readonly false_start_time_penalty: number;
   readonly group_options: GroupOptions;
@@ -74,6 +75,7 @@ export class Race implements Model {
     hot_start: boolean = false,
     restart_on_false_start: boolean = false,
     start_behind_sensor: boolean = true,
+    start_at_current: boolean = false,
     false_start_lap_penalty: number = 0,
     false_start_time_penalty: number = 0,
     group_options: GroupOptions = new GroupOptions(),
@@ -107,6 +109,7 @@ export class Race implements Model {
     this.hot_start = hot_start;
     this.restart_on_false_start = restart_on_false_start;
     this.start_behind_sensor = start_behind_sensor;
+    this.start_at_current = start_at_current;
     this.false_start_lap_penalty = false_start_lap_penalty;
     this.false_start_time_penalty = false_start_time_penalty;
     this.group_options = group_options;

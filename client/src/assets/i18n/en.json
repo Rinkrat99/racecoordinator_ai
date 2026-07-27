@@ -948,6 +948,7 @@
   "RE_ROTATION_SINGLE_HEAT": "Single Heat",
   "RE_ROTATION_SINGLE_HEAT_SOLO": "Single Heat (Solo)",
   "RE_SELECT_CUSTOM_ROTATION": "Select Custom Rotation Asset",
+  "RE_START_AT_CURRENT": "Start at Current",
   "RE_START_BEHIND_SENSOR": "Start Behind Sensor",
   "RE_START_METHOD_HEADER": "Start Method",
   "RE_START_RANDOMIZER": "Start Randomizer (s)",

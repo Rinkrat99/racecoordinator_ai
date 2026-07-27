@@ -516,6 +516,7 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
             hot_start: race.hot_start || false,
             restart_on_false_start: race.restart_on_false_start || false,
             start_behind_sensor: race.start_behind_sensor ?? true,
+            start_at_current: race.start_at_current ?? false,
             false_start_lap_penalty: race.false_start_lap_penalty || 0,
             false_start_time_penalty: race.false_start_time_penalty || 0,
             group_options: {
@@ -798,6 +799,7 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       hot_start: false,
       restart_on_false_start: false,
       start_behind_sensor: true,
+      start_at_current: false,
       false_start_lap_penalty: 0,
       false_start_time_penalty: 0,
       group_options: {
@@ -1860,6 +1862,7 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       hot_start: race.hot_start,
       restart_on_false_start: race.restart_on_false_start,
       start_behind_sensor: race.start_behind_sensor,
+      start_at_current: race.start_at_current,
       practice: race.practice,
       false_start_lap_penalty: race.false_start_lap_penalty,
       false_start_time_penalty: race.false_start_time_penalty,

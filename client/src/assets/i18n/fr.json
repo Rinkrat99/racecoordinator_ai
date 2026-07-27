@@ -946,6 +946,7 @@
   "RE_ROTATION_SINGLE_HEAT": "Manche Unique",
   "RE_ROTATION_SINGLE_HEAT_SOLO": "Course Unique (Solo)",
   "RE_SELECT_CUSTOM_ROTATION": "Sélectionner un asset de rotation personnalisé",
+  "RE_START_AT_CURRENT": "Démarrer au Point Actuel",
   "RE_START_BEHIND_SENSOR": "Démarrer Derrière le Capteur",
   "RE_START_METHOD_HEADER": "Méthode de Départ",
   "RE_START_RANDOMIZER": "Randomiseur de départ (s)",

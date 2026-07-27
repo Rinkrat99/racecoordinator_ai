@@ -331,6 +331,19 @@
                       </span>
                     </label>
                   </div>
+                  <div class="config-section checkbox-section">
+                    <label class="checkbox-container">
+                      <input
+                        type="checkbox"
+                        [(ngModel)]="editingRace.start_at_current"
+                        (ngModelChange)="captureState()"
+                      />
+                      <span class="checkmark"></span>
+                      <span class="checkbox-label">
+                        {{ "RE_START_AT_CURRENT" | translate }}
+                      </span>
+                    </label>
+                  </div>
                 </div>
                 <div class="config-row">
                   <div class="config-section checkbox-section">

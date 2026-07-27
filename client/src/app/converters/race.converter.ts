@@ -214,6 +214,7 @@ export class RaceConverter {
           p.hotStart || p.hot_start || false,
           p.restartOnFalseStart || p.restart_on_false_start || false,
           p.startBehindSensor ?? p.start_behind_sensor ?? true,
+          p.startAtCurrent ?? p.start_at_current ?? false,
           p.falseStartLapPenalty || p.false_start_lap_penalty || 0,
           p.falseStartTimePenalty || p.false_start_time_penalty || 0,
           p.groupOptions || p.group_options

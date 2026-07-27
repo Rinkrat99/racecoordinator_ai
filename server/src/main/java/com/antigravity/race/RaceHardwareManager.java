@@ -117,16 +117,42 @@ public class RaceHardwareManager {
         break;
     }
 
+    boolean anyColdStartLanes = false;
+    List<Integer> coldLanes = new ArrayList<>();
     if (race.getState() instanceof Starting
         && race.getRaceModel().isHotStart()
         && !race.hasRacedInCurrentHeat()) {
       powerOn = true;
+
+      if (race.getRaceModel().isStartAtCurrent() && race.getCurrentHeat() != null) {
+        List<DriverHeatData> drivers = race.getCurrentHeat().getDrivers();
+        for (int i = 0; i < drivers.size(); i++) {
+          DriverHeatData dhd = drivers.get(i);
+          if (dhd != null
+              && dhd.getDriver() != null
+              && dhd.getDriver().getStableId() != null
+              && !race.isFirstHeatForDriver(dhd.getDriver().getStableId(), race.getCurrentHeat())) {
+            anyColdStartLanes = true;
+            coldLanes.add(i);
+          }
+        }
+
+        if (anyColdStartLanes && !hasPerLaneRelays()) {
+          powerOn = false;
+        }
+      }
     }
 
     race.setMainPower(powerOn);
 
     if (protocols == null) return;
     protocols.setMainPower(powerOn);
+
+    if (anyColdStartLanes && hasPerLaneRelays() && powerOn) {
+      for (int lane : coldLanes) {
+        race.setLanePower(false, lane);
+      }
+    }
   }
 
   public void forceMainPowerSync() {

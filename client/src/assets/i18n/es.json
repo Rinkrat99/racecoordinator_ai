@@ -946,6 +946,7 @@
   "RE_ROTATION_SINGLE_HEAT": "Carrera individual",
   "RE_ROTATION_SINGLE_HEAT_SOLO": "Carrera individual (Solo)",
   "RE_SELECT_CUSTOM_ROTATION": "Seleccionar rotación personalizada",
+  "RE_START_AT_CURRENT": "Comenzar en el Actual",
   "RE_START_BEHIND_SENSOR": "Empezar Detrás del Sensor",
   "RE_START_METHOD_HEADER": "Método de Inicio",
   "RE_START_RANDOMIZER": "Aleatorizador de inicio (s)",
