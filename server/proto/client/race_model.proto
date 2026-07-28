@@ -123,6 +123,7 @@ message RaceModel {
   bool start_behind_sensor = 31;
   bool practice = 32;
   bool start_at_current = 33;
+  bool adjust_drift_laps = 34;
 }
 
 // CustomRotation and CustomHeat moved to rotation_model.proto

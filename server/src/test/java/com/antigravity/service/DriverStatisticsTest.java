@@ -80,21 +80,21 @@ public class DriverStatisticsTest {
 
     // Heat 1: p1 in Lane 0, p2 in Lane 1
     DriverHeatData hd1_p1 = new DriverHeatData(p1);
-    hd1_p1.addLap(5.5, false); // Best lap 5.5, lap count 1
+    hd1_p1.addLap(5.5, false, true); // Best lap 5.5, lap count 1
 
     DriverHeatData hd1_p2 = new DriverHeatData(p2);
-    hd1_p2.addLap(6.2, false); // Best lap 6.2, lap count 1
+    hd1_p2.addLap(6.2, false, true); // Best lap 6.2, lap count 1
 
     Heat heat1 = new Heat(1, Arrays.asList(hd1_p1, hd1_p2), new HeatScoring(), false);
     heat1.setStarted(true);
 
     // Heat 2: p2 in Lane 0, p1 in Lane 1
     DriverHeatData hd2_p2 = new DriverHeatData(p2);
-    hd2_p2.addLap(6.0, false); // Best lap 6.0, lap count 1
+    hd2_p2.addLap(6.0, false, true); // Best lap 6.0, lap count 1
 
     DriverHeatData hd2_p1 = new DriverHeatData(p1);
-    hd2_p1.addLap(5.2, false);
-    hd2_p1.addLap(5.4, false); // Best lap 5.2, lap count 2
+    hd2_p1.addLap(5.2, false, true);
+    hd2_p1.addLap(5.4, false, true); // Best lap 5.2, lap count 2
 
     Heat heat2 = new Heat(2, Arrays.asList(hd2_p2, hd2_p1), new HeatScoring(), false);
     heat2.setStarted(true);
@@ -178,7 +178,7 @@ public class DriverStatisticsTest {
       for (int lane = 0; lane < heat.getDrivers().size(); lane++) {
         DriverHeatData dhd = heat.getDrivers().get(lane);
         if (dhd.getDriver() != null && !dhd.getDriver().getDriver().isEmpty()) {
-          dhd.addLap(5.0 + lane, false); // Best lap time: 5.0 + lane, count: 1
+          dhd.addLap(5.0 + lane, false, true); // Best lap time: 5.0 + lane, count: 1
         }
       }
     }
@@ -287,10 +287,10 @@ public class DriverStatisticsTest {
 
     // Heat 1: started, has one real driver and one empty driver
     DriverHeatData hd1_p1 = new DriverHeatData(p1);
-    hd1_p1.addLap(5.5, false); // Best lap 5.5, lap count 1
+    hd1_p1.addLap(5.5, false, true); // Best lap 5.5, lap count 1
 
     DriverHeatData hd1_pEmpty = new DriverHeatData(pEmpty);
-    hd1_pEmpty.addLap(6.2, false); // Best lap 6.2, lap count 1
+    hd1_pEmpty.addLap(6.2, false, true); // Best lap 6.2, lap count 1
 
     Heat heat1 = new Heat(1, Arrays.asList(hd1_p1, hd1_pEmpty), new HeatScoring(), false);
     heat1.setStarted(true); // Mark as started

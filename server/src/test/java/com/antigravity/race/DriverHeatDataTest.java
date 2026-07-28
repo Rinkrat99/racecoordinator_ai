@@ -15,7 +15,7 @@ public class DriverHeatDataTest {
 
     // Mock 5 laps
     for (int i = 0; i < 5; i++) {
-      dhd.addLap(10.0, false);
+      dhd.addLap(10.0, false, true);
     }
 
     dhd.setPenaltyLaps(-1.0);
@@ -34,7 +34,7 @@ public class DriverHeatDataTest {
 
     // 5 laps of 10 seconds each
     for (int i = 0; i < 5; i++) {
-      dhd.addLap(10.0, false);
+      dhd.addLap(10.0, false, true);
     }
 
     // Add significant adjustments that would change the average if they were included
@@ -78,9 +78,9 @@ public class DriverHeatDataTest {
     DriverHeatData original = new DriverHeatData(driver);
     original.addSegment(1.5);
     original.addSegment(2.5);
-    original.addLap(10.0, false);
+    original.addLap(10.0, false, true);
     original.addSegment(3.0);
-    original.addLap(12.0, true);
+    original.addLap(12.0, true, true);
 
     org.bson.codecs.configuration.CodecRegistry pojoCodecRegistry =
         org.bson.codecs.configuration.CodecRegistries.fromRegistries(
@@ -98,5 +98,25 @@ public class DriverHeatDataTest {
 
     assertEquals(original.getLaps().size(), decoded.getLaps().size());
     assertEquals(original.getSegments().size(), decoded.getSegments().size());
+  }
+
+  @Test
+  public void testDriftLapDoesNotUpdateBestLapTime() {
+    Driver driverModel = new Driver("Test Driver", "Nickname");
+    RaceParticipant driver = new RaceParticipant(driverModel);
+    DriverHeatData dhd = new DriverHeatData(driver);
+
+    // Add a normal lap
+    dhd.addLap(10.0, false, true);
+    assertEquals(10.0, dhd.getBestLapTime(), 0.001);
+
+    // Add a fast lap that shouldn't count towards records (adjustDriftLaps = true)
+    dhd.addLap(5.0, true, false);
+
+    // Best lap time should remain 10.0
+    assertEquals(10.0, dhd.getBestLapTime(), 0.001);
+
+    // Total laps should be 2
+    assertEquals(2, dhd.getLaps().size());
   }
 }

@@ -1609,7 +1609,7 @@ describe("RaceEditorComponent", () => {
   describe("Guided Help", () => {
     it("should return complete guided help steps in expected order", () => {
       const steps = component.getHelpSteps();
-      expect(steps.length).toBe(9);
+      expect(steps.length).toBe(10);
       expect(steps[0].title).toBe("RE_HELP_WELCOME_TITLE");
       expect(steps[1].selector).toBe("#race-name-input");
       expect(steps[2].selector).toBe("#heat-rotation-select");
@@ -1618,7 +1618,8 @@ describe("RaceEditorComponent", () => {
       expect(steps[5].selector).toBe("#track-select");
       expect(steps[6].selector).toBe("#min-lap-time-input");
       expect(steps[7].selector).toBe("#drift-time-input");
-      expect(steps[8].selector).toBe("#practice-input");
+      expect(steps[8].selector).toBe("#adjust-drift-laps-input");
+      expect(steps[9].selector).toBe("#practice-input");
     });
 
     it("should trigger help service when startHelp is called", () => {

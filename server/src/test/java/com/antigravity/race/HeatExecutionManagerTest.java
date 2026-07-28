@@ -1225,4 +1225,46 @@ public class HeatExecutionManagerTest {
     executionManager.processTicker(0.1f);
     assertTrue("Power should be restored and stutter cleared once fueled", race.isLanePower(0));
   }
+
+  @Test
+  public void testLapRace_AdjustDriftLaps() {
+    Race raceModel =
+        new Race.Builder()
+            .withName("Test Race")
+            .withTrackEntityId("track1")
+            .withHeatScoring(heatScoring)
+            .withOverallScoring(new OverallScoring())
+            .withEntityId("race1")
+            .withAdjustDriftLaps(true)
+            .build();
+    race =
+        new com.antigravity.race.Race.Builder()
+            .model(raceModel)
+            .drivers(participants)
+            .track(track)
+            .isDemoMode(true)
+            .build();
+    executionManager = race.getHeatExecutionManager();
+    executionManager.initialize(track.getLanes().size());
+    race.updatePowerForFlag(com.antigravity.proto.RaceFlag.GREEN);
+
+    // Initial state
+    DriverHeatData dhd = race.getCurrentHeat().getDrivers().get(0);
+    assertEquals(0, dhd.getLaps().size());
+
+    // Reaction lap (false, true, false) - this registers reaction time but isn't added to laps
+    // array
+    executionManager.onLap(0, 1.0, 1, false, true, false);
+    assertEquals(0, dhd.getLaps().size());
+
+    // A drift lap
+    executionManager.onLap(0, 5.0, 1, false, true, true); // driftInvolved = true
+    assertEquals(1, dhd.getLaps().size());
+    assertFalse(dhd.getLaps().get(0).isCountTowardsRecords()); // Because adjustDriftLaps is true
+
+    // A normal lap
+    executionManager.onLap(0, 5.0, 1, false, true, false); // driftInvolved = false
+    assertEquals(2, dhd.getLaps().size());
+    assertTrue(dhd.getLaps().get(1).isCountTowardsRecords());
+  }
 }

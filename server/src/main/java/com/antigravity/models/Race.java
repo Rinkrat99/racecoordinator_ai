@@ -153,6 +153,11 @@ public class Race extends Model {
   @JsonProperty("practice")
   private final boolean practice;
 
+  @BsonProperty("adjust_drift_laps")
+  @JsonProperty("adjust_drift_laps")
+  @JsonAlias("adjustDriftLaps")
+  private final boolean adjustDriftLaps;
+
   @BsonCreator
   @JsonCreator
   public Race(
@@ -250,6 +255,10 @@ public class Race extends Model {
           @JsonAlias("startBehindSensor")
           Boolean startBehindSensor,
       @BsonProperty("practice") @JsonProperty("practice") @JsonAlias("practice") Boolean practice,
+      @BsonProperty("adjust_drift_laps")
+          @JsonProperty("adjust_drift_laps")
+          @JsonAlias("adjustDriftLaps")
+          Boolean adjustDriftLaps,
       @BsonProperty("entity_id") @JsonProperty("entity_id") String entityId,
       @BsonId @JsonProperty("_id") ObjectId id) {
     super(id, entityId);
@@ -290,6 +299,7 @@ public class Race extends Model {
     this.groupOptions = groupOptions != null ? groupOptions : new GroupOptions();
     this.startBehindSensor = startBehindSensor != null ? startBehindSensor : true;
     this.practice = practice != null ? practice : false;
+    this.adjustDriftLaps = adjustDriftLaps != null ? adjustDriftLaps : false;
   }
 
   public static class Builder {
@@ -326,6 +336,7 @@ public class Race extends Model {
     private GroupOptions groupOptions = new GroupOptions();
     private boolean startBehindSensor = true;
     private boolean practice = false;
+    private boolean adjustDriftLaps = false;
     private String entityId;
     private ObjectId id;
 
@@ -362,6 +373,7 @@ public class Race extends Model {
       this.groupOptions = other.getGroupOptions();
       this.startBehindSensor = other.isStartBehindSensor();
       this.practice = other.isPractice();
+      this.adjustDriftLaps = other.isAdjustDriftLaps();
       this.entityId = other.getEntityId();
       this.id = other.getId();
       return this;
@@ -527,6 +539,11 @@ public class Race extends Model {
       return this;
     }
 
+    public Builder withAdjustDriftLaps(boolean adjustDriftLaps) {
+      this.adjustDriftLaps = adjustDriftLaps;
+      return this;
+    }
+
     public Builder withEntityId(String entityId) {
       this.entityId = entityId;
       return this;
@@ -572,6 +589,7 @@ public class Race extends Model {
           groupOptions,
           startBehindSensor,
           practice,
+          adjustDriftLaps,
           entityId,
           id);
     }
@@ -712,7 +730,15 @@ public class Race extends Model {
     return startBehindSensor;
   }
 
+  @BsonProperty("practice")
+  @JsonProperty("practice")
   public boolean isPractice() {
     return practice;
+  }
+
+  @BsonProperty("adjust_drift_laps")
+  @JsonProperty("adjust_drift_laps")
+  public boolean isAdjustDriftLaps() {
+    return adjustDriftLaps;
   }
 }

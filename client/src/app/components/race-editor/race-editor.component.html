@@ -221,6 +221,8 @@
                       data-testid="drift-time-input"
                     />
                   </div>
+                </div>
+                <div class="config-row">
                   <div class="config-section checkbox-section">
                     <label class="checkbox-container">
                       <input
@@ -234,6 +236,22 @@
                       <span class="checkmark"></span>
                       <span class="checkbox-label">
                         {{ "RE_PRACTICE" | translate }}
+                      </span>
+                    </label>
+                  </div>
+                  <div class="config-section checkbox-section">
+                    <label class="checkbox-container">
+                      <input
+                        id="adjust-drift-laps-input"
+                        type="checkbox"
+                        [(ngModel)]="editingRace.adjust_drift_laps"
+                        (ngModelChange)="captureState()"
+                        class="adjust-drift-laps-input"
+                        data-testid="adjust-drift-laps-input"
+                      />
+                      <span class="checkmark"></span>
+                      <span class="checkbox-label">
+                        {{ "RE_ADJUST_DRIFT_LAPS" | translate }}
                       </span>
                     </label>
                   </div>

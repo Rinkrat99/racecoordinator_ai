@@ -78,9 +78,9 @@ public class HeatConverterTest {
     dhd.setRefueling(true);
     dhd.setCurrentLocation(com.antigravity.protocols.CarLocation.PitRow);
     dhd.setInitialFuelLevel(100.0);
-    dhd.addLap(10.0, false);
-    dhd.addLap(11.0, false);
-    dhd.addLap(13.5, false);
+    dhd.addLap(10.0, false, true);
+    dhd.addLap(11.0, false, true);
+    dhd.addLap(13.5, false, true);
     dhd.setUserLaps(2.0);
     dhd.setPenaltyLaps(-1.0);
     dhd.setAutoCalculatedLaps(0.5);

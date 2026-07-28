@@ -654,6 +654,8 @@ public class DatabaseTaskHandler {
               .withFalseStartLapPenalty(race.getFalseStartLapPenalty())
               .withFalseStartTimePenalty(race.getFalseStartTimePenalty())
               .withGroupOptions(race.getGroupOptions())
+              .withPractice(race.isPractice())
+              .withAdjustDriftLaps(race.isAdjustDriftLaps())
               .withEntityId(nextId)
               .build();
     }
@@ -796,6 +798,7 @@ public class DatabaseTaskHandler {
       raceMap.put("false_start_time_penalty", race.getFalseStartTimePenalty());
       raceMap.put("group_options", race.getGroupOptions());
       raceMap.put("practice", race.isPractice());
+      raceMap.put("adjust_drift_laps", race.isAdjustDriftLaps());
       response.add(raceMap);
     }
     ctx.json(response);

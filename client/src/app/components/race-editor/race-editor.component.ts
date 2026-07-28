@@ -517,6 +517,8 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
             restart_on_false_start: race.restart_on_false_start || false,
             start_behind_sensor: race.start_behind_sensor ?? true,
             start_at_current: race.start_at_current ?? false,
+            practice: race.practice ?? false,
+            adjust_drift_laps: race.adjust_drift_laps ?? false,
             false_start_lap_penalty: race.false_start_lap_penalty || 0,
             false_start_time_penalty: race.false_start_time_penalty || 0,
             group_options: {
@@ -802,6 +804,7 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       start_at_current: false,
       false_start_lap_penalty: 0,
       false_start_time_penalty: 0,
+      adjust_drift_laps: false,
       group_options: {
         enabled: false,
         max_groups: 2,
@@ -1864,6 +1867,7 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       start_behind_sensor: race.start_behind_sensor,
       start_at_current: race.start_at_current,
       practice: race.practice,
+      adjust_drift_laps: race.adjust_drift_laps,
       false_start_lap_penalty: race.false_start_lap_penalty,
       false_start_time_penalty: race.false_start_time_penalty,
       group_options: race.group_options
@@ -1934,6 +1938,16 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
         title: this.translationService.translate("RE_HELP_DRIFT_TIME_TITLE"),
         content: this.translationService.translate(
           "RE_HELP_DRIFT_TIME_CONTENT",
+        ),
+        position: "bottom",
+      },
+      {
+        selector: "#adjust-drift-laps-input",
+        title: this.translationService.translate(
+          "RE_HELP_ADJUST_DRIFT_LAPS_TITLE",
+        ),
+        content: this.translationService.translate(
+          "RE_HELP_ADJUST_DRIFT_LAPS_CONTENT",
         ),
         position: "bottom",
       },

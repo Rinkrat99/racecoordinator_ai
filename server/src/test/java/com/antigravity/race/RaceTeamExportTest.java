@@ -96,11 +96,11 @@ public class RaceTeamExportTest {
 
     // 2. Teammate A records a lap
     dhd.setActualDriver(teammateA);
-    dhd.addLap(10.5, false);
+    dhd.addLap(10.5, false, true);
 
     // 3. Teammate B records a lap
     dhd.setActualDriver(teammateB);
-    dhd.addLap(12.3, false);
+    dhd.addLap(12.3, false, true);
 
     // 4. Export to CSV
     String csv = CsvExporter.export(race);

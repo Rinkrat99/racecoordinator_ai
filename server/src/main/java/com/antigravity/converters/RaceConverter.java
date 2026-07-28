@@ -155,6 +155,7 @@ public class RaceConverter {
       }
       builder.setSoloLaneIndex(race.getSoloLaneIndex());
       builder.setPractice(race.isPractice());
+      builder.setAdjustDriftLaps(race.isAdjustDriftLaps());
       if (race.getCustomRotationSequence() != null) {
         builder.addAllCustomRotationSequence(race.getCustomRotationSequence());
       }

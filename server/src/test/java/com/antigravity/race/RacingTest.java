@@ -365,13 +365,13 @@ public class RacingTest {
     verify(mockRace).broadcastFlag(com.antigravity.proto.RaceFlag.GREEN);
 
     // Advance to 2nd lap (limit 3) -> Should be WHITE flag
-    d1.addLap(1.0, false);
-    d1.addLap(1.0, false); // Now 2 laps
+    d1.addLap(1.0, false, true);
+    d1.addLap(1.0, false, true); // Now 2 laps
     Thread.sleep(200);
     verify(mockRace).broadcastFlag(com.antigravity.proto.RaceFlag.WHITE);
 
     // Advance to 3rd lap -> Should be CHECKERED flag
-    d1.addLap(1.0, false); // Now 3 laps
+    d1.addLap(1.0, false, true); // Now 3 laps
     Thread.sleep(200);
     verify(mockRace).broadcastFlag(com.antigravity.proto.RaceFlag.CHECKERED);
 

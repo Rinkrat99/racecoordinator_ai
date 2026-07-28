@@ -81,8 +81,8 @@ public class AutoSegmentsTest {
   public void testCalculateAutoSegments_Basic() {
     DriverHeatData d1 = drivers.get(0);
     // 2 laps of 10s. Median = 10s.
-    d1.addLap(10.0, false);
-    d1.addLap(10.0, false);
+    d1.addLap(10.0, false, true);
+    d1.addLap(10.0, false, true);
 
     // 5s since last lap. Expect 5/10 = 0.5 segments.
     double[] times = new double[] {5.0, 0.0};
@@ -98,8 +98,8 @@ public class AutoSegmentsTest {
   public void testCalculateAutoSegments_CapAt99() {
     DriverHeatData d1 = drivers.get(0);
     // 2 laps of 10s. Median = 10s.
-    d1.addLap(10.0, false);
-    d1.addLap(10.0, false);
+    d1.addLap(10.0, false, true);
+    d1.addLap(10.0, false, true);
 
     // 11s since last lap (more than median). Expect cap at 0.99.
     double[] times = new double[] {11.0, 0.0};
@@ -142,17 +142,17 @@ public class AutoSegmentsTest {
 
     DriverHeatData d1 = drivers.get(0);
     // d1 reached 5 laps. Should get 0 auto segments.
-    d1.addLap(10.0, false);
-    d1.addLap(10.0, false);
-    d1.addLap(10.0, false);
-    d1.addLap(10.0, false);
-    d1.addLap(10.0, false);
+    d1.addLap(10.0, false, true);
+    d1.addLap(10.0, false, true);
+    d1.addLap(10.0, false, true);
+    d1.addLap(10.0, false, true);
+    d1.addLap(10.0, false, true);
 
     DriverHeatData d2 = drivers.get(1);
     // d2 reached 3 laps. Median = 10s.
-    d2.addLap(10.0, false);
-    d2.addLap(10.0, false);
-    d2.addLap(10.0, false);
+    d2.addLap(10.0, false, true);
+    d2.addLap(10.0, false, true);
+    d2.addLap(10.0, false, true);
 
     // 4s since last lap for d1, 6s for d2.
     double[] times = new double[] {4.0, 6.0};

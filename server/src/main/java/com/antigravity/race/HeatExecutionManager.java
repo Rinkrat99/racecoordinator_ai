@@ -97,6 +97,7 @@ public class HeatExecutionManager {
                 double carry = lastDhd.getCarryOverTime();
                 this.timeSinceLastLap[i] = carry;
                 dhd.setPendingLapTime(carry);
+                dhd.markDriftTime();
               }
             }
           }
@@ -807,7 +808,10 @@ public class HeatExecutionManager {
       effectiveLapTime += driverData.getReactionTime();
     }
 
-    driverData.addLap(effectiveLapTime, isDrift);
+    boolean driftInvolved = isDrift || driverData.consumeDriftTime();
+    boolean countTowardsRecords = !(race.getRaceModel().isAdjustDriftLaps() && driftInvolved);
+
+    driverData.addLap(effectiveLapTime, isDrift, countTowardsRecords);
 
     // Handle analog fuel usage, but exclude reaction time as it could be extremely
     // high if the driver has technical issues at the start of the heat. Also exclude

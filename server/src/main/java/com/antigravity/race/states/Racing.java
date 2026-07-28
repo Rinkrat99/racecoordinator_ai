@@ -353,6 +353,7 @@ public class Racing implements IRaceState {
           DriverHeatData dhd = drivers.get(lane);
           if (dhd != null) {
             dhd.addPendingLapTime(pt.getLapTime());
+            dhd.markDriftTime();
             logger.info("Added partial lap time of {}s to lane {}", pt.getLapTime(), lane);
           }
         }

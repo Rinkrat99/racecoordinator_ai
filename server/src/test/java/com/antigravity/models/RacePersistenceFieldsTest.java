@@ -77,6 +77,7 @@ public class RacePersistenceFieldsTest {
             null,
             null,
             false,
+            null,
             "race1",
             new ObjectId());
 

@@ -937,7 +937,15 @@ public class Race implements ProtocolListener {
   public void onLap(int lane, double lapTime, int interfaceId, int interfaceIndex) {
     if (state.onLap(lane, lapTime, interfaceId, false)) {
       DriverHeatData dhd = currentHeat.getDrivers().get(lane);
-      if (dhd != null) recordsManager.onLap(dhd, dhd.getLastLapTime(), lane);
+      if (dhd != null) {
+        boolean countTowardsRecords = true;
+        if (!dhd.getLaps().isEmpty()) {
+          countTowardsRecords = dhd.getLaps().get(dhd.getLaps().size() - 1).isCountTowardsRecords();
+        }
+        if (countTowardsRecords) {
+          recordsManager.onLap(dhd, dhd.getLastLapTime(), lane);
+        }
+      }
     }
   }
 

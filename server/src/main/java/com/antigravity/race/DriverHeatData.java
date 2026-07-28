@@ -19,14 +19,25 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
     private String driverId;
     private List<Double> segments = new ArrayList<>();
     private boolean isDrift;
+    private boolean countTowardsRecords = true;
 
     public LapData(double lapTime, String driverId, List<Double> segments, boolean isDrift) {
+      this(lapTime, driverId, segments, isDrift, true);
+    }
+
+    public LapData(
+        double lapTime,
+        String driverId,
+        List<Double> segments,
+        boolean isDrift,
+        boolean countTowardsRecords) {
       this.lapTime = lapTime;
       this.driverId = driverId;
       if (segments != null) {
         this.segments = new ArrayList<>(segments);
       }
       this.isDrift = isDrift;
+      this.countTowardsRecords = countTowardsRecords;
     }
 
     public LapData() {}
@@ -64,6 +75,16 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
     public void setDrift(boolean drift) {
       isDrift = drift;
     }
+
+    @BsonProperty("countTowardsRecords")
+    public boolean isCountTowardsRecords() {
+      return countTowardsRecords;
+    }
+
+    @BsonProperty("countTowardsRecords")
+    public void setCountTowardsRecords(boolean countTowardsRecords) {
+      this.countTowardsRecords = countTowardsRecords;
+    }
   }
 
   private ArrayList<LapData> laps = new ArrayList<>();
@@ -87,6 +108,7 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
   private double remainingFalseStartTimePenalty = 0.0;
   private RaceFlag flag = RaceFlag.UNKNOWN_FLAG;
   private double carryOverTime = 0.0;
+  private boolean hasDriftTime = false;
 
   public DriverHeatData(RaceParticipant driver, Driver actualDriver) {
     super();
@@ -136,15 +158,18 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
     this.actualDriver = actualDriver;
   }
 
-  public void addLap(double lapTime, boolean isDrift) {
+  public void addLap(double lapTime, boolean isDrift, boolean countTowardsRecords) {
     laps.add(
         new LapData(
             lapTime,
             actualDriver != null ? actualDriver.getEntityId() : "",
             new ArrayList<>(segments),
-            isDrift));
-    if (bestLapTime == 0.0f || lapTime < bestLapTime) {
-      bestLapTime = lapTime;
+            isDrift,
+            countTowardsRecords));
+    if (countTowardsRecords) {
+      if (bestLapTime == 0.0f || lapTime < bestLapTime) {
+        bestLapTime = lapTime;
+      }
     }
     segments.clear();
   }
@@ -271,6 +296,7 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
     falseStarts = 0;
     remainingFalseStartTimePenalty = 0.0;
     penaltyLaps = 0.0;
+    hasDriftTime = false;
   }
 
   public void resetForFalseStart() {
@@ -426,5 +452,25 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
 
   public void setFlag(RaceFlag flag) {
     this.flag = flag;
+  }
+
+  public void markDriftTime() {
+    this.hasDriftTime = true;
+  }
+
+  public boolean consumeDriftTime() {
+    boolean result = hasDriftTime;
+    hasDriftTime = false;
+    return result;
+  }
+
+  @BsonProperty("hasDriftTime")
+  public boolean isHasDriftTime() {
+    return hasDriftTime;
+  }
+
+  @BsonProperty("hasDriftTime")
+  public void setHasDriftTime(boolean hasDriftTime) {
+    this.hasDriftTime = hasDriftTime;
   }
 }
