@@ -491,46 +491,47 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
         if (race) {
           this.editingRace = {
             ...deepCopy(race),
-            auto_advance_time: race.auto_advance_time || 0,
-            auto_start_time: race.auto_start_time || 0,
-            auto_advance_warmup_time: race.auto_advance_warmup_time || 0,
-            auto_start_warmup_time: race.auto_start_warmup_time || 0,
-            drift_time: race.drift_time ?? 0.5,
-            min_lap_time: race.min_lap_time ?? 1.5,
-            start_time: race.start_time ?? 5.0,
-            restart_time: race.restart_time ?? 5.0,
-            start_randomizer: race.start_randomizer ?? race.start_delay ?? 0.0,
-            restart_randomizer:
-              race.restart_randomizer ?? race.restart_delay ?? 0.0,
-            solo_lane_index: race.solo_lane_index ?? 0,
-            custom_rotation_sequence:
-              race.custom_rotation_sequence ||
-              race.customRotationSequence ||
-              [],
-            custom_rotation_asset_id:
-              race.custom_rotation_asset_id || race.customRotationAssetId,
-            custom_rotations:
-              race.custom_rotations || race.customRotations || [],
-            heat_times_through: race.heat_times_through || 1,
-            reverse_heats: race.reverse_heats || false,
-            hot_start: race.hot_start || false,
-            restart_on_false_start: race.restart_on_false_start || false,
-            start_behind_sensor: race.start_behind_sensor ?? true,
-            start_at_current: race.start_at_current ?? false,
-            practice: race.practice ?? false,
-            adjust_drift_laps: race.adjust_drift_laps ?? false,
-            false_start_lap_penalty: race.false_start_lap_penalty || 0,
-            false_start_time_penalty: race.false_start_time_penalty || 0,
-            group_options: {
-              enabled: race.group_options?.enabled ?? false,
-              max_groups: race.group_options?.max_groups ?? 2,
-              balance: race.group_options?.balance ?? true,
-              allow_empty_lanes: race.group_options?.allow_empty_lanes ?? false,
-              force_multiple_of_max:
-                race.group_options?.force_multiple_of_max ?? false,
-              rotate_group_heats:
-                race.group_options?.rotate_group_heats ?? false,
-              min_advancing: race.group_options?.min_advancing ?? 0,
+            // Fallback for nested objects to prevent null access errors in templates
+            group_options: race.group_options || {
+              enabled: false,
+              max_groups: 2,
+              balance: true,
+              allow_empty_lanes: false,
+              force_multiple_of_max: false,
+              rotate_group_heats: false,
+              min_advancing: 0,
+            },
+            fuel_options: race.fuel_options || {
+              enabled: false,
+              reset_fuel_at_heat_start: false,
+              out_of_fuel_action: "DO_NOT_COUNT_LAPS",
+              capacity: 100,
+              usage_type: "LINEAR",
+              usage_rate: 4.0,
+              start_level: 100,
+              refuel_rate: 10.0,
+              pit_stop_delay: 2.0,
+              reference_time: 6.0,
+              power_stutter_on_time: 1.0,
+              power_stutter_off_time: 1.0,
+            },
+            digital_fuel_options: race.digital_fuel_options || {
+              enabled: false,
+              reset_fuel_at_heat_start: false,
+              out_of_fuel_action: "DO_NOT_COUNT_LAPS",
+              capacity: 100,
+              usage_type: "LINEAR",
+              usage_rate: 4.0,
+              start_level: 100,
+              refuel_rate: 10.0,
+              pit_stop_delay: 2.0,
+            },
+            team_options: race.team_options || {
+              heat_lap_limit: 0,
+              heat_time_limit: 0.0,
+              overall_lap_limit: 0,
+              overall_time_limit: 0.0,
+              require_pit_stop_change_driver: false,
             },
           };
           if (!this.editingRace.heat_scoring) {
@@ -1785,103 +1786,10 @@ export class RaceEditorComponent implements OnInit, OnDestroy, DirtyComponent {
   }
 
   private buildRacePayload(race: any): any {
-    return {
-      "@id": 1,
-      name: race.name,
-      track_entity_id: race.track_entity_id,
-      heat_rotation_type: race.heat_rotation_type,
-      heat_scoring: {
-        finish_method: race.heat_scoring.finish_method,
-        finish_value: race.heat_scoring.finish_value,
-        heat_ranking: race.heat_scoring.heat_ranking,
-        heat_ranking_tiebreaker: race.heat_scoring.heat_ranking_tiebreaker,
-        allow_finish: race.heat_scoring.allow_finish,
-      },
-      overall_scoring: {
-        dropped_heats: race.overall_scoring.dropped_heats,
-        ranking_method: race.overall_scoring.ranking_method,
-        tiebreaker: race.overall_scoring.tiebreaker,
-      },
-      fuel_options: race.fuel_options
-        ? {
-            enabled: race.fuel_options.enabled,
-            reset_fuel_at_heat_start:
-              race.fuel_options.reset_fuel_at_heat_start,
-            out_of_fuel_action: race.fuel_options.out_of_fuel_action,
-            capacity: race.fuel_options.capacity,
-            usage_type: race.fuel_options.usage_type,
-            usage_rate: race.fuel_options.usage_rate,
-            start_level: race.fuel_options.start_level,
-            refuel_rate: race.fuel_options.refuel_rate,
-            pit_stop_delay: race.fuel_options.pit_stop_delay,
-            reference_time: race.fuel_options.reference_time,
-            power_stutter_on_time: race.fuel_options.power_stutter_on_time,
-            power_stutter_off_time: race.fuel_options.power_stutter_off_time,
-          }
-        : undefined,
-      digital_fuel_options: race.digital_fuel_options
-        ? {
-            enabled: race.digital_fuel_options.enabled,
-            reset_fuel_at_heat_start:
-              race.digital_fuel_options.reset_fuel_at_heat_start,
-            out_of_fuel_action: race.digital_fuel_options.out_of_fuel_action,
-            capacity: race.digital_fuel_options.capacity,
-            usage_type: race.digital_fuel_options.usage_type,
-            usage_rate: race.digital_fuel_options.usage_rate,
-            start_level: race.digital_fuel_options.start_level,
-            refuel_rate: race.digital_fuel_options.refuel_rate,
-            pit_stop_delay: race.digital_fuel_options.pit_stop_delay,
-          }
-        : undefined,
-      auto_advance_time: race.auto_advance_time,
-      auto_start_time: race.auto_start_time,
-      auto_advance_warmup_time: race.auto_advance_warmup_time,
-      auto_start_warmup_time: race.auto_start_warmup_time,
-      min_lap_time: race.min_lap_time,
-      drift_time: race.drift_time,
-      start_time: race.start_time,
-      restart_time: race.restart_time,
-      start_randomizer: race.start_randomizer,
-      restart_randomizer: race.restart_randomizer,
-      solo_lane_index: race.solo_lane_index,
-      custom_rotation_sequence: race.custom_rotation_sequence,
-      customRotationSequence: race.custom_rotation_sequence,
-      custom_rotation_asset_id: race.custom_rotation_asset_id,
-      customRotationAssetId: race.custom_rotation_asset_id,
-      custom_rotations: race.custom_rotations,
-      customRotations: race.custom_rotations,
-      team_options: race.team_options
-        ? {
-            heat_lap_limit: race.team_options.heat_lap_limit,
-            heat_time_limit: race.team_options.heat_time_limit,
-            overall_lap_limit: race.team_options.overall_lap_limit,
-            overall_time_limit: race.team_options.overall_time_limit,
-            require_pit_stop_change_driver:
-              race.team_options.require_pit_stop_change_driver,
-          }
-        : undefined,
-      heat_times_through: race.heat_times_through,
-      reverse_heats: race.reverse_heats,
-      hot_start: race.hot_start,
-      restart_on_false_start: race.restart_on_false_start,
-      start_behind_sensor: race.start_behind_sensor,
-      start_at_current: race.start_at_current,
-      practice: race.practice,
-      adjust_drift_laps: race.adjust_drift_laps,
-      false_start_lap_penalty: race.false_start_lap_penalty,
-      false_start_time_penalty: race.false_start_time_penalty,
-      group_options: race.group_options
-        ? {
-            enabled: race.group_options.enabled,
-            max_groups: race.group_options.max_groups,
-            balance: race.group_options.balance,
-            allow_empty_lanes: race.group_options.allow_empty_lanes,
-            force_multiple_of_max: race.group_options.force_multiple_of_max,
-            rotate_group_heats: race.group_options.rotate_group_heats,
-            min_advancing: race.group_options.min_advancing,
-          }
-        : undefined,
-    };
+    const payload = deepCopy(race);
+    payload["@id"] = 1;
+    delete payload.track;
+    return payload;
   }
 
   getHelpSteps(): GuideStep[] {

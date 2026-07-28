@@ -55,6 +55,18 @@ public class DatabaseTaskHandler {
   private static final Logger logger = LoggerFactory.getLogger(DatabaseTaskHandler.class);
   private final DatabaseContext databaseContext;
 
+  public static class RaceResponse {
+    @com.fasterxml.jackson.annotation.JsonUnwrapped public Race race;
+
+    @com.fasterxml.jackson.annotation.JsonProperty("track")
+    public Track track;
+
+    public RaceResponse(Race race, Track track) {
+      this.race = race;
+      this.track = track;
+    }
+  }
+
   public DatabaseTaskHandler(DatabaseContext databaseContext, Javalin app) {
     this.databaseContext = databaseContext;
 
@@ -759,47 +771,11 @@ public class DatabaseTaskHandler {
     List<Race> races = new ArrayList<>();
     getRaceCollection().find().forEach(races::add);
 
-    List<Map<String, Object>> response = new ArrayList<>();
+    List<RaceResponse> response = new ArrayList<>();
     for (Race race : races) {
       Track track =
           getTrackCollection().find(Filters.eq("entity_id", race.getTrackEntityId())).first();
-      Map<String, Object> raceMap = new HashMap<>();
-      raceMap.put("name", race.getName());
-      raceMap.put("entity_id", race.getEntityId());
-      raceMap.put("track", track);
-      raceMap.put("track_entity_id", race.getTrackEntityId());
-      raceMap.put("heat_rotation_type", race.getHeatRotationType());
-      raceMap.put("heat_scoring", race.getHeatScoring());
-      raceMap.put("overall_scoring", race.getOverallScoring());
-      raceMap.put("min_lap_time", race.getMinLapTime());
-      raceMap.put("fuel_options", race.getFuelOptions());
-      raceMap.put("digital_fuel_options", race.getDigitalFuelOptions());
-      raceMap.put("team_options", race.getTeamOptions());
-      raceMap.put("auto_advance_time", race.getAutoAdvanceTime());
-      raceMap.put("auto_start_time", race.getAutoStartTime());
-      raceMap.put("auto_advance_warmup_time", race.getAutoAdvanceWarmupTime());
-      raceMap.put("auto_start_warmup_time", race.getAutoStartWarmupTime());
-      raceMap.put("drift_time", race.getDriftTime());
-      raceMap.put("start_time", race.getStartTime());
-      raceMap.put("restart_time", race.getRestartTime());
-      raceMap.put("start_randomizer", race.getStartRandomizer());
-      raceMap.put("restart_randomizer", race.getRestartRandomizer());
-      raceMap.put("solo_lane_index", race.getSoloLaneIndex());
-      raceMap.put("custom_rotation_asset_id", race.getCustomRotationAssetId());
-      raceMap.put("custom_rotation_sequence", race.getCustomRotationSequence());
-      raceMap.put("custom_rotations", race.getCustomRotations());
-      raceMap.put("heat_times_through", race.getHeatTimesThrough());
-      raceMap.put("reverse_heats", race.isReverseHeats());
-      raceMap.put("hot_start", race.isHotStart());
-      raceMap.put("start_at_current", race.isStartAtCurrent());
-      raceMap.put("restart_on_false_start", race.isRestartOnFalseStart());
-      raceMap.put("start_behind_sensor", race.isStartBehindSensor());
-      raceMap.put("false_start_lap_penalty", race.getFalseStartLapPenalty());
-      raceMap.put("false_start_time_penalty", race.getFalseStartTimePenalty());
-      raceMap.put("group_options", race.getGroupOptions());
-      raceMap.put("practice", race.isPractice());
-      raceMap.put("adjust_drift_laps", race.isAdjustDriftLaps());
-      response.add(raceMap);
+      response.add(new RaceResponse(race, track));
     }
     ctx.json(response);
   }
