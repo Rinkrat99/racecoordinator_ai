@@ -109,6 +109,15 @@ public class DriverHeatData extends ServerToClientObject implements GapParticipa
   private RaceFlag flag = RaceFlag.UNKNOWN_FLAG;
   private double carryOverTime = 0.0;
   private boolean hasDriftTime = false;
+  private int lane = 0;
+
+  public int getLane() {
+    return lane;
+  }
+
+  public void setLane(int lane) {
+    this.lane = lane;
+  }
 
   public DriverHeatData(RaceParticipant driver, Driver actualDriver) {
     super();

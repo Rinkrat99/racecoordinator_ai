@@ -50,11 +50,13 @@ import com.antigravity.protocols.phidget.PhidgetProtocol;
 import com.antigravity.protocols.trackmate.TrackmateConfig;
 import com.antigravity.protocols.trackmate.TrackmateProtocol;
 import com.antigravity.race.ClientSubscriptionManager;
+import com.antigravity.race.DriverAnalysisSummary;
 import com.antigravity.race.DriverHeatData;
 import com.antigravity.race.Heat;
 import com.antigravity.race.OverallStandings;
 import com.antigravity.race.RaceParticipant;
 import com.antigravity.race.RaceSaveData;
+import com.antigravity.race.RaceStatisticsUtils;
 import com.antigravity.race.states.NotStarted;
 import com.antigravity.race.states.RaceOver;
 import com.antigravity.race.states.Racing;
@@ -1625,7 +1627,16 @@ public class ClientCommandTaskHandler {
         jxlsContext.putVar("heats", runHeats);
         jxlsContext.putVar("heatSheetNames", heatSheetNames);
 
-        org.jxls.util.JxlsHelper.getInstance().processTemplate(is, os, jxlsContext);
+        List<DriverAnalysisSummary> driverSummaries = new ArrayList<>();
+        List<String> driverSheetNames = new ArrayList<>();
+        RaceStatisticsUtils.prepareExportData(
+            race, driversCopy, runHeats, driverSummaries, driverSheetNames);
+
+        jxlsContext.putVar("driverSummaries", driverSummaries);
+        jxlsContext.putVar("driverSheetNames", driverSheetNames);
+
+        InputStream sanitizedIs = RaceStatisticsUtils.sanitizeWorkbookTemplate(is);
+        org.jxls.util.JxlsHelper.getInstance().processTemplate(sanitizedIs, os, jxlsContext);
       }
 
       ctx.contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

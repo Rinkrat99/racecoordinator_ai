@@ -2,6 +2,7 @@ package com.antigravity.race;
 
 import com.antigravity.models.Driver;
 import com.antigravity.models.Team;
+import java.util.ArrayList;
 import java.util.List;
 
 public class RaceParticipant extends ServerToClientObject implements GapParticipant {
@@ -291,5 +292,15 @@ public class RaceParticipant extends ServerToClientObject implements GapParticip
 
   public int getLapsDownPosition() {
     return lapsDownPosition;
+  }
+
+  private List<Double> laneLaps = new ArrayList<>();
+
+  public List<Double> getLaneLaps() {
+    return laneLaps;
+  }
+
+  public void setLaneLaps(List<Double> laneLaps) {
+    this.laneLaps = laneLaps != null ? laneLaps : new ArrayList<>();
   }
 }
