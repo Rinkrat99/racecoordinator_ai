@@ -1267,4 +1267,47 @@ public class HeatExecutionManagerTest {
     assertEquals(2, dhd.getLaps().size());
     assertTrue(dhd.getLaps().get(1).isCountTowardsRecords());
   }
+
+  @Test
+  public void testMinLapTimeAccumulatedTimeCheck() {
+    double minLapTime = 3.0;
+    Race raceModel =
+        new Race.Builder()
+            .withName("Test Race")
+            .withTrackEntityId("track1")
+            .withHeatScoring(heatScoring)
+            .withOverallScoring(new OverallScoring())
+            .withMinLapTime(minLapTime)
+            .withEntityId("race1")
+            .withStartBehindSensor(false)
+            .build();
+
+    race =
+        new com.antigravity.race.Race.Builder()
+            .model(raceModel)
+            .drivers(participants)
+            .track(track)
+            .isDemoMode(true)
+            .build();
+    executionManager = race.getHeatExecutionManager();
+    executionManager.initialize(track.getLanes().size());
+
+    DriverHeatData dhd = race.getCurrentHeat().getDrivers().get(0);
+
+    // 1st crossing: 0.1s. Accumulated pending time is 0.1s.
+    boolean counted = executionManager.onLap(0, 0.1, 1, false, true, false);
+    assertFalse(counted);
+    assertEquals(0.1, dhd.getPendingLapTime(), 0.001);
+
+    // 2nd crossing: 0.2s. Accumulated pending time becomes 0.3s.
+    counted = executionManager.onLap(0, 0.2, 1, false, true, false);
+    assertFalse(counted);
+    assertEquals(0.3, dhd.getPendingLapTime(), 0.001);
+
+    // 3rd crossing: 2.8s. Accumulated minCheckTime is 0.3s + 2.8s = 3.1s >= 3.0s, so it passes!
+    counted = executionManager.onLap(0, 2.8, 1, false, true, false);
+    assertTrue(counted);
+    assertEquals(1, dhd.getLaps().size());
+    assertEquals(3.1, dhd.getLaps().get(0).getLapTime(), 0.001);
+  }
 }

@@ -1123,7 +1123,9 @@ export class DefaultRacedayComponent
     }
 
     if (lap.type === LapType.MIN_LAP_TIME) {
-      this.playThemedSound(THEME_SLOT_KEYS.AUDIO_MIN_LAP_TIME, ttsContext);
+      if ((lap.lapTime ?? 0) > 0.25) {
+        this.playThemedSound(THEME_SLOT_KEYS.AUDIO_MIN_LAP_TIME, ttsContext);
+      }
       return;
     }
 
@@ -2999,7 +3001,12 @@ export class DefaultRacedayComponent
     }
 
     // Ctrl+Alt+F12 for Reset All Lanes (practice mode only)
-    if (isCtrlOrCmd && event.altKey && event.key === "F12" && this.race?.practice) {
+    if (
+      isCtrlOrCmd &&
+      event.altKey &&
+      event.key === "F12" &&
+      this.race?.practice
+    ) {
       event.preventDefault();
       this.resetAllLanes(event);
       return;

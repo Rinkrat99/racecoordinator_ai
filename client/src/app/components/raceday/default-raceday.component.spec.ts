@@ -1709,7 +1709,7 @@ describe("DefaultRacedayComponent", () => {
       fixture.detectChanges();
     });
 
-    it("should play themed min lap time sound when receiving MIN_LAP_TIME lap and return early", () => {
+    it("should play themed min lap time sound when receiving MIN_LAP_TIME lap with lapTime > 0.25s and return early", () => {
       spyOn(component as any, "playThemedSound");
 
       (component as any).heat.heatDrivers[0].driver.lapAudio = {
@@ -1730,6 +1730,23 @@ describe("DefaultRacedayComponent", () => {
           driver: jasmine.objectContaining({ nickname: "The Rocket" }),
         }),
       );
+    });
+
+    it("should not play themed min lap time sound when receiving MIN_LAP_TIME lap with lapTime <= 0.25s and return early", () => {
+      spyOn(component as any, "playThemedSound");
+
+      (component as any).heat.heatDrivers[0].driver.lapAudio = {
+        type: "tts",
+        text: "{driver.nickname} lap time {driver.lastLapTime}",
+      } as any;
+
+      lapsSubject.next({
+        objectId: "hd1",
+        lapTime: 0.25,
+        type: LapType.MIN_LAP_TIME,
+      });
+
+      expect((component as any).playThemedSound).not.toHaveBeenCalled();
     });
 
     it("should play themed drift lap sound when receiving drift lap", () => {

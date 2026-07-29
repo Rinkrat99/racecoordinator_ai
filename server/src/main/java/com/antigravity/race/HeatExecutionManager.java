@@ -222,7 +222,7 @@ public class HeatExecutionManager {
         Lap minLapMsg =
             Lap.newBuilder()
                 .setObjectId(driverData.getObjectId())
-                .setLapTime(lapTime)
+                .setLapTime(minCheckTime)
                 .setInterfaceId(interfaceId)
                 .setType(Lap.LapType.MIN_LAP_TIME)
                 .setFlag(race.getState().getLaneFlagType(race, lane))
