@@ -106,6 +106,14 @@ export class RacedayFormatUtils {
       ) {
         return timePlaceholder;
       }
+      if (
+        isInset &&
+        (baseKey === "flag" ||
+          (baseKey.startsWith("imageset") &&
+            propertyName.toLowerCase().includes("driverstate")))
+      ) {
+        return "";
+      }
     }
 
     if (
