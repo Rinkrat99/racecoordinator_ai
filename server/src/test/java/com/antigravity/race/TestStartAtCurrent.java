@@ -76,6 +76,13 @@ public class TestStartAtCurrent {
             .drivers(participants)
             .track(track)
             .isDemoMode(true)
+            .demoConfig(
+                com.antigravity.proto.DemoConfig.newBuilder()
+                    .setMinReactionTimeMs(3600000)
+                    .setMaxReactionTimeMs(3600000)
+                    .setMinLapTimeMs(3600000)
+                    .setMaxLapTimeMs(3600000)
+                    .build())
             .build();
     executionManager = race.getHeatExecutionManager();
     executionManager.initialize(track.getLanes().size());
@@ -101,6 +108,13 @@ public class TestStartAtCurrent {
             .drivers(participants)
             .track(track)
             .isDemoMode(true)
+            .demoConfig(
+                com.antigravity.proto.DemoConfig.newBuilder()
+                    .setMinReactionTimeMs(3600000)
+                    .setMaxReactionTimeMs(3600000)
+                    .setMinLapTimeMs(3600000)
+                    .setMaxLapTimeMs(3600000)
+                    .build())
             .build();
 
     // In round-robin with 2 lanes, 2 drivers, we get 2 heats
