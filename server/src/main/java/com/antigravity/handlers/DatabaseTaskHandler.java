@@ -20,6 +20,7 @@ import com.antigravity.race.ClientSubscriptionManager;
 import com.antigravity.race.DriverHeatData;
 import com.antigravity.race.Heat;
 import com.antigravity.race.RaceParticipant;
+import com.antigravity.repository.MongoRepository;
 import com.antigravity.service.DatabaseService;
 import com.antigravity.util.CsvExporter;
 import com.fasterxml.jackson.core.JsonParser;
@@ -32,7 +33,6 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Updates;
-import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
@@ -54,6 +54,10 @@ public class DatabaseTaskHandler {
 
   private static final Logger logger = LoggerFactory.getLogger(DatabaseTaskHandler.class);
   private final DatabaseContext databaseContext;
+  private final MongoRepository<Driver> driverRepository;
+  private final MongoRepository<Team> teamRepository;
+  private final MongoRepository<Track> trackRepository;
+  private final MongoRepository<Race> raceRepository;
 
   public static class RaceResponse {
     @com.fasterxml.jackson.annotation.JsonUnwrapped public Race race;
@@ -69,6 +73,10 @@ public class DatabaseTaskHandler {
 
   public DatabaseTaskHandler(DatabaseContext databaseContext, Javalin app) {
     this.databaseContext = databaseContext;
+    this.driverRepository = new MongoRepository<>(databaseContext, "drivers", Driver.class);
+    this.teamRepository = new MongoRepository<>(databaseContext, "teams", Team.class);
+    this.trackRepository = new MongoRepository<>(databaseContext, "tracks", Track.class);
+    this.raceRepository = new MongoRepository<>(databaseContext, "races", Race.class);
 
     app.get("/api/drivers", this::getDrivers, Role.VIEWER);
     app.post("/api/drivers", this::createDriver, Role.DIRECTOR);
@@ -112,21 +120,7 @@ public class DatabaseTaskHandler {
     app.get("/api/history/drivers/{driverId}/stats", this::getDriverStatistics, Role.VIEWER);
   }
 
-  private MongoCollection<Driver> getDriverCollection() {
-    return databaseContext.getDatabase().getCollection("drivers", Driver.class);
-  }
-
-  private MongoCollection<Team> getTeamCollection() {
-    return databaseContext.getDatabase().getCollection("teams", Team.class);
-  }
-
-  private MongoCollection<Track> getTrackCollection() {
-    return databaseContext.getDatabase().getCollection("tracks", Track.class);
-  }
-
-  private MongoCollection<Race> getRaceCollection() {
-    return databaseContext.getDatabase().getCollection("races", Race.class);
-  }
+  // Removed collection getters
 
   // --- Database Management Handlers ---
 
@@ -316,15 +310,12 @@ public class DatabaseTaskHandler {
   private void createDriver(Context ctx) {
     try {
       Driver driver = bodyAsClassWithId(ctx.body(), Driver.class);
-      MongoCollection<Driver> col = getDriverCollection();
 
-      // Uniqueness check
       Driver existing =
-          col.find(
-                  Filters.or(
-                      Filters.eq("name", driver.getName()),
-                      Filters.eq("nickname", driver.getNickname())))
-              .first();
+          driverRepository.findOne(
+              Filters.or(
+                  Filters.eq("name", driver.getName()),
+                  Filters.eq("nickname", driver.getNickname())));
 
       if (existing != null) {
         ctx.status(409).result("Driver name or nickname already exists");
@@ -355,7 +346,7 @@ public class DatabaseTaskHandler {
                 nextId,
                 null);
       }
-      col.insertOne(driver);
+      driverRepository.insert(driver);
       ctx.status(201).json(driver);
     } catch (Exception e) {
       logger.error("Error creating driver", e);
@@ -367,23 +358,21 @@ public class DatabaseTaskHandler {
     try {
       String id = ctx.pathParam("id");
       Driver driver = bodyAsClassWithId(ctx.body(), Driver.class);
-      MongoCollection<Driver> col = getDriverCollection();
 
       Driver existing =
-          col.find(
-                  Filters.and(
-                      Filters.ne("entity_id", id),
-                      Filters.or(
-                          Filters.eq("name", driver.getName()),
-                          Filters.eq("nickname", driver.getNickname()))))
-              .first();
+          driverRepository.findOne(
+              Filters.and(
+                  Filters.ne("entity_id", id),
+                  Filters.or(
+                      Filters.eq("name", driver.getName()),
+                      Filters.eq("nickname", driver.getNickname()))));
 
       if (existing != null) {
         ctx.status(409).result("Driver name or nickname already exists");
         return;
       }
 
-      col.replaceOne(Filters.eq("entity_id", id), driver);
+      driverRepository.replace(id, driver);
       ctx.json(driver);
     } catch (Exception e) {
       logger.error("Error updating driver", e);
@@ -403,11 +392,9 @@ public class DatabaseTaskHandler {
   }
 
   public void deleteDriver(String id) {
-    getDriverCollection().deleteOne(Filters.eq("entity_id", id));
+    driverRepository.delete(id);
 
-    MongoCollection<Team> teamCol = getTeamCollection();
-    List<Team> teamsToUpdate = new ArrayList<>();
-    teamCol.find(Filters.in("driverIds", id)).forEach(teamsToUpdate::add);
+    List<Team> teamsToUpdate = teamRepository.find(Filters.in("driverIds", id));
 
     for (Team team : teamsToUpdate) {
       List<String> driverIds = team.getDriverIds();
@@ -418,15 +405,13 @@ public class DatabaseTaskHandler {
         Team updatedTeam =
             new Team(
                 team.getName(), team.getAvatarUrl(), driverIds, team.getEntityId(), team.getId());
-        teamCol.replaceOne(Filters.eq("entity_id", team.getEntityId()), updatedTeam);
+        teamRepository.replace(team.getEntityId(), updatedTeam);
       }
     }
   }
 
   private void getTeams(Context ctx) {
-    List<Team> teams = new ArrayList<>();
-    getTeamCollection().find().forEach(teams::add);
-    ctx.json(teams);
+    ctx.json(teamRepository.findAll());
   }
 
   private void createTeam(Context ctx) {
@@ -443,10 +428,8 @@ public class DatabaseTaskHandler {
   }
 
   public Team createTeam(Team team) {
-    MongoCollection<Team> col = getTeamCollection();
-
     // Uniqueness check
-    Team existing = col.find(Filters.eq("name", team.getName())).first();
+    Team existing = teamRepository.findOne(Filters.eq("name", team.getName()));
 
     if (existing != null) {
       throw new IllegalArgumentException("Team name already exists");
@@ -455,10 +438,10 @@ public class DatabaseTaskHandler {
     if (team.getEntityId() == null
         || team.getEntityId().isEmpty()
         || "new".equals(team.getEntityId())) {
-      String nextId = getNextSequence("teams");
+      String nextId = teamRepository.getNextSequence();
       team = new Team(team.getName(), team.getAvatarUrl(), team.getDriverIds(), nextId, null);
     }
-    col.insertOne(team);
+    teamRepository.insert(team);
     return team;
   }
 
@@ -477,11 +460,9 @@ public class DatabaseTaskHandler {
   }
 
   public Team updateTeam(String id, Team team) {
-    MongoCollection<Team> col = getTeamCollection();
-
     Team existing =
-        col.find(Filters.and(Filters.ne("entity_id", id), Filters.eq("name", team.getName())))
-            .first();
+        teamRepository.findOne(
+            Filters.and(Filters.ne("entity_id", id), Filters.eq("name", team.getName())));
 
     if (existing != null) {
       throw new IllegalArgumentException("Team name or nickname already exists");
@@ -491,7 +472,7 @@ public class DatabaseTaskHandler {
     // However, we construct a new object to ensure it has the correct ID
     team = new Team(team.getName(), team.getAvatarUrl(), team.getDriverIds(), id, team.getId());
 
-    UpdateResult result = col.replaceOne(Filters.eq("entity_id", id), team);
+    UpdateResult result = teamRepository.replace(id, team);
     if (result.getMatchedCount() == 0) {
       // throw new IllegalArgumentException("Team not found"); // Optional depending
       // on requirement
@@ -511,15 +492,14 @@ public class DatabaseTaskHandler {
   }
 
   public void deleteTeam(String id) {
-    getTeamCollection().deleteOne(Filters.eq("entity_id", id));
+    teamRepository.delete(id);
   }
 
   private void createTrack(Context ctx) {
     try {
       Track track = bodyAsClassWithId(ctx.body(), Track.class);
-      MongoCollection<Track> col = getTrackCollection();
 
-      Track existing = col.find(Filters.eq("name", track.getName())).first();
+      Track existing = trackRepository.findOne(Filters.eq("name", track.getName()));
 
       if (existing != null) {
         ctx.status(409).result("Track name already exists");
@@ -529,7 +509,7 @@ public class DatabaseTaskHandler {
       if (track.getEntityId() == null
           || track.getEntityId().isEmpty()
           || "new".equals(track.getEntityId())) {
-        String nextId = getNextSequence("tracks");
+        String nextId = trackRepository.getNextSequence();
         track =
             new Track.Builder()
                 .name(track.getName())
@@ -542,7 +522,7 @@ public class DatabaseTaskHandler {
                 .id(null)
                 .build();
       }
-      col.insertOne(track);
+      trackRepository.insert(track);
       ctx.status(201).json(track);
     } catch (Exception e) {
       logger.error("Error creating track", e);
@@ -554,11 +534,10 @@ public class DatabaseTaskHandler {
     try {
       String id = ctx.pathParam("id");
       Track track = bodyAsClassWithId(ctx.body(), Track.class);
-      MongoCollection<Track> col = getTrackCollection();
 
       Track existing =
-          col.find(Filters.and(Filters.ne("entity_id", id), Filters.eq("name", track.getName())))
-              .first();
+          trackRepository.findOne(
+              Filters.and(Filters.ne("entity_id", id), Filters.eq("name", track.getName())));
 
       if (existing != null) {
         ctx.status(409).result("Track name already exists");
@@ -585,7 +564,7 @@ public class DatabaseTaskHandler {
         logger.debug("Saving configs is NULL or empty");
       }
 
-      col.replaceOne(Filters.eq("entity_id", id), track);
+      trackRepository.replace(id, track);
       ctx.json(track);
     } catch (Exception e) {
       e.printStackTrace();
@@ -596,7 +575,7 @@ public class DatabaseTaskHandler {
   private void deleteTrack(Context ctx) {
     try {
       String id = ctx.pathParam("id");
-      getTrackCollection().deleteOne(Filters.eq("entity_id", id));
+      trackRepository.delete(id);
       ctx.status(204);
     } catch (Exception e) {
       logger.error("Error deleting track", e);
@@ -621,10 +600,8 @@ public class DatabaseTaskHandler {
   }
 
   public Race createRace(Race race) {
-    MongoCollection<Race> col = getRaceCollection();
-
     // Uniqueness check
-    Race existing = col.find(Filters.eq("name", race.getName())).first();
+    Race existing = raceRepository.findOne(Filters.eq("name", race.getName()));
     if (existing != null) {
       throw new IllegalArgumentException("Race name already exists");
     }
@@ -632,7 +609,7 @@ public class DatabaseTaskHandler {
     if (race.getEntityId() == null
         || race.getEntityId().isEmpty()
         || "new".equals(race.getEntityId())) {
-      String nextId = getNextSequence("races");
+      String nextId = raceRepository.getNextSequence();
       race =
           new Race.Builder()
               .withName(race.getName())
@@ -671,7 +648,7 @@ public class DatabaseTaskHandler {
               .withEntityId(nextId)
               .build();
     }
-    col.insertOne(race);
+    raceRepository.insert(race);
     return race;
   }
 
@@ -698,18 +675,16 @@ public class DatabaseTaskHandler {
   }
 
   public Race updateRace(String id, Race race) {
-    MongoCollection<Race> col = getRaceCollection();
-
     Race existing =
-        col.find(Filters.and(Filters.ne("entity_id", id), Filters.eq("name", race.getName())))
-            .first();
+        raceRepository.findOne(
+            Filters.and(Filters.ne("entity_id", id), Filters.eq("name", race.getName())));
 
     if (existing != null) {
       throw new IllegalArgumentException("Race name already exists");
     }
 
     race = new Race.Builder().from(race).withEntityId(id).withId(race.getId()).build();
-    UpdateResult result = col.replaceOne(Filters.eq("entity_id", id), race);
+    UpdateResult result = raceRepository.replace(id, race);
     if (result.getMatchedCount() == 0) {
       throw new IllegalArgumentException("Race not found");
     }
@@ -735,10 +710,7 @@ public class DatabaseTaskHandler {
     // Perform cascading deletion of associated data (history, stats, saves)
     DatabaseService.getInstance().deleteAllRaceData(databaseContext.getDatabase(), id);
 
-    DeleteResult result = getRaceCollection().deleteOne(Filters.eq("entity_id", id));
-    if (result.getDeletedCount() == 0) {
-      throw new IllegalArgumentException("Race not found");
-    }
+    raceRepository.delete(id);
   }
 
   private String getNextSequence(String collectionName) {
@@ -752,15 +724,11 @@ public class DatabaseTaskHandler {
   }
 
   public void getDrivers(Context ctx) {
-    List<Driver> drivers = new ArrayList<>();
-    getDriverCollection().find().forEach(drivers::add);
-    ctx.json(drivers);
+    ctx.json(driverRepository.findAll());
   }
 
   public void getTracks(Context ctx) {
-    List<Track> tracks = new ArrayList<>();
-    getTrackCollection().find().forEach(tracks::add);
-    ctx.json(tracks);
+    ctx.json(trackRepository.findAll());
   }
 
   private void getFactoryTrack(Context ctx) {
@@ -768,13 +736,11 @@ public class DatabaseTaskHandler {
   }
 
   public void getRaces(Context ctx) {
-    List<Race> races = new ArrayList<>();
-    getRaceCollection().find().forEach(races::add);
+    List<Race> races = raceRepository.findAll();
 
     List<RaceResponse> response = new ArrayList<>();
     for (Race race : races) {
-      Track track =
-          getTrackCollection().find(Filters.eq("entity_id", race.getTrackEntityId())).first();
+      Track track = trackRepository.findOne(Filters.eq("entity_id", race.getTrackEntityId()));
       response.add(new RaceResponse(race, track));
     }
     ctx.json(response);
@@ -792,15 +758,14 @@ public class DatabaseTaskHandler {
     }
 
     // Find the race
-    Race race = getRaceCollection().find(Filters.eq("entity_id", raceId)).first();
+    Race race = raceRepository.findByEntityId(raceId);
     if (race == null) {
       ctx.status(404).result("Race not found");
       return;
     }
 
     // Find the track to get lane count
-    Track track =
-        getTrackCollection().find(Filters.eq("entity_id", race.getTrackEntityId())).first();
+    Track track = trackRepository.findByEntityId(race.getTrackEntityId());
     if (track == null) {
       ctx.status(404).result("Track not found for race");
       return;
@@ -925,7 +890,7 @@ public class DatabaseTaskHandler {
     }
 
     // Find the track to get lane count
-    Track track = getTrackCollection().find(Filters.eq("entity_id", trackId)).first();
+    Track track = trackRepository.findByEntityId(trackId);
     if (track == null) {
       ctx.status(404).result("Track not found");
       return;
@@ -1205,8 +1170,7 @@ public class DatabaseTaskHandler {
       if (seq == null || seq.isEmpty()) {
         throw new IllegalArgumentException("Custom rotation sequence is required");
       }
-      Track track =
-          getTrackCollection().find(Filters.eq("entity_id", race.getTrackEntityId())).first();
+      Track track = trackRepository.findByEntityId(race.getTrackEntityId());
       int numLanes = track != null ? track.getLanes().size() : Integer.MAX_VALUE;
 
       Set<Integer> uniqueLanes = new HashSet<>();
@@ -1233,8 +1197,7 @@ public class DatabaseTaskHandler {
       if (rotations == null || rotations.isEmpty()) {
         throw new IllegalArgumentException("Custom rotation asset not found or empty");
       }
-      Track track =
-          getTrackCollection().find(Filters.eq("entity_id", race.getTrackEntityId())).first();
+      Track track = trackRepository.findByEntityId(race.getTrackEntityId());
       int numLanes = track != null ? track.getLanes().size() : 0;
 
       Set<Integer> driverCounts = new HashSet<>();
