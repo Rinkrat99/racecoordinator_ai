@@ -63,9 +63,15 @@ public class DatabaseContextTest {
     System.setProperty("app.data.dir", tempFolder.getRoot().getAbsolutePath());
     configService = new ServerConfigService();
 
-    File mongoArtifactDir = new File(System.getProperty("user.home"), ".embedmongo");
+    String artifactProp = System.getProperty("de.flapdoodle.embed.mongo.artifacts");
+    File mongoArtifactDir;
+    if (artifactProp != null && !artifactProp.trim().isEmpty()) {
+      mongoArtifactDir = new File(artifactProp);
+    } else {
+      mongoArtifactDir = new File(System.getProperty("user.home"), ".embedmongo");
+    }
     if (!mongoArtifactDir.exists()) {
-      mongoArtifactDir = tempFolder.newFolder(".embedmongo");
+      mongoArtifactDir.mkdirs();
     }
 
     try {

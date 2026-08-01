@@ -123,22 +123,9 @@ jobs:
           cache-dependency-path: client/package-lock.json
       - name: Install dependencies
         run: cd client && npm install --legacy-peer-deps
-      - name: Install LibSSL 1.1 (for MongoDB)
-        run: |
-          wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-          sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
       - name: Install Protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-      - name: Generate Protobufs
-        # Match local environment exactly by running the generation script first
+      - name: Run server tests
         run: |
-          cd server
-          chmod +x generate_protos.sh
-          ./generate_protos.sh
-      - name: Build and test with Maven
-        # skipProtobuf=true since we just generated them with the script
-        run: |
-          cd server
-          mvn test -DskipProtobuf=true \
-                   -Dde.flapdoodle.embed.mongo.artifacts=/tmp/.embedmongo \
-                   -Djava.io.tmpdir=/tmp
+          chmod +x run_server_tests.sh
+          ./run_server_tests.sh
