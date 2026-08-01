@@ -21,6 +21,7 @@ import { ColumnVisibility, Settings } from "@app/models/settings";
 import { LoggerService } from "@app/services/logger.service";
 import { RaceService } from "@app/services/race.service";
 import { RaceFlagService } from "@app/services/race-flag.service";
+import { RacePredictionService } from "@app/services/race-prediction.service";
 import { SettingsService } from "@app/services/settings.service";
 import { ThemeService } from "@app/services/theme.service";
 import { TranslationService } from "@app/services/translation.service";
@@ -370,6 +371,17 @@ describe("DefaultRacedayComponent", () => {
           ]),
         },
         { provide: AuthService, useValue: mockAuthService },
+        {
+          provide: RacePredictionService,
+          useValue: {
+            getRacePredictions: jasmine
+              .createSpy("getRacePredictions")
+              .and.returnValue(of(null)),
+            getPredictionEvaluation: jasmine
+              .createSpy("getPredictionEvaluation")
+              .and.returnValue(of(null)),
+          },
+        },
         ChangeDetectorRef,
       ],
     }).compileComponents();
@@ -4958,6 +4970,150 @@ describe("DefaultRacedayComponent", () => {
       expect(updateScaleSpy).toHaveBeenCalled();
       expect(component.dashboardWidth).toBe(1000);
       expect(component.dashboardHeight).toBe(500);
+    });
+  });
+
+  describe("applyPredictionsToDrivers (Pre-Race & Realtime)", () => {
+    it("should apply pre-race predictions even if no laps have been run across all drivers", () => {
+      // Mock participants and heat drivers with 0 laps
+      const hd1 = {
+        actualDriver: { entity_id: "1" },
+        participant: { entity_id: "1" },
+        driver: { entity_id: "1" },
+        totalLaps: 0,
+      };
+      const hd2 = {
+        actualDriver: { entity_id: "2" },
+        participant: { entity_id: "2" },
+        driver: { entity_id: "2" },
+        totalLaps: 0,
+      };
+
+      (component as any).participants = [
+        { entity_id: "1", totalLaps: 0 } as any,
+        { entity_id: "2", totalLaps: 0 } as any,
+      ];
+      (component as any).heat = {
+        heatDrivers: [hd1, hd2],
+      } as any;
+      (component as any).sortedHeatDrivers = [];
+
+      const mockSnapshot = {
+        projected_standings: [
+          {
+            driver_id: "1",
+            win_probability: 0.8,
+            podium_probability: 0.9,
+            projected_laps: 10,
+            projected_rank: 1,
+          },
+          {
+            driver_id: "2",
+            win_probability: 0.2,
+            podium_probability: 0.3,
+            projected_laps: 8,
+            projected_rank: 2,
+          },
+        ],
+        heat_forecasts: [],
+      } as any;
+
+      const mockRecord = {
+        pre_race: mockSnapshot,
+      } as any;
+
+      (component as any).applyPredictionsToDrivers(mockRecord);
+
+      expect((hd1 as any).winProbability).toBe(0.8);
+      expect((hd1 as any).projectedLaps).toBe(10);
+
+      expect((hd2 as any).winProbability).toBe(0.2);
+      expect((hd2 as any).projectedLaps).toBe(8);
+    });
+
+    it("should apply predictions normally if at least one lap has been run", () => {
+      const hd1 = {
+        actualDriver: { entity_id: "1" },
+        participant: { entity_id: "1" },
+        driver: { entity_id: "1" },
+        totalLaps: 0,
+      };
+      const hd2 = {
+        actualDriver: { entity_id: "2" },
+        participant: { entity_id: "2" },
+        driver: { entity_id: "2" },
+        totalLaps: 1,
+      }; // one lap run!
+
+      (component as any).participants = [
+        { entity_id: "1", totalLaps: 0 } as any,
+        { entity_id: "2", totalLaps: 1 } as any,
+      ];
+      (component as any).heat = {
+        heatDrivers: [hd1, hd2],
+      } as any;
+      (component as any).sortedHeatDrivers = [];
+
+      const mockSnapshot = {
+        projected_standings: [
+          {
+            driver_id: "1",
+            win_probability: 0.8,
+            podium_probability: 0.9,
+            projected_laps: 10,
+            projected_rank: 1,
+          },
+          {
+            driver_id: "2",
+            win_probability: 0.2,
+            podium_probability: 0.3,
+            projected_laps: 8,
+            projected_rank: 2,
+          },
+        ],
+        heat_forecasts: [],
+      } as any;
+
+      const mockRecord = {
+        pre_race: mockSnapshot,
+      } as any;
+
+      (component as any).applyPredictionsToDrivers(mockRecord);
+
+      expect((hd1 as any).winProbability).toBe(0.8);
+      expect((hd1 as any).projectedLaps).toBe(10);
+
+      expect((hd2 as any).winProbability).toBe(0.2);
+      expect((hd2 as any).projectedLaps).toBe(8);
+    });
+  });
+
+  describe("predictionResultsWindow management", () => {
+    let mockChildWindow: any;
+
+    beforeEach(() => {
+      mockChildWindow = { close: jasmine.createSpy("close"), closed: false };
+      spyOn(window, "open").and.returnValue(mockChildWindow);
+    });
+
+    it("should open predictionResultsWindow when PREDICTION_RESULTS action is called", () => {
+      (component as any).onWindowsMenuSelect("PREDICTION_RESULTS");
+      expect(window.open).toHaveBeenCalledWith("mock-url", "_blank");
+      expect((component as any).predictionResultsWindow).toBe(mockChildWindow);
+    });
+
+    it("should close predictionResultsWindow on onPageHide", () => {
+      (component as any).onWindowsMenuSelect("PREDICTION_RESULTS");
+      component.onPageHide({});
+      expect(mockChildWindow.close).toHaveBeenCalled();
+      expect((component as any).predictionResultsWindow).toBeNull();
+    });
+
+    it("should close predictionResultsWindow on ngOnDestroy", () => {
+      (component as any).onWindowsMenuSelect("PREDICTION_RESULTS");
+      component.ngOnDestroy();
+      expect(mockChildWindow.close).toHaveBeenCalled();
+      expect((component as any).predictionResultsWindow).toBeNull();
     });
   });
 });

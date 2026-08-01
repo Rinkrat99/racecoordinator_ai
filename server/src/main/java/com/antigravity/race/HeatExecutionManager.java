@@ -14,11 +14,17 @@ import com.antigravity.proto.RaceData;
 import com.antigravity.proto.Segment;
 import com.antigravity.proto.StandingsUpdate;
 import com.antigravity.protocols.CarLocation;
+import com.antigravity.race.prediction.PredictionEngine;
+import com.antigravity.race.prediction.PredictionEngine.DriverHeatState;
 import com.antigravity.race.states.HeatOver;
 import com.antigravity.race.states.RaceOver;
+import com.antigravity.service.RacePredictionService;
+import com.mongodb.client.MongoDatabase;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -812,6 +818,7 @@ public class HeatExecutionManager {
     boolean countTowardsRecords = !(race.getRaceModel().isAdjustDriftLaps() && driftInvolved);
 
     driverData.addLap(effectiveLapTime, isDrift, countTowardsRecords);
+    updateRealtimePredictionOnLap();
 
     // Handle analog fuel usage, but exclude reaction time as it could be extremely
     // high if the driver has technical issues at the start of the heat. Also exclude
@@ -961,5 +968,99 @@ public class HeatExecutionManager {
 
   public double[] getTimeSinceLastLap() {
     return timeSinceLastLap;
+  }
+
+  private void updateRealtimePredictionOnLap() {
+    try {
+      if (this.race == null || this.race.getRaceModel() == null) {
+        return;
+      }
+      String raceId = this.race.getRaceModel().getEntityId();
+      if (raceId == null || raceId.isEmpty()) {
+        return;
+      }
+
+      MongoDatabase db =
+          this.race.getDatabaseContext() != null
+              ? this.race.getDatabaseContext().getDatabase()
+              : null;
+
+      Map<String, DriverHeatState> actualDriverStates = new HashMap<>();
+      List<Heat> heats = this.race.getHeats();
+      int heatIdx = heats != null ? heats.indexOf(this.race.getCurrentHeat()) : 0;
+      if (heatIdx < 0) {
+        heatIdx = 0;
+      }
+
+      if (heats != null) {
+        for (int i = 0; i <= heatIdx; i++) {
+          Heat h;
+          if (i == heatIdx && this.race.getCurrentHeat() != null) {
+            h = this.race.getCurrentHeat();
+          } else {
+            h = heats.get(i);
+          }
+          if (h != null && h.getDrivers() != null) {
+            for (DriverHeatData dhd : h.getDrivers()) {
+              if (dhd == null || dhd.getDriver() == null) continue;
+
+              String driverId = PredictionEngine.getParticipantId(dhd.getDriver());
+
+              if (driverId != null && !driverId.isEmpty()) {
+                DriverHeatState state =
+                    actualDriverStates.computeIfAbsent(driverId, k -> new DriverHeatState());
+
+                if (i < heatIdx) {
+                  state.totalLapsCompleted += dhd.getLapCount();
+                  double pastElapsed = Math.max(0, dhd.getReactionTime());
+                  for (DriverHeatData.LapData lap : dhd.getLaps()) {
+                    if (lap.getLapTime() > 0) {
+                      pastElapsed += lap.getLapTime();
+                      state.allRaceLapTimes.add(lap.getLapTime());
+                    }
+                  }
+                  state.totalElapsedSec += pastElapsed;
+                } else {
+                  state.totalLapsCompleted += dhd.getLapCount();
+                  state.currentHeatLapsCompleted = dhd.getLapCount();
+                  double elapsed = Math.max(0, dhd.getReactionTime());
+                  for (DriverHeatData.LapData lap : dhd.getLaps()) {
+                    if (lap.getLapTime() > 0) {
+                      state.currentHeatLapTimes.add(lap.getLapTime());
+                      state.allRaceLapTimes.add(lap.getLapTime());
+                      elapsed += lap.getLapTime();
+                    }
+                  }
+                  elapsed += Math.max(0, dhd.getPendingLapTime());
+                  state.currentHeatPendingLapTime = Math.max(0, dhd.getPendingLapTime());
+                  state.currentHeatElapsedSec = elapsed;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      RacePredictionService.getInstance()
+          .updateRealtimePrediction(
+              db,
+              raceId,
+              this.race.getRaceModel(),
+              this.race.getDrivers(),
+              this.race.getHeats(),
+              heatIdx,
+              actualDriverStates,
+              this.race.isDemoMode());
+    } catch (Exception e) {
+      logger.error("Error updating realtime prediction on lap", e);
+      try {
+        java.io.PrintWriter pw =
+            new java.io.PrintWriter(new java.io.FileWriter("/tmp/antigravity_error.log", true));
+        pw.println("ERROR IN updateRealtimePredictionOnLap:");
+        e.printStackTrace(pw);
+        pw.close();
+      } catch (Exception ex) {
+      }
+    }
   }
 }

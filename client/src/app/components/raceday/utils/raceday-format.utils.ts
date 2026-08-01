@@ -231,6 +231,24 @@ export class RacedayFormatUtils {
         rank = ctx.getDriverGroupRanking(hd);
       }
       return rank !== undefined ? `${rank}` : "--";
+    } else if (baseKey === "winProbability") {
+      const prob =
+        (hd as any).winProbability ?? (hd.participant as any)?.winProbability;
+      if (prob !== undefined && prob >= 0) return `${Math.round(prob * 100)}%`;
+      if (RacedayFormatUtils.isEmptyDriver(hd)) return "--%";
+      return "--%";
+    } else if (baseKey === "projectedRank") {
+      const rank =
+        (hd as any).projectedRank ?? (hd.participant as any)?.projectedRank;
+      if (rank && rank > 0) return `#${rank}`;
+      if (RacedayFormatUtils.isEmptyDriver(hd)) return "--";
+      return "--";
+    } else if (baseKey === "projectedLaps") {
+      const laps =
+        (hd as any).projectedLaps ?? (hd.participant as any)?.projectedLaps;
+      if (laps !== undefined && laps >= 0) return `${laps}`;
+      if (RacedayFormatUtils.isEmptyDriver(hd)) return "--";
+      return "--";
     } else if (baseKey === "flag") {
       const flag =
         value === RaceFlag.UNKNOWN_FLAG || value === 0

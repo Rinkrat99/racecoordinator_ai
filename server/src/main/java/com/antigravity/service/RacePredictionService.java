@@ -1,0 +1,218 @@
+package com.antigravity.service;
+
+import com.antigravity.models.DriverTrackStats;
+import com.antigravity.models.PredictionEvaluationRecord;
+import com.antigravity.models.Race;
+import com.antigravity.models.RacePredictionRecord;
+import com.antigravity.models.RacePredictionRecord.PredictionSnapshot;
+import com.antigravity.race.Heat;
+import com.antigravity.race.RaceParticipant;
+import com.antigravity.race.prediction.PredictionEngine;
+import com.mongodb.client.MongoDatabase;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.bson.types.ObjectId;
+
+public class RacePredictionService {
+
+  private static final RacePredictionService instance = new RacePredictionService();
+  private final PredictionEngine engine;
+
+  public static RacePredictionService getInstance() {
+    return instance;
+  }
+
+  public RacePredictionService() {
+    this.engine = new PredictionEngine();
+  }
+
+  public RacePredictionService(PredictionEngine engine) {
+    this.engine = engine;
+  }
+
+  public RacePredictionRecord generateAndSavePreRacePrediction(
+      MongoDatabase database,
+      String raceId,
+      Race raceModel,
+      List<RaceParticipant> participants,
+      List<Heat> heats,
+      boolean isDemo) {
+    return generateAndSavePreRacePrediction(
+        database, raceId, raceModel, participants, heats, isDemo, false);
+  }
+
+  public RacePredictionRecord generateAndSavePreRacePrediction(
+      MongoDatabase database,
+      String raceId,
+      Race raceModel,
+      List<RaceParticipant> participants,
+      List<Heat> heats,
+      boolean isDemo,
+      boolean force) {
+
+    if (raceId == null || participants == null || heats == null) {
+      return null;
+    }
+
+    if (!force && database != null) {
+      RacePredictionRecord existing =
+          DatabaseService.getInstance().getRacePredictionRecord(database, raceId, isDemo);
+      if (existing != null && existing.getPreRace() != null) {
+        List<RacePredictionRecord.DriverProjection> standings =
+            existing.getPreRace().getProjectedStandings();
+        if (standings != null && !standings.isEmpty()) {
+          Set<String> existingIds = new HashSet<>();
+          for (RacePredictionRecord.DriverProjection dp : standings) {
+            if (dp != null
+                && dp.getDriverId() != null
+                && !"EMPTY_LANE".equalsIgnoreCase(dp.getDriverId())) {
+              existingIds.add(dp.getDriverId());
+            }
+          }
+          Set<String> currentIds = new HashSet<>();
+          for (RaceParticipant rp : participants) {
+            if (rp != null && !PredictionEngine.isParticipantEmpty(rp)) {
+              String pId = PredictionEngine.getParticipantId(rp);
+              if (pId != null && !pId.isEmpty() && !"EMPTY_LANE".equals(pId)) {
+                currentIds.add(pId);
+              }
+            }
+          }
+          if (existingIds.equals(currentIds)) {
+            return existing;
+          }
+        }
+      }
+    }
+
+    String trackId = raceModel != null ? raceModel.getTrackEntityId() : "";
+    Map<String, DriverTrackStats> statsMap = new HashMap<>();
+
+    if (database != null && trackId != null && !trackId.isEmpty()) {
+      for (RaceParticipant rp : participants) {
+        if (rp != null && !PredictionEngine.isParticipantEmpty(rp)) {
+          String driverId = PredictionEngine.getParticipantId(rp);
+          if (driverId != null && !driverId.isEmpty()) {
+            DriverTrackStats dts =
+                DatabaseService.getInstance()
+                    .getDriverTrackStats(database, driverId, trackId, isDemo);
+            if (dts != null) {
+              statsMap.put(driverId, dts);
+            }
+          }
+        }
+      }
+    }
+
+    PredictionSnapshot preRaceSnapshot =
+        engine.generatePreRacePrediction(raceModel, participants, heats, statsMap);
+
+    RacePredictionRecord record = null;
+    if (database != null) {
+      record = DatabaseService.getInstance().getRacePredictionRecord(database, raceId, isDemo);
+    }
+    if (record == null) {
+      record = new RacePredictionRecord();
+      record.setId(new ObjectId());
+      record.setRaceId(raceId);
+    }
+    record.setTimestamp(System.currentTimeMillis());
+    record.setPreRace(preRaceSnapshot);
+    if (record.getRealtimeSnapshots() == null) {
+      record.setRealtimeSnapshots(new ArrayList<>());
+    }
+
+    if (database != null) {
+      DatabaseService.getInstance().saveRacePredictionRecord(database, record, isDemo);
+    }
+
+    return record;
+  }
+
+  public PredictionSnapshot updateRealtimePrediction(
+      MongoDatabase database,
+      String raceId,
+      Race raceModel,
+      List<RaceParticipant> participants,
+      List<Heat> heats,
+      int currentHeatIndex,
+      Map<String, PredictionEngine.DriverHeatState> driverHeatStates,
+      boolean isDemo) {
+
+    String trackId = raceModel != null ? raceModel.getTrackEntityId() : "";
+    Map<String, DriverTrackStats> statsMap = new HashMap<>();
+
+    if (database != null && trackId != null && !trackId.isEmpty()) {
+      for (RaceParticipant rp : participants) {
+        if (rp != null && !PredictionEngine.isParticipantEmpty(rp)) {
+          String driverId = PredictionEngine.getParticipantId(rp);
+          if (driverId != null && !driverId.isEmpty()) {
+            DriverTrackStats dts =
+                DatabaseService.getInstance()
+                    .getDriverTrackStats(database, driverId, trackId, isDemo);
+            if (dts != null) {
+              statsMap.put(driverId, dts);
+            }
+          }
+        }
+      }
+    }
+
+    PredictionSnapshot snapshot =
+        engine.generateRealtimePrediction(
+            raceModel, participants, heats, statsMap, currentHeatIndex, driverHeatStates);
+
+    if (database != null && raceId != null) {
+      RacePredictionRecord record =
+          DatabaseService.getInstance().getRacePredictionRecord(database, raceId, isDemo);
+      if (record == null) {
+        record = new RacePredictionRecord();
+        record.setRaceId(raceId);
+        record.setTimestamp(System.currentTimeMillis());
+        record.setRealtimeSnapshots(new ArrayList<>());
+        record.setPreRace(snapshot);
+      }
+      if (record.getRealtimeSnapshots() == null) {
+        record.setRealtimeSnapshots(new ArrayList<>());
+      }
+      record.getRealtimeSnapshots().add(snapshot);
+
+      // Keep only last N to prevent unbounded growth?
+      if (record.getRealtimeSnapshots().size() > 50) { // e.g. keep last 50
+        record.getRealtimeSnapshots().remove(0);
+      }
+
+      DatabaseService.getInstance().saveRacePredictionRecord(database, record, isDemo);
+    }
+
+    return snapshot;
+  }
+
+  public PredictionEvaluationRecord evaluateAndSavePostRacePrediction(
+      MongoDatabase database,
+      String raceId,
+      List<RacePredictionRecord.DriverProjection> actualStandings,
+      boolean isDemo) {
+
+    if (database == null || raceId == null || actualStandings == null) {
+      return null;
+    }
+
+    RacePredictionRecord record =
+        DatabaseService.getInstance().getRacePredictionRecord(database, raceId, isDemo);
+    if (record == null || record.getPreRace() == null) {
+      return null;
+    }
+
+    PredictionEvaluationRecord evalRecord =
+        engine.evaluatePredictionAccuracy(raceId, record.getPreRace(), actualStandings);
+
+    DatabaseService.getInstance().savePredictionEvaluationRecord(database, evalRecord, isDemo);
+
+    return evalRecord;
+  }
+}

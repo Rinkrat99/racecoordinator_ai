@@ -5,6 +5,7 @@ import com.antigravity.context.DatabaseContext;
 import com.antigravity.models.AudioConfig;
 import com.antigravity.models.Driver;
 import com.antigravity.models.DriverStatistics;
+import com.antigravity.models.DriverTrackStats;
 import com.antigravity.models.GlobalStatistics;
 import com.antigravity.models.HeatRotationType;
 import com.antigravity.models.HeatScoring;
@@ -13,8 +14,10 @@ import com.antigravity.models.HeatScoring.HeatRanking;
 import com.antigravity.models.HeatScoring.HeatRankingTiebreaker;
 import com.antigravity.models.Lane;
 import com.antigravity.models.OverallScoring;
+import com.antigravity.models.PredictionEvaluationRecord;
 import com.antigravity.models.Race;
 import com.antigravity.models.RaceHistoryRecord;
+import com.antigravity.models.RacePredictionRecord;
 import com.antigravity.models.Team;
 import com.antigravity.models.Track;
 import com.antigravity.proto.AssetMessage;
@@ -1363,6 +1366,293 @@ public class DatabaseService {
     } catch (Exception e) {
       logger.error("Failed to query driver statistics for driver: {}", driverId, e);
       return null;
+    }
+  }
+
+  public DriverTrackStats getDriverTrackStats(
+      MongoDatabase database, String driverId, String trackId, boolean isDemo) {
+    if (database == null || driverId == null || trackId == null) {
+      return null;
+    }
+    try {
+      MongoCollection<DriverTrackStats> col =
+          database.getCollection(
+              getCollectionName("driver_track_stats", isDemo), DriverTrackStats.class);
+      if (col == null) {
+        return null;
+      }
+      Bson filter = Filters.and(Filters.eq("driver_id", driverId), Filters.eq("track_id", trackId));
+      return col.find(filter).first();
+    } catch (Exception e) {
+      logger.error(
+          "Failed to get driver track stats for driver: {}, track: {}", driverId, trackId, e);
+      return null;
+    }
+  }
+
+  @SuppressWarnings("checkstyle:MethodLength")
+  public void updateDriverTrackStats(
+      MongoDatabase database, com.antigravity.race.Race race, boolean isDemo) { // fqn-collision
+    try {
+      if (database == null || race == null || race.getRaceModel() == null) return;
+      String trackId = race.getRaceModel().getTrackEntityId();
+      if (trackId == null || trackId.isEmpty()) return;
+
+      double minLapTime = race.getRaceModel().getMinLapTime();
+
+      for (RaceParticipant rp : race.getDrivers()) {
+        if (rp.getDriver() == null
+            || rp.getDriver().getEntityId() == null
+            || rp.getDriver().getEntityId().isEmpty()) {
+          continue;
+        }
+        String driverId = rp.getDriver().getEntityId();
+
+        DriverTrackStats stats = getDriverTrackStats(database, driverId, trackId, isDemo);
+        if (stats == null) {
+          stats = new DriverTrackStats();
+          stats.setId(new ObjectId());
+          stats.setDriverId(driverId);
+          stats.setTrackId(trackId);
+        }
+
+        stats.setTotalRaces(stats.getTotalRaces() + 1);
+
+        int heatsCompleted = 0;
+        int lapsCompleted = 0;
+        Map<Integer, List<Double>> laneLaps = new HashMap<>();
+
+        if (race.getHeats() != null) {
+          for (Heat heat : race.getHeats()) {
+            if (heat.getDrivers() != null) {
+              for (int laneIdx = 0; laneIdx < heat.getDrivers().size(); laneIdx++) {
+                DriverHeatData dhd = heat.getDrivers().get(laneIdx);
+                if (dhd.getDriver() != null) {
+                  String heatDriverId =
+                      dhd.getDriver().getDriver() != null
+                          ? dhd.getDriver().getDriver().getEntityId()
+                          : null;
+                  if (driverId.equals(heatDriverId)) {
+                    heatsCompleted++;
+                    lapsCompleted += dhd.getLapCount();
+
+                    if (dhd.getLaps() != null) {
+                      logger.info(
+                          "updateDriverTrackStats: dhd laps count: {}", dhd.getLaps().size());
+                      List<Double> validLaps = new ArrayList<>();
+                      for (DriverHeatData.LapData lap : dhd.getLaps()) {
+                        if (lap.getLapTime() > 0
+                            && (minLapTime == 0 || lap.getLapTime() >= minLapTime)) {
+                          validLaps.add(lap.getLapTime());
+                        }
+                      }
+                      logger.info("updateDriverTrackStats: valid laps count: {}", validLaps.size());
+                      if (!validLaps.isEmpty()) {
+                        laneLaps.computeIfAbsent(laneIdx, k -> new ArrayList<>()).addAll(validLaps);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        stats.setTotalHeats(stats.getTotalHeats() + heatsCompleted);
+        stats.setTotalLaps(stats.getTotalLaps() + lapsCompleted);
+
+        List<DriverTrackStats.LanePaceStats> laneStatsList = stats.getLaneStats();
+        for (Map.Entry<Integer, List<Double>> entry : laneLaps.entrySet()) {
+          int laneIdx = entry.getKey();
+          List<Double> currentLaps = entry.getValue();
+          Collections.sort(currentLaps);
+          double currentMedian;
+          int size = currentLaps.size();
+          if (size % 2 == 0) {
+            currentMedian = (currentLaps.get(size / 2 - 1) + currentLaps.get(size / 2)) / 2.0;
+          } else {
+            currentMedian = currentLaps.get(size / 2);
+          }
+
+          double sum = 0;
+          for (double l : currentLaps) sum += l;
+          double mean = sum / size;
+          double sumSq = 0;
+          for (double l : currentLaps) sumSq += Math.pow(l - mean, 2);
+          double currentStdDev = Math.sqrt(sumSq / size);
+
+          DriverTrackStats.LanePaceStats existingLane = null;
+          for (DriverTrackStats.LanePaceStats lps : laneStatsList) {
+            if (lps.getLaneIndex() == laneIdx) {
+              existingLane = lps;
+              break;
+            }
+          }
+          if (existingLane == null) {
+            existingLane = new DriverTrackStats.LanePaceStats();
+            existingLane.setLaneIndex(laneIdx);
+            existingLane.setMedianLapTime(currentMedian);
+            existingLane.setStdDev(currentStdDev);
+            laneStatsList.add(existingLane);
+          } else {
+            int oldHeats = Math.max(1, stats.getTotalHeats() - heatsCompleted);
+            double newMedian =
+                ((existingLane.getMedianLapTime() * oldHeats) + (currentMedian * heatsCompleted))
+                    / (oldHeats + heatsCompleted);
+            double newStdDev =
+                ((existingLane.getStdDev() * oldHeats) + (currentStdDev * heatsCompleted))
+                    / (oldHeats + heatsCompleted);
+            existingLane.setMedianLapTime(newMedian);
+            existingLane.setStdDev(newStdDev);
+          }
+        }
+
+        if (!laneStatsList.isEmpty()) {
+          double sumMedians = 0;
+          int count = 0;
+          for (DriverTrackStats.LanePaceStats lps : laneStatsList) {
+            if (lps.getMedianLapTime() > 0) {
+              sumMedians += lps.getMedianLapTime();
+              count++;
+            }
+          }
+          if (count > 0) {
+            stats.setOverallMedianLapTime(sumMedians / count);
+          }
+        }
+
+        stats.setLastUpdated(System.currentTimeMillis());
+
+        logger.info(
+            "updateDriverTrackStats: About to save stats for driverId={} with overallMedianLapTime={}",
+            stats.getDriverId(),
+            stats.getOverallMedianLapTime());
+        saveDriverTrackStats(database, stats, isDemo);
+      }
+    } catch (Throwable t) {
+      logger.error("updateDriverTrackStats: FAILED with throwable!", t);
+    }
+  }
+
+  public void saveDriverTrackStats(MongoDatabase database, DriverTrackStats stats, boolean isDemo) {
+    if (database == null
+        || stats == null
+        || stats.getDriverId() == null
+        || stats.getTrackId() == null) {
+      return;
+    }
+    try {
+      MongoCollection<DriverTrackStats> col =
+          database.getCollection(
+              getCollectionName("driver_track_stats", isDemo), DriverTrackStats.class);
+      if (col == null) {
+        return;
+      }
+      Bson filter =
+          Filters.and(
+              Filters.eq("driver_id", stats.getDriverId()),
+              Filters.eq("track_id", stats.getTrackId()));
+      ReplaceOptions opts = new ReplaceOptions().upsert(true);
+      col.replaceOne(filter, stats, opts);
+    } catch (Exception e) {
+      logger.error("Failed to save driver track stats for driver: {}", stats.getDriverId(), e);
+    }
+  }
+
+  public RacePredictionRecord getRacePredictionRecord(
+      MongoDatabase database, String raceId, boolean isDemo) {
+    if (database == null || raceId == null) {
+      return null;
+    }
+    try {
+      MongoCollection<RacePredictionRecord> col =
+          database.getCollection(
+              getCollectionName("race_predictions", isDemo), RacePredictionRecord.class);
+      if (col == null) {
+        return null;
+      }
+      return col.find(Filters.eq("race_id", raceId)).first();
+    } catch (Exception e) {
+      logger.error("Failed to get race prediction record for race: {}", raceId, e);
+      return null;
+    }
+  }
+
+  public void saveRacePredictionRecord(
+      MongoDatabase database, RacePredictionRecord record, boolean isDemo) {
+    if (database == null || record == null || record.getRaceId() == null) {
+      return;
+    }
+    try {
+      MongoCollection<RacePredictionRecord> col =
+          database.getCollection(
+              getCollectionName("race_predictions", isDemo), RacePredictionRecord.class);
+      if (col == null) {
+        return;
+      }
+      RacePredictionRecord existing = col.find(Filters.eq("race_id", record.getRaceId())).first();
+      if (existing != null && existing.getId() != null) {
+        record.setId(existing.getId());
+      } else if (record.getId() == null) {
+        record.setId(new ObjectId());
+      }
+      ReplaceOptions opts = new ReplaceOptions().upsert(true);
+      col.replaceOne(Filters.eq("race_id", record.getRaceId()), record, opts);
+    } catch (Exception e) {
+      logger.error("Failed to save race prediction record for race: {}", record.getRaceId(), e);
+    }
+  }
+
+  public PredictionEvaluationRecord getPredictionEvaluationRecord(
+      MongoDatabase database, String raceId, boolean isDemo) {
+    if (database == null || raceId == null) {
+      return null;
+    }
+    try {
+      MongoCollection<PredictionEvaluationRecord> col =
+          database.getCollection(
+              getCollectionName("prediction_evaluations", isDemo),
+              PredictionEvaluationRecord.class);
+      if (col == null) {
+        return null;
+      }
+      PredictionEvaluationRecord record = col.find(Filters.eq("race_id", raceId)).first();
+
+      // If we found a record but it's a baseline "no data" evaluation (rank == -1),
+      // it's meaningless and shouldn't be shown to the user. Delete it and return null.
+      if (record != null
+          && record.getDriverEvaluations() != null
+          && !record.getDriverEvaluations().isEmpty()
+          && record.getDriverEvaluations().get(0).getProjectedRank() == -1) {
+        col.deleteOne(Filters.eq("race_id", raceId));
+        return null;
+      }
+
+      return record;
+    } catch (Exception e) {
+      logger.error("Failed to get prediction evaluation record for race: {}", raceId, e);
+      return null;
+    }
+  }
+
+  public void savePredictionEvaluationRecord(
+      MongoDatabase database, PredictionEvaluationRecord record, boolean isDemo) {
+    if (database == null || record == null || record.getRaceId() == null) {
+      return;
+    }
+    try {
+      MongoCollection<PredictionEvaluationRecord> col =
+          database.getCollection(
+              getCollectionName("prediction_evaluations", isDemo),
+              PredictionEvaluationRecord.class);
+      if (col == null) {
+        return;
+      }
+      ReplaceOptions opts = new ReplaceOptions().upsert(true);
+      col.replaceOne(Filters.eq("race_id", record.getRaceId()), record, opts);
+    } catch (Exception e) {
+      logger.error(
+          "Failed to save prediction evaluation record for race: {}", record.getRaceId(), e);
     }
   }
 
