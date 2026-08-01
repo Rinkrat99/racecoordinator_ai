@@ -188,4 +188,25 @@ public class RaceStatisticsUtilsTest {
 
     assertTrue(os.toByteArray().length > 0);
   }
+
+  @Test
+  public void testSheetNameSanitizationAndUniqueness() {
+    assertEquals("Driver_1", RaceStatisticsUtils.sanitizeSheetName("Driver:1", 1));
+    assertEquals("Driver 1_2", RaceStatisticsUtils.sanitizeSheetName("Driver 1/2", 1));
+
+    List<String> rawNames =
+        Arrays.asList(
+            "Driver 1",
+            "Driver 1",
+            "Driver 1: Very Long Name That Exceeds Thirty One Characters Limit",
+            "Driver 1: Very Long Name That Exceeds Thirty One Characters Limit");
+
+    List<String> uniqueNames = RaceStatisticsUtils.makeSheetNamesUnique(rawNames);
+    assertEquals(4, uniqueNames.size());
+    assertEquals("Driver 1", uniqueNames.get(0));
+    assertEquals("Driver 1_2", uniqueNames.get(1));
+    assertTrue(uniqueNames.get(2).length() <= 31);
+    assertTrue(uniqueNames.get(3).length() <= 31);
+    assertEquals(4, new java.util.HashSet<>(uniqueNames).size());
+  }
 }

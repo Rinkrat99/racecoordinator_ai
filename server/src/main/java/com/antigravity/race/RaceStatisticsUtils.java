@@ -5,7 +5,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -20,8 +22,22 @@ public final class RaceStatisticsUtils {
     if (inputStream == null) {
       return null;
     }
+    byte[] bytes;
     try {
-      XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      byte[] buffer = new byte[8192];
+      int n;
+      while ((n = inputStream.read(buffer)) != -1) {
+        baos.write(buffer, 0, n);
+      }
+      bytes = baos.toByteArray();
+    } catch (Exception e) {
+      return inputStream;
+    }
+
+    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        XSSFWorkbook workbook = new XSSFWorkbook(bais);
+        ByteArrayOutputStream os = new ByteArrayOutputStream()) {
       for (Sheet sheet : workbook) {
         for (Row row : sheet) {
           for (Cell cell : row) {
@@ -33,13 +49,51 @@ public final class RaceStatisticsUtils {
           }
         }
       }
-      ByteArrayOutputStream os = new ByteArrayOutputStream();
       workbook.write(os);
-      workbook.close();
       return new ByteArrayInputStream(os.toByteArray());
     } catch (Exception e) {
-      return inputStream;
+      return new ByteArrayInputStream(bytes);
     }
+  }
+
+  public static String sanitizeSheetName(String rawName, int fallbackIndex) {
+    if (rawName == null || rawName.trim().isEmpty()) {
+      return "Sheet " + fallbackIndex;
+    }
+    String clean = rawName.replaceAll("[\\\\/:\\?\\*\\[\\]]", "_").trim();
+    if (clean.length() > 31) {
+      clean = clean.substring(0, 31).trim();
+    }
+    if (clean.isEmpty()) {
+      return "Sheet " + fallbackIndex;
+    }
+    return clean;
+  }
+
+  public static List<String> makeSheetNamesUnique(List<String> rawNames) {
+    List<String> result = new ArrayList<>();
+    if (rawNames == null || rawNames.isEmpty()) {
+      return result;
+    }
+    Set<String> used = new HashSet<>();
+    for (int i = 0; i < rawNames.size(); i++) {
+      String base = sanitizeSheetName(rawNames.get(i), i + 1);
+      String candidate = base;
+      int counter = 2;
+      while (used.contains(candidate.toLowerCase())) {
+        String suffix = "_" + counter;
+        int maxBaseLen = 31 - suffix.length();
+        if (base.length() > maxBaseLen) {
+          candidate = base.substring(0, maxBaseLen) + suffix;
+        } else {
+          candidate = base + suffix;
+        }
+        counter++;
+      }
+      used.add(candidate.toLowerCase());
+      result.add(candidate);
+    }
+    return result;
   }
 
   public static DriverAnalysisSummary.LaneStats calculateLaneStats(
@@ -257,5 +311,9 @@ public final class RaceStatisticsUtils {
       outSummaries.add(dummy);
       outDriverSheetNames.add("Driver 1");
     }
+
+    List<String> uniqueSheetNames = makeSheetNamesUnique(outDriverSheetNames);
+    outDriverSheetNames.clear();
+    outDriverSheetNames.addAll(uniqueSheetNames);
   }
 }

@@ -1,15 +1,22 @@
 package com.antigravity.util;
 
+import com.antigravity.context.DatabaseContext;
 import com.antigravity.models.Driver;
+import com.antigravity.models.PredictionEvaluationRecord;
+import com.antigravity.models.RacePredictionRecord;
+import com.antigravity.models.RacePredictionRecord.PredictionSnapshot;
 import com.antigravity.models.Track;
 import com.antigravity.proto.CurrentRecords;
 import com.antigravity.proto.OverallRecords;
 import com.antigravity.proto.RecordData;
+import com.antigravity.race.ClientSubscriptionManager;
 import com.antigravity.race.DriverHeatData;
 import com.antigravity.race.DriverHeatData.LapData;
 import com.antigravity.race.Heat;
 import com.antigravity.race.Race;
 import com.antigravity.race.RaceParticipant;
+import com.antigravity.service.DatabaseService;
+import com.antigravity.service.RacePredictionService;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +25,9 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.UnknownFieldSet;
+import com.mongodb.client.MongoDatabase;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 public class CsvExporter {
@@ -115,7 +125,10 @@ public class CsvExporter {
       appendTable(sb, "Race Stats", Collections.singletonList(race.getStatistics()));
     }
 
-    // Section 4: Overall Standings
+    // Section 4: Race Predictions
+    appendPredictionsSection(sb);
+
+    // Section 5: Overall Standings
     sb.append("#Section,Overall Standings\n\n");
     if (race.getDrivers() != null && !race.getDrivers().isEmpty()) {
       appendTable(sb, "Standings", race.getDrivers());
@@ -344,6 +357,58 @@ public class CsvExporter {
     return value;
   }
 
+  private static String formatDecimal(double val) {
+    if (Double.isNaN(val) || Double.isInfinite(val)) {
+      return String.valueOf(val);
+    }
+    BigDecimal bd = BigDecimal.valueOf(val).setScale(3, RoundingMode.HALF_UP);
+    String str = bd.stripTrailingZeros().toPlainString();
+    if (!str.contains(".")) {
+      return str + ".0";
+    }
+    return str;
+  }
+
+  private static String formatListValue(List<?> list) {
+    if (list == null) {
+      return "[]";
+    }
+    List<String> items = new ArrayList<>();
+    for (Object item : list) {
+      items.add(formatValue(item));
+    }
+    return items.toString();
+  }
+
+  private static String formatValue(Object value) {
+    if (value == null) {
+      return "";
+    }
+    if (value instanceof List) {
+      return formatListValue((List<?>) value);
+    }
+    if (value instanceof Double || value instanceof Float || value instanceof BigDecimal) {
+      return formatDecimal(((Number) value).doubleValue());
+    }
+    if (value instanceof String) {
+      String str = (String) value;
+      try {
+        if (str.contains(".")
+            && !str.contains("T")
+            && !str.contains("-")
+            && !str.contains(":")
+            && !str.endsWith("%")) {
+          double d = Double.parseDouble(str);
+          return formatDecimal(d);
+        }
+      } catch (NumberFormatException ignored) {
+        // Not a plain number string
+      }
+      return str;
+    }
+    return String.valueOf(value);
+  }
+
   private static void flattenMap(
       String prefix, Map<String, Object> map, Map<String, String> flattened) {
     if (map == null) return;
@@ -355,11 +420,8 @@ public class CsvExporter {
         flattened.put(key, "");
       } else if (value instanceof Map) {
         flattenMap(key, (Map<String, Object>) value, flattened);
-      } else if (value instanceof List) {
-        // Stringify lists for CSV
-        flattened.put(key, value.toString());
       } else {
-        flattened.put(key, String.valueOf(value));
+        flattened.put(key, formatValue(value));
       }
     }
   }
@@ -399,6 +461,163 @@ public class CsvExporter {
 
     public String getTeamName() {
       return teamName;
+    }
+  }
+
+  private void appendPredictionsSection(StringBuilder sb) {
+    sb.append("#Section,Race Predictions\n\n");
+    PredictionEvaluationRecord evalRecord = getPredictionEvaluation(race);
+    if (evalRecord != null) {
+      ModelEvaluationRow evalRow = new ModelEvaluationRow();
+      evalRow.brierScore = evalRecord.getBrierScore();
+      evalRow.rankMae = evalRecord.getRankMae();
+      evalRow.lapProjectionMae = evalRecord.getLapProjectionMae();
+      appendTable(sb, "Post-Race Model Evaluation", Collections.singletonList(evalRow));
+    }
+
+    PredictionSnapshot snapshot = getPredictionSnapshot(race);
+    if (snapshot != null
+        && snapshot.getProjectedStandings() != null
+        && !snapshot.getProjectedStandings().isEmpty()) {
+      List<PredictionRow> predRows = new ArrayList<>();
+      for (RacePredictionRecord.DriverProjection proj : snapshot.getProjectedStandings()) {
+        PredictionRow row = new PredictionRow();
+        row.projectedRank =
+            proj.getProjectedRank() > 0 ? String.valueOf(proj.getProjectedRank()) : "--";
+        row.driverName = proj.getDriverName();
+        row.winProbability = formatPercent(proj.getWinProbability());
+        row.podiumProbability = formatPercent(proj.getPodiumProbability());
+        row.projectedLaps =
+            proj.getProjectedLaps() >= 0 ? formatDecimal(proj.getProjectedLaps()) : "--";
+        predRows.add(row);
+      }
+      appendTable(sb, "Pre-Race Projections & Odds", predRows);
+    }
+  }
+
+  private static String formatPercent(double prob) {
+    if (prob < 0) {
+      return "--%";
+    }
+    return Math.round(prob * 100) + "%";
+  }
+
+  private MongoDatabase getActiveDatabase() {
+    try {
+      DatabaseContext dbCtx = ClientSubscriptionManager.getInstance().getDatabaseContext();
+      if (dbCtx != null) {
+        return dbCtx.getDatabase();
+      }
+    } catch (Exception e) {
+      // Ignore
+    }
+    return null;
+  }
+
+  private PredictionSnapshot getPredictionSnapshot(Race race) {
+    if (race == null) {
+      return null;
+    }
+    String raceId = race.getRaceModel() != null ? race.getRaceModel().getEntityId() : null;
+    boolean isDemo = race.isDemoMode();
+
+    MongoDatabase database = getActiveDatabase();
+
+    if (database != null && raceId != null && !raceId.isEmpty()) {
+      RacePredictionRecord record =
+          DatabaseService.getInstance().getRacePredictionRecord(database, raceId, isDemo);
+      if (record != null && record.getPreRace() != null) {
+        return record.getPreRace();
+      }
+    }
+
+    try {
+      if (race.getRaceModel() != null
+          && race.getDrivers() != null
+          && !race.getDrivers().isEmpty()
+          && race.getHeats() != null
+          && !race.getHeats().isEmpty()) {
+        RacePredictionRecord record =
+            RacePredictionService.getInstance()
+                .generateAndSavePreRacePrediction(
+                    database,
+                    raceId != null ? raceId : "temp",
+                    race.getRaceModel(),
+                    race.getDrivers(),
+                    race.getHeats(),
+                    isDemo);
+        if (record != null && record.getPreRace() != null) {
+          return record.getPreRace();
+        }
+      }
+    } catch (Exception e) {
+      // Ignore
+    }
+    return null;
+  }
+
+  private PredictionEvaluationRecord getPredictionEvaluation(Race race) {
+    if (race == null) {
+      return null;
+    }
+    String raceId = race.getRaceModel() != null ? race.getRaceModel().getEntityId() : null;
+    boolean isDemo = race.isDemoMode();
+
+    try {
+      MongoDatabase database = getActiveDatabase();
+      if (database != null && raceId != null && !raceId.isEmpty()) {
+        return DatabaseService.getInstance()
+            .getPredictionEvaluationRecord(database, raceId, isDemo);
+      }
+    } catch (Exception e) {
+      // Ignore
+    }
+    return null;
+  }
+
+  public static class ModelEvaluationRow {
+    public double brierScore;
+    public double rankMae;
+    public double lapProjectionMae;
+
+    public double getBrierScore() {
+      return brierScore;
+    }
+
+    public double getRankMae() {
+      return rankMae;
+    }
+
+    public double getLapProjectionMae() {
+      return lapProjectionMae;
+    }
+  }
+
+  public static class PredictionRow {
+    public String projectedRank;
+    public String driverName;
+    public String winProbability;
+    public String podiumProbability;
+    public String projectedLaps;
+
+    public String getProjectedRank() {
+      return projectedRank;
+    }
+
+    public String getDriverName() {
+      return driverName;
+    }
+
+    public String getWinProbability() {
+      return winProbability;
+    }
+
+    public String getPodiumProbability() {
+      return podiumProbability;
+    }
+
+    public String getProjectedLaps() {
+      return projectedLaps;
     }
   }
 }

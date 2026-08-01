@@ -24,7 +24,7 @@ import {
   RouterStateSnapshot,
 } from "@angular/router";
 import * as QRCode from "qrcode";
-import { Observable, Subject, Subscription } from "rxjs";
+import { firstValueFrom, Observable, Subject, Subscription } from "rxjs";
 import { debounceTime } from "rxjs/operators";
 import { LoginDialogComponent } from "@app/components/login-dialog/login-dialog.component";
 import { DriverConverter } from "@app/converters/driver.converter";
@@ -2932,78 +2932,122 @@ export class DefaultRacedayComponent
 
   async exportToCsv() {
     try {
+      const csvData = await firstValueFrom(this.dataService.exportRaceToCsv());
+      if (!csvData || csvData.trim().length === 0) {
+        this.logger.error("Failed to export CSV: received empty data");
+        return;
+      }
+
       const timestamp = this.getExportTimestamp();
       const timeStr = this.printService.formatExportTimestamp(timestamp);
       const raceName = this.race?.name || "Race";
       const suggestedName = `${raceName}-RaceDay${timeStr}.csv`;
-      const handle = await (window as any).showSaveFilePicker({
-        suggestedName: suggestedName,
-        types: [
-          {
-            description: "CSV Files",
-            accept: { "text/csv": [".csv"] },
-          },
-        ],
-      });
 
-      this.dataService.exportRaceToCsv().subscribe({
-        next: async (csvData: string) => {
+      if (typeof (window as any).showSaveFilePicker === "function") {
+        try {
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: suggestedName,
+            types: [
+              {
+                description: "CSV Files",
+                accept: { "text/csv": [".csv"] },
+              },
+            ],
+          });
           const writable = await handle.createWritable();
           await writable.write(csvData);
           await writable.close();
           this.logger.debug("CSV Exported successfully");
-        },
-        error: (err: any) => {
-          this.logger.error("Failed to export CSV", err);
-        },
-      });
-    } catch (err: any) {
-      if (err.name === "AbortError") {
-        this.logger.debug("User cancelled save");
-        return;
+          return;
+        } catch (pickerErr: any) {
+          if (pickerErr.name === "AbortError") {
+            this.logger.debug("User cancelled save");
+            return;
+          }
+          this.logger.warn(
+            "File picker failed, falling back to blob download",
+            pickerErr,
+          );
+        }
       }
-      this.logger.error("Save error", err);
+
+      // Fallback blob download
+      const blob = new Blob([csvData], { type: "text/csv;charset=utf-8" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = suggestedName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      this.logger.debug("CSV Exported via fallback download");
+    } catch (err: any) {
+      this.logger.error("Failed to export CSV", err);
     }
   }
 
   async exportToXls() {
     try {
+      const template =
+        this.settingsService.getSettings()?.customExportTemplateBase64;
+      const xlsData: Blob = await firstValueFrom(
+        this.dataService.exportRaceToXls(template),
+      );
+
+      if (!xlsData || xlsData.size === 0) {
+        this.logger.error("Failed to export XLS: received empty blob");
+        return;
+      }
+
       const timestamp = this.getExportTimestamp();
       const timeStr = this.printService.formatExportTimestamp(timestamp);
       const raceName = this.race?.name || "Race";
       const suggestedName = `${raceName}-RaceDay${timeStr}.xlsx`;
-      const handle = await (window as any).showSaveFilePicker({
-        suggestedName: suggestedName,
-        types: [
-          {
-            description: "Excel Files",
-            accept: {
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-                [".xlsx"],
-            },
-          },
-        ],
-      });
 
-      const template =
-        this.settingsService.getSettings()?.customExportTemplateBase64;
-      this.dataService.exportRaceToXls(template).subscribe({
-        next: async (xlsData: Blob) => {
+      if (typeof (window as any).showSaveFilePicker === "function") {
+        try {
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: suggestedName,
+            types: [
+              {
+                description: "Excel Files",
+                accept: {
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                    [".xlsx"],
+                },
+              },
+            ],
+          });
           const writable = await handle.createWritable();
           await writable.write(xlsData);
           await writable.close();
           this.logger.debug("XLS Exported successfully");
-        },
-        error: (err: any) => {
-          this.logger.error("Failed to export XLS", err);
-        },
-      });
-    } catch (err: any) {
-      if (err.name === "AbortError") {
-        this.logger.debug("User cancelled save");
-        return;
+          return;
+        } catch (pickerErr: any) {
+          if (pickerErr.name === "AbortError") {
+            this.logger.debug("User cancelled save");
+            return;
+          }
+          this.logger.warn(
+            "File picker failed, falling back to blob download",
+            pickerErr,
+          );
+        }
       }
-      this.logger.error("Error with file picker", err);
+
+      // Fallback blob download
+      const url = window.URL.createObjectURL(xlsData);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = suggestedName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      this.logger.debug("XLS Exported via fallback download");
+    } catch (err: any) {
+      this.logger.error("Failed to export XLS", err);
     }
   }
 

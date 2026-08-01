@@ -101,15 +101,17 @@ public class RaceTeamExportTest {
     // 3. Teammate B records a lap
     dhd.setActualDriver(teammateB);
     dhd.addLap(12.3, false, true);
+    dhd.addLap(5.4819876, false, true);
 
     // 4. Export to CSV
     String csv = CsvExporter.export(race);
-    System.out.println("---- CSV START ----\n" + csv + "\n---- CSV END ----");
 
-    // 5. Verify Lap times exist in the CSV
+    // 5. Verify Lap times exist in the CSV and are limited to 3 decimal places
     assertTrue("CSV should contain teammate lap time 10.5", csv.contains("10.5"));
-
     assertTrue("CSV should contain teammate lap time 12.3", csv.contains("12.3"));
+    assertTrue("CSV should contain rounded lap time 5.482", csv.contains("5.482"));
+    org.junit.Assert.assertFalse(
+        "CSV should NOT contain high precision lap time 5.4819876", csv.contains("5.4819876"));
 
     // 6. Verify Team name exists
     assertTrue("CSV should contain Team name", csv.contains("The Team"));
@@ -142,5 +144,35 @@ public class RaceTeamExportTest {
         csv.contains("heatNumber,laneNumber,driverName,driverNickname,teamName"));
     assertTrue(
         "CSV Heat List should contain expected row", csv.contains("1,1,Teammate B,TB,The Team"));
+
+    // 11. Verify Race Predictions section exists before Overall Standings
+    int predictionsIdx = csv.indexOf("#Section,Race Predictions");
+    int standingsIdx = csv.indexOf("#Section,Overall Standings");
+    assertTrue("CSV should contain Race Predictions section", predictionsIdx != -1);
+    assertTrue("CSV should contain Overall Standings section", standingsIdx != -1);
+    assertTrue(
+        "Race Predictions section must come before Overall Standings",
+        predictionsIdx < standingsIdx);
+  }
+
+  @Test
+  public void testPredictionExportWithNoDataFallback() {
+    race.changeState(new Racing());
+    String csv = CsvExporter.export(race);
+    assertTrue(
+        "CSV should contain Race Predictions section", csv.contains("#Section,Race Predictions"));
+    assertTrue(
+        "CSV should contain Pre-Race Projections table header",
+        csv.contains("projectedRank,driverName,winProbability,podiumProbability,projectedLaps"));
+
+    int predIdx = csv.indexOf("#Section,Race Predictions");
+    int standingsIdx = csv.indexOf("#Section,Overall Standings");
+    String predSection = csv.substring(predIdx, standingsIdx);
+
+    assertTrue(
+        "CSV prediction row should contain driver name and -- placeholders instead of raw -1",
+        predSection.contains("--,The Team,--%,--%,--"));
+    org.junit.Assert.assertFalse(
+        "CSV prediction section should not output raw -1", predSection.contains("-1"));
   }
 }
