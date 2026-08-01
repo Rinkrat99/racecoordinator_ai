@@ -21,6 +21,7 @@ import com.antigravity.models.Track;
 import com.antigravity.race.ClientSubscriptionManager;
 import com.antigravity.race.DriverHeatData;
 import com.antigravity.race.Heat;
+import com.antigravity.race.HeatExecutionManager;
 import com.antigravity.race.RaceParticipant;
 import com.antigravity.race.prediction.PredictionEngine;
 import com.antigravity.repository.MongoRepository;
@@ -1354,13 +1355,13 @@ public class DatabaseTaskHandler {
   private boolean isStalePredictionRecord(
       RacePredictionRecord record, com.antigravity.race.Race activeRace) { // fqn-collision
     if (record == null || record.getPreRace() == null) {
-      logger.info("PREDICTION: Stale because record or preRace is null");
+      logger.debug("PREDICTION: Stale because record or preRace is null");
       return true;
     }
     List<RacePredictionRecord.DriverProjection> standings =
         record.getPreRace().getProjectedStandings();
     if (standings == null || standings.isEmpty()) {
-      logger.info("PREDICTION: Stale because standings is null or empty");
+      logger.debug("PREDICTION: Stale because standings is null or empty");
       return true;
     }
 
@@ -1385,7 +1386,7 @@ public class DatabaseTaskHandler {
       }
 
       if (!standingDriverIds.equals(activeDriverIds)) {
-        logger.info(
+        logger.debug(
             "PREDICTION: Stale because active race drivers do not match prediction standings (active: {}, prediction: {})",
             activeDriverIds.size(),
             standingDriverIds.size());
@@ -1397,30 +1398,31 @@ public class DatabaseTaskHandler {
     Set<Integer> ranks = new HashSet<>();
     for (RacePredictionRecord.DriverProjection dp : standings) {
       if (dp == null || dp.getDriverId() == null) {
-        logger.info("PREDICTION: Stale because driver projection is null");
+        logger.debug("PREDICTION: Stale because driver projection is null");
         return true;
       }
       if ("EMPTY_LANE".equalsIgnoreCase(dp.getDriverId())
           || "Empty Lane".equalsIgnoreCase(dp.getDriverName())) {
-        logger.info("PREDICTION: Stale because empty lane driver found");
+        logger.debug("PREDICTION: Stale because empty lane driver found");
         return true;
       }
       if (dp.getProjectedRank() != -1) {
         if (ranks.contains(dp.getProjectedRank())) {
-          logger.info("PREDICTION: Stale because duplicate rank found: " + dp.getProjectedRank());
+          logger.debug("PREDICTION: Stale because duplicate rank found: " + dp.getProjectedRank());
           return true;
         }
         ranks.add(dp.getProjectedRank());
       } else {
-        logger.info("PREDICTION: Stale because rank is -1 (fallback prediction)");
+        logger.debug("PREDICTION: Stale because rank is -1 (fallback prediction)");
         return true;
       }
       totalWinProb += dp.getWinProbability();
     }
 
     if (standings.size() > 1 && totalWinProb >= 0.0 && totalWinProb < 0.95) {
-      logger.info("PREDICTION: Stale because totalWinProb < 0.95: " + totalWinProb);
-      // return true; // Disabled because this causes an infinite loop of overwriting realtime
+      logger.debug("PREDICTION: Stale because totalWinProb < 0.95: " + totalWinProb);
+      // return true; // Disabled because this causes an infinite loop of overwriting
+      // realtime
       // snapshots
     }
 
@@ -1445,8 +1447,9 @@ public class DatabaseTaskHandler {
           ClientSubscriptionManager.getInstance().getRace();
 
       // Auto-detect demo mode from the active running race
-      if (!isDemo && activeRace != null && activeRace.getRaceModel() != null) {
-        if ("current".equals(raceId) || activeRace.getRaceModel().getEntityId().equals(raceId)) {
+      if (activeRace != null && activeRace.getRaceModel() != null) {
+        String activeId = activeRace.getRaceModel().getEntityId();
+        if ("current".equals(raceId) || (activeId != null && activeId.equals(raceId))) {
           isDemo = activeRace.isDemoMode();
         }
       }
@@ -1485,19 +1488,8 @@ public class DatabaseTaskHandler {
                   : 0;
           if (currentHeatIdx < 0) currentHeatIdx = 0;
 
-          Map<String, PredictionEngine.DriverHeatState> actualLaps = new HashMap<>();
-          if (activeRace.getDrivers() != null) {
-            for (RaceParticipant rp : activeRace.getDrivers()) {
-              if (rp != null) {
-                String dId = PredictionEngine.getParticipantId(rp);
-                if (dId != null) {
-                  PredictionEngine.DriverHeatState state = new PredictionEngine.DriverHeatState();
-                  state.totalLapsCompleted = rp.getTotalLaps();
-                  actualLaps.put(dId, state);
-                }
-              }
-            }
-          }
+          Map<String, PredictionEngine.DriverHeatState> actualLaps =
+              HeatExecutionManager.buildDriverHeatStates(activeRace);
 
           RacePredictionService.getInstance()
               .updateRealtimePrediction(

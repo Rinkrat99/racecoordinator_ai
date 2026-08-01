@@ -6,12 +6,10 @@ import com.antigravity.proto.RaceState;
 import com.antigravity.protocols.CarData;
 import com.antigravity.race.ClientSubscriptionManager;
 import com.antigravity.race.Race;
-import com.antigravity.race.RaceParticipant;
 import com.antigravity.race.prediction.PredictionEngine.DriverHeatState;
 import com.antigravity.service.RacePredictionService;
 import com.mongodb.client.MongoDatabase;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -62,19 +60,8 @@ public class HeatOver implements IRaceState {
             race.getHeats() != null && race.getCurrentHeat() != null
                 ? race.getHeats().indexOf(race.getCurrentHeat())
                 : 0;
-        Map<String, DriverHeatState> actualLaps = new HashMap<>();
-        if (race.getDrivers() != null) {
-          for (RaceParticipant rp : race.getDrivers()) {
-            if (rp != null) {
-              String dId = rp.getDriver() != null ? rp.getDriver().getEntityId() : rp.getObjectId();
-              if (dId != null) {
-                DriverHeatState state = new DriverHeatState();
-                state.totalLapsCompleted = rp.getTotalLaps();
-                actualLaps.put(dId, state);
-              }
-            }
-          }
-        }
+        Map<String, DriverHeatState> actualLaps =
+            com.antigravity.race.HeatExecutionManager.buildDriverHeatStates(race); // fqn-collision
         RacePredictionService.getInstance()
             .updateRealtimePrediction(
                 db,

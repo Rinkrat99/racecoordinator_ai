@@ -970,6 +970,72 @@ public class HeatExecutionManager {
     return timeSinceLastLap;
   }
 
+  public static Map<String, DriverHeatState> buildDriverHeatStates(Race race) {
+    Map<String, DriverHeatState> actualDriverStates = new HashMap<>();
+    if (race == null) {
+      return actualDriverStates;
+    }
+    List<Heat> heats = race.getHeats();
+    int heatIdx = heats != null ? heats.indexOf(race.getCurrentHeat()) : 0;
+    if (heatIdx < 0) {
+      heatIdx = 0;
+    }
+
+    if (heats != null) {
+      for (int i = 0; i <= heatIdx; i++) {
+        Heat h;
+        if (i == heatIdx && race.getCurrentHeat() != null) {
+          h = race.getCurrentHeat();
+        } else {
+          h = heats.get(i);
+        }
+        if (h != null && h.getDrivers() != null) {
+          for (DriverHeatData dhd : h.getDrivers()) {
+            if (dhd == null || dhd.getDriver() == null) continue;
+
+            String driverId = PredictionEngine.getParticipantId(dhd.getDriver());
+
+            if (driverId != null && !driverId.isEmpty()) {
+              DriverHeatState state =
+                  actualDriverStates.computeIfAbsent(driverId, k -> new DriverHeatState());
+
+              if (i < heatIdx) {
+                state.totalLapsCompleted += dhd.getLapCount();
+                double pastElapsed = Math.max(0, dhd.getReactionTime());
+                if (dhd.getLaps() != null) {
+                  for (DriverHeatData.LapData lap : dhd.getLaps()) {
+                    if (lap != null && lap.getLapTime() > 0) {
+                      pastElapsed += lap.getLapTime();
+                      state.allRaceLapTimes.add(lap.getLapTime());
+                    }
+                  }
+                }
+                state.totalElapsedSec += pastElapsed;
+              } else {
+                state.totalLapsCompleted += dhd.getLapCount();
+                state.currentHeatLapsCompleted = dhd.getLapCount();
+                double elapsed = Math.max(0, dhd.getReactionTime());
+                if (dhd.getLaps() != null) {
+                  for (DriverHeatData.LapData lap : dhd.getLaps()) {
+                    if (lap != null && lap.getLapTime() > 0) {
+                      state.currentHeatLapTimes.add(lap.getLapTime());
+                      state.allRaceLapTimes.add(lap.getLapTime());
+                      elapsed += lap.getLapTime();
+                    }
+                  }
+                }
+                elapsed += Math.max(0, dhd.getPendingLapTime());
+                state.currentHeatPendingLapTime = Math.max(0, dhd.getPendingLapTime());
+                state.currentHeatElapsedSec = elapsed;
+              }
+            }
+          }
+        }
+      }
+    }
+    return actualDriverStates;
+  }
+
   private void updateRealtimePredictionOnLap() {
     try {
       if (this.race == null || this.race.getRaceModel() == null) {
@@ -985,60 +1051,11 @@ public class HeatExecutionManager {
               ? this.race.getDatabaseContext().getDatabase()
               : null;
 
-      Map<String, DriverHeatState> actualDriverStates = new HashMap<>();
+      Map<String, DriverHeatState> actualDriverStates = buildDriverHeatStates(this.race);
       List<Heat> heats = this.race.getHeats();
       int heatIdx = heats != null ? heats.indexOf(this.race.getCurrentHeat()) : 0;
       if (heatIdx < 0) {
         heatIdx = 0;
-      }
-
-      if (heats != null) {
-        for (int i = 0; i <= heatIdx; i++) {
-          Heat h;
-          if (i == heatIdx && this.race.getCurrentHeat() != null) {
-            h = this.race.getCurrentHeat();
-          } else {
-            h = heats.get(i);
-          }
-          if (h != null && h.getDrivers() != null) {
-            for (DriverHeatData dhd : h.getDrivers()) {
-              if (dhd == null || dhd.getDriver() == null) continue;
-
-              String driverId = PredictionEngine.getParticipantId(dhd.getDriver());
-
-              if (driverId != null && !driverId.isEmpty()) {
-                DriverHeatState state =
-                    actualDriverStates.computeIfAbsent(driverId, k -> new DriverHeatState());
-
-                if (i < heatIdx) {
-                  state.totalLapsCompleted += dhd.getLapCount();
-                  double pastElapsed = Math.max(0, dhd.getReactionTime());
-                  for (DriverHeatData.LapData lap : dhd.getLaps()) {
-                    if (lap.getLapTime() > 0) {
-                      pastElapsed += lap.getLapTime();
-                      state.allRaceLapTimes.add(lap.getLapTime());
-                    }
-                  }
-                  state.totalElapsedSec += pastElapsed;
-                } else {
-                  state.totalLapsCompleted += dhd.getLapCount();
-                  state.currentHeatLapsCompleted = dhd.getLapCount();
-                  double elapsed = Math.max(0, dhd.getReactionTime());
-                  for (DriverHeatData.LapData lap : dhd.getLaps()) {
-                    if (lap.getLapTime() > 0) {
-                      state.currentHeatLapTimes.add(lap.getLapTime());
-                      state.allRaceLapTimes.add(lap.getLapTime());
-                      elapsed += lap.getLapTime();
-                    }
-                  }
-                  elapsed += Math.max(0, dhd.getPendingLapTime());
-                  state.currentHeatPendingLapTime = Math.max(0, dhd.getPendingLapTime());
-                  state.currentHeatElapsedSec = elapsed;
-                }
-              }
-            }
-          }
-        }
       }
 
       RacePredictionService.getInstance()

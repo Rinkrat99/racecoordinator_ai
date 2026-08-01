@@ -16,10 +16,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PredictionEngine {
 
+  private static final Logger logger = LoggerFactory.getLogger(PredictionEngine.class);
   private static final int DEFAULT_SIMULATION_RUNS = 1000;
   private final Random random;
 
@@ -60,6 +64,32 @@ public class PredictionEngine {
     public List<Double> allRaceLapTimes = new ArrayList<>();
     public double currentHeatElapsedSec = 0.0;
     public double currentHeatPendingLapTime = 0.0;
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      DriverHeatState state = (DriverHeatState) o;
+      return Double.compare(state.totalLapsCompleted, totalLapsCompleted) == 0
+          && Double.compare(state.totalElapsedSec, totalElapsedSec) == 0
+          && Double.compare(state.currentHeatLapsCompleted, currentHeatLapsCompleted) == 0
+          && Double.compare(state.currentHeatElapsedSec, currentHeatElapsedSec) == 0
+          && Double.compare(state.currentHeatPendingLapTime, currentHeatPendingLapTime) == 0
+          && Objects.equals(currentHeatLapTimes, state.currentHeatLapTimes)
+          && Objects.equals(allRaceLapTimes, state.allRaceLapTimes);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          totalLapsCompleted,
+          totalElapsedSec,
+          currentHeatLapsCompleted,
+          currentHeatLapTimes,
+          allRaceLapTimes,
+          currentHeatElapsedSec,
+          currentHeatPendingLapTime);
+    }
   }
 
   private static class SimulationResult {
@@ -102,25 +132,20 @@ public class PredictionEngine {
       for (Map.Entry<String, DriverTrackStats> entry : driverStatsMap.entrySet()) {
         DriverTrackStats stats = entry.getValue();
         if (stats.getOverallMedianLapTime() > 0) {
-          System.out.println(
-              "PREDICTION_ENGINE: Found data for driver "
-                  + entry.getKey()
-                  + " (OverallMedianLapTime="
-                  + stats.getOverallMedianLapTime()
-                  + ")");
+          logger.debug(
+              "Found data for driver {} (OverallMedianLapTime={})",
+              entry.getKey(),
+              stats.getOverallMedianLapTime());
           return true;
         }
         if (stats.getLaneStats() != null) {
           for (DriverTrackStats.LanePaceStats lps : stats.getLaneStats()) {
             if (lps.getMedianLapTime() > 0) {
-              System.out.println(
-                  "PREDICTION_ENGINE: Found data for driver "
-                      + entry.getKey()
-                      + " (Lane "
-                      + lps.getLaneIndex()
-                      + " MedianLapTime="
-                      + lps.getMedianLapTime()
-                      + ")");
+              logger.debug(
+                  "Found data for driver {} (Lane {} MedianLapTime={})",
+                  entry.getKey(),
+                  lps.getLaneIndex(),
+                  lps.getMedianLapTime());
               return true;
             }
           }
@@ -130,14 +155,14 @@ public class PredictionEngine {
     if (driverHeatStates != null) {
       for (Map.Entry<String, DriverHeatState> entry : driverHeatStates.entrySet()) {
         DriverHeatState state = entry.getValue();
-        if (state.currentHeatLapTimes != null && !state.currentHeatLapTimes.isEmpty()) {
-          System.out.println(
-              "PREDICTION_ENGINE: Found empirical data for driver " + entry.getKey());
+        if ((state.currentHeatLapTimes != null && !state.currentHeatLapTimes.isEmpty())
+            || (state.allRaceLapTimes != null && !state.allRaceLapTimes.isEmpty())) {
+          logger.debug("Found empirical data for driver {}", entry.getKey());
           return true;
         }
       }
     }
-    System.out.println("PREDICTION_ENGINE: No data found for any driver. Returning false.");
+    logger.debug("No data found for any driver. Returning false.");
     return false;
   }
 

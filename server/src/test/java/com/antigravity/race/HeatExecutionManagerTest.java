@@ -2,6 +2,7 @@ package com.antigravity.race;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -18,11 +19,13 @@ import com.antigravity.models.Track;
 import com.antigravity.protocols.CarData;
 import com.antigravity.protocols.CarLocation;
 import com.antigravity.protocols.arduino.ArduinoConfig;
+import com.antigravity.race.prediction.PredictionEngine;
 import com.antigravity.race.states.HeatOver;
 import com.antigravity.race.states.NotStarted;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.bson.types.ObjectId;
 import org.junit.Before;
 import org.junit.Test;
@@ -1309,5 +1312,15 @@ public class HeatExecutionManagerTest {
     assertTrue(counted);
     assertEquals(1, dhd.getLaps().size());
     assertEquals(3.1, dhd.getLaps().get(0).getLapTime(), 0.001);
+  }
+
+  @Test
+  public void testBuildDriverHeatStates() {
+    Map<String, PredictionEngine.DriverHeatState> states =
+        HeatExecutionManager.buildDriverHeatStates(race);
+    assertNotNull(states);
+    assertFalse(states.isEmpty());
+    assertTrue(states.containsKey("d1"));
+    assertTrue(states.containsKey("d2"));
   }
 }

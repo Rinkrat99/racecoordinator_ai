@@ -595,4 +595,59 @@ public class PredictionEngineTest {
           "Win probabilities should include " + id, snapshot.getWinProbabilities().containsKey(id));
     }
   }
+
+  @Test
+  public void testDeterministicDriverHeatStateSeeding() {
+    Map<String, PredictionEngine.DriverHeatState> stateMap1 = new HashMap<>();
+    PredictionEngine.DriverHeatState s1 = new PredictionEngine.DriverHeatState();
+    s1.totalLapsCompleted = 5;
+    s1.allRaceLapTimes.add(5.2);
+    s1.allRaceLapTimes.add(5.1);
+    stateMap1.put("d1", s1);
+
+    Map<String, PredictionEngine.DriverHeatState> stateMap2 = new HashMap<>();
+    PredictionEngine.DriverHeatState s2 = new PredictionEngine.DriverHeatState();
+    s2.totalLapsCompleted = 5;
+    s2.allRaceLapTimes.add(5.2);
+    s2.allRaceLapTimes.add(5.1);
+    stateMap2.put("d1", s2);
+
+    PredictionSnapshot snap1 =
+        engine.generateRealtimePrediction(null, participants, heats, statsMap, 0, stateMap1);
+    PredictionSnapshot snap2 =
+        engine.generateRealtimePrediction(null, participants, heats, statsMap, 0, stateMap2);
+
+    assertEquals(
+        snap1.getWinProbabilities().get("d1"), snap2.getWinProbabilities().get("d1"), 0.0001);
+    assertEquals(
+        snap1.getProjectedStandings().get(0).getProjectedLaps(),
+        snap2.getProjectedStandings().get(0).getProjectedLaps(),
+        0.0001);
+  }
+
+  @Test
+  public void testRealtimePredictionHasAnyDataWithAllRaceLapTimesOnly() {
+    Map<String, PredictionEngine.DriverHeatState> stateMap = new HashMap<>();
+    PredictionEngine.DriverHeatState s1 = new PredictionEngine.DriverHeatState();
+    s1.totalLapsCompleted = 10;
+    s1.allRaceLapTimes.add(5.2);
+    s1.allRaceLapTimes.add(5.1);
+    // currentHeatLapTimes is left EMPTY (simulating start of Heat 2)
+    stateMap.put("d1", s1);
+
+    // statsMap is EMPTY (simulating new drivers with no historical stats)
+    Map<String, DriverTrackStats> emptyStatsMap = new HashMap<>();
+
+    PredictionSnapshot snap =
+        engine.generateRealtimePrediction(null, participants, heats, emptyStatsMap, 1, stateMap);
+
+    assertNotNull(snap);
+    assertNotNull(snap.getProjectedStandings());
+    assertTrue(!snap.getProjectedStandings().isEmpty());
+    DriverProjection dp = snap.getProjectedStandings().get(0);
+    assertTrue(
+        "Projected rank should be valid when allRaceLapTimes exists", dp.getProjectedRank() > 0);
+    assertTrue(
+        "Projected laps should be valid when allRaceLapTimes exists", dp.getProjectedLaps() > 0);
+  }
 }
