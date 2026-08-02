@@ -3048,7 +3048,16 @@ export class DefaultRacedayComponent
       window.URL.revokeObjectURL(url);
       this.logger.debug("XLS Exported via fallback download");
     } catch (err: any) {
-      this.logger.error("Failed to export XLS", err);
+      if (err?.error instanceof Blob) {
+        try {
+          const text = await err.error.text();
+          this.logger.error("Failed to export XLS:", text, err);
+        } catch (_) {
+          this.logger.error("Failed to export XLS", err);
+        }
+      } else {
+        this.logger.error("Failed to export XLS", err);
+      }
     }
   }
 

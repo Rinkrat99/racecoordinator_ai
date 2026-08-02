@@ -10,6 +10,7 @@ import {
 import {
   ComponentFixture,
   fakeAsync,
+  flush,
   TestBed,
   tick,
 } from "@angular/core/testing";
@@ -33,7 +34,7 @@ class MockTranslatePipe implements PipeTransform {
   }
 }
 
-import { BehaviorSubject, of, Subject } from "rxjs";
+import { BehaviorSubject, of, Subject, throwError } from "rxjs";
 import { Role } from "@app/models/role";
 import { THEME_SLOT_KEYS } from "@app/models/theme";
 import { AuthService } from "@app/services/auth.service";
@@ -2630,6 +2631,36 @@ describe("DefaultRacedayComponent", () => {
             /Grand Prix-RaceDay--\d{4}-\d{2}-\d{2}--\d{2}-\d{2}-\d{2}_(AM|PM)\.xlsx/,
           ),
         }),
+      );
+    }));
+
+    it("should handle Blob error response gracefully when exportToXls fails", fakeAsync(() => {
+      const errorBlob = new Blob(["Internal Server Error: template error"], {
+        type: "text/plain",
+      });
+      spyOn(errorBlob, "text").and.returnValue(
+        Promise.resolve("Internal Server Error: template error"),
+      );
+      const errorResponse = {
+        name: "HttpErrorResponse",
+        status: 500,
+        statusText: "Server Error",
+        error: errorBlob,
+      };
+
+      mockDataService.exportRaceToXls = jasmine
+        .createSpy("exportRaceToXls")
+        .and.returnValue(throwError(() => errorResponse));
+
+      component.exportToXls();
+      tick();
+      flush();
+
+      expect(mockDataService.exportRaceToXls).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        "Failed to export XLS:",
+        "Internal Server Error: template error",
+        errorResponse,
       );
     }));
 
