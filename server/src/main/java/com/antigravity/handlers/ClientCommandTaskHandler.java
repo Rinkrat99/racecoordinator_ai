@@ -2,6 +2,7 @@ package com.antigravity.handlers;
 
 import com.antigravity.auth.Role;
 import com.antigravity.context.DatabaseContext;
+import com.antigravity.context.RaceScope;
 import com.antigravity.converters.ArduinoConfigConverter;
 import com.antigravity.converters.PhidgetConfigConverter;
 import com.antigravity.converters.TrackmateConfigConverter;
@@ -64,6 +65,7 @@ import com.antigravity.service.AnalyticsService;
 import com.antigravity.service.DatabaseService;
 import com.antigravity.util.CsvExporter;
 import com.antigravity.util.NetworkUtils;
+import com.antigravity.util.RequestContextUtils;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -1723,9 +1725,9 @@ public class ClientCommandTaskHandler {
 
   void getSavedRaces(Context ctx) {
     try {
-      boolean isDemo = "true".equals(ctx.queryParam("demo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       DatabaseService dbService = DatabaseService.getInstance();
-      List<RaceSaveData> saves = dbService.getSavedRaces(databaseContext.getDatabase(), isDemo);
+      List<RaceSaveData> saves = dbService.getSavedRaces(databaseContext.getDatabase(), scope);
       List<String> files =
           saves.stream().map(RaceSaveData::getSaveName).collect(Collectors.toList());
       ObjectMapper mapper = getObjectMapper();
@@ -1739,9 +1741,9 @@ public class ClientCommandTaskHandler {
   void deleteSavedRace(Context ctx) {
     String saveName = ctx.pathParam("filename");
     try {
-      boolean isDemo = "true".equals(ctx.queryParam("demo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       DatabaseService dbService = DatabaseService.getInstance();
-      boolean deleted = dbService.deleteSavedRace(databaseContext.getDatabase(), saveName, isDemo);
+      boolean deleted = dbService.deleteSavedRace(databaseContext.getDatabase(), saveName, scope);
       if (deleted) {
         ctx.status(200).result("Save deleted: " + saveName);
       } else {
@@ -1758,7 +1760,7 @@ public class ClientCommandTaskHandler {
     try {
       Map<String, Object> body = ctx.bodyAsClass(HashMap.class);
       String saveName = (String) body.get("filename");
-      boolean isDemo = Boolean.TRUE.equals(body.get("isDemo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       if (saveName == null) {
         ctx.status(400).result("Filename is required");
         return;
@@ -1766,7 +1768,7 @@ public class ClientCommandTaskHandler {
 
       DatabaseService dbService = DatabaseService.getInstance();
       RaceSaveData saveData =
-          dbService.getSavedRace(databaseContext.getDatabase(), saveName, isDemo);
+          dbService.getSavedRace(databaseContext.getDatabase(), saveName, scope);
 
       if (saveData == null) {
         ctx.status(404).result("Save file not found");

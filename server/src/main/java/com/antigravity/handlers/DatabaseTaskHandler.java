@@ -2,6 +2,7 @@ package com.antigravity.handlers;
 
 import com.antigravity.auth.Role;
 import com.antigravity.context.DatabaseContext;
+import com.antigravity.context.RaceScope;
 import com.antigravity.models.CustomHeat;
 import com.antigravity.models.CustomRotation;
 import com.antigravity.models.Driver;
@@ -28,6 +29,7 @@ import com.antigravity.repository.MongoRepository;
 import com.antigravity.service.DatabaseService;
 import com.antigravity.service.RacePredictionService;
 import com.antigravity.util.CsvExporter;
+import com.antigravity.util.RequestContextUtils;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
@@ -1087,10 +1089,10 @@ public class DatabaseTaskHandler {
 
   private void getRaceHistoryList(Context ctx) {
     try {
-      boolean isDemo = "true".equals(ctx.queryParam("demo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       DatabaseService dbService = DatabaseService.getInstance();
       List<RaceHistoryRecord> history =
-          dbService.getRaceHistory(databaseContext.getDatabase(), isDemo);
+          dbService.getRaceHistory(databaseContext.getDatabase(), scope);
       ctx.json(history);
     } catch (Exception e) {
       e.printStackTrace();
@@ -1101,10 +1103,10 @@ public class DatabaseTaskHandler {
   private void getRaceHistoryById(Context ctx) {
     try {
       String id = ctx.pathParam("id");
-      boolean isDemo = "true".equals(ctx.queryParam("demo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       DatabaseService dbService = DatabaseService.getInstance();
       RaceHistoryRecord history =
-          dbService.getRaceHistoryById(databaseContext.getDatabase(), id, isDemo);
+          dbService.getRaceHistoryById(databaseContext.getDatabase(), id, scope);
       if (history == null) {
         ctx.status(404).result("Race history not found");
         return;
@@ -1119,10 +1121,10 @@ public class DatabaseTaskHandler {
   private void exportRaceHistoryCsv(Context ctx) {
     try {
       String id = ctx.pathParam("id");
-      boolean isDemo = "true".equals(ctx.queryParam("demo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       DatabaseService dbService = DatabaseService.getInstance();
       RaceHistoryRecord history =
-          dbService.getRaceHistoryById(databaseContext.getDatabase(), id, isDemo);
+          dbService.getRaceHistoryById(databaseContext.getDatabase(), id, scope);
       if (history == null) {
         ctx.status(404).result("Race history not found");
         return;
@@ -1156,15 +1158,14 @@ public class DatabaseTaskHandler {
 
   private void getGlobalStatistics(Context ctx) {
     try {
-      boolean isDemo =
-          "true".equals(ctx.queryParam("demo")) || "true".equals(ctx.queryParam("isDemo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       String raceId = ctx.queryParam("raceId");
       if (raceId == null || raceId.isEmpty()) {
         raceId = "global";
       }
       DatabaseService dbService = DatabaseService.getInstance();
       GlobalStatistics stats =
-          dbService.getGlobalStatistics(databaseContext.getDatabase(), raceId, isDemo);
+          dbService.getGlobalStatistics(databaseContext.getDatabase(), raceId, scope);
       ctx.json(stats);
     } catch (Exception e) {
       e.printStackTrace();
@@ -1321,25 +1322,24 @@ public class DatabaseTaskHandler {
     try {
       String driverId = ctx.pathParam("driverId");
       String raceId = ctx.queryParam("raceId");
-      boolean isDemo =
-          "true".equals(ctx.queryParam("demo")) || "true".equals(ctx.queryParam("isDemo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
 
-      // Auto-detect demo mode from the active running race
-      if (!isDemo) {
+      // Auto-detect demo mode from active running race if scope is PRODUCTION
+      if (!scope.isDemo()) {
         com.antigravity.race.Race activeRace = // fqn-collision
             ClientSubscriptionManager.getInstance().getRace();
         if (activeRace != null && activeRace.getRaceModel() != null) {
           if (raceId == null
               || raceId.isEmpty()
               || activeRace.getRaceModel().getEntityId().equals(raceId)) {
-            isDemo = activeRace.isDemoMode();
+            scope = RaceScope.fromBoolean(activeRace.isDemoMode());
           }
         }
       }
 
       DatabaseService dbService = DatabaseService.getInstance();
       DriverStatistics stats =
-          dbService.getDriverStatistics(databaseContext.getDatabase(), driverId, raceId, isDemo);
+          dbService.getDriverStatistics(databaseContext.getDatabase(), driverId, raceId, scope);
 
       if (stats == null) {
         ctx.status(404).result("Driver statistics not found");
@@ -1432,8 +1432,7 @@ public class DatabaseTaskHandler {
   private void getRacePredictionRecord(Context ctx) {
     try {
       String raceId = ctx.pathParam("id");
-      boolean isDemo =
-          "true".equals(ctx.queryParam("demo")) || "true".equals(ctx.queryParam("isDemo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       boolean forceRecalc =
           "true".equals(ctx.queryParam("force")) || "true".equals(ctx.queryParam("recalculate"));
       DatabaseService dbService = DatabaseService.getInstance();
@@ -1446,11 +1445,11 @@ public class DatabaseTaskHandler {
       com.antigravity.race.Race activeRace = // fqn-collision
           ClientSubscriptionManager.getInstance().getRace();
 
-      // Auto-detect demo mode from the active running race
+      // Auto-detect demo mode from the active running race if not explicitly in DEMO scope
       if (activeRace != null && activeRace.getRaceModel() != null) {
         String activeId = activeRace.getRaceModel().getEntityId();
         if ("current".equals(raceId) || (activeId != null && activeId.equals(raceId))) {
-          isDemo = activeRace.isDemoMode();
+          scope = RaceScope.fromBoolean(activeRace.isDemoMode());
         }
       }
 
@@ -1461,7 +1460,7 @@ public class DatabaseTaskHandler {
 
       RacePredictionRecord record = null;
       if (!forceRecalc && database != null && targetRaceId != null && !targetRaceId.isEmpty()) {
-        record = dbService.getRacePredictionRecord(database, targetRaceId, isDemo);
+        record = dbService.getRacePredictionRecord(database, targetRaceId, scope.isDemo());
       }
 
       boolean isStale = isStalePredictionRecord(record, activeRace);
@@ -1479,7 +1478,7 @@ public class DatabaseTaskHandler {
                       activeRace.getRaceModel(),
                       activeRace.getDrivers(),
                       activeRace.getHeats(),
-                      isDemo,
+                      scope.isDemo(),
                       true);
 
           int currentHeatIdx =
@@ -1500,9 +1499,9 @@ public class DatabaseTaskHandler {
                   activeRace.getHeats(),
                   currentHeatIdx,
                   actualLaps,
-                  isDemo);
+                  scope.isDemo());
 
-          record = dbService.getRacePredictionRecord(database, activeRaceId, isDemo);
+          record = dbService.getRacePredictionRecord(database, activeRaceId, scope.isDemo());
         }
       }
 
@@ -1520,17 +1519,16 @@ public class DatabaseTaskHandler {
   private void getPredictionEvaluationRecord(Context ctx) {
     try {
       String raceId = ctx.pathParam("id");
-      boolean isDemo =
-          "true".equals(ctx.queryParam("demo")) || "true".equals(ctx.queryParam("isDemo"));
+      RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       DatabaseService dbService = DatabaseService.getInstance();
 
       com.antigravity.race.Race activeRace = // fqn-collision
           ClientSubscriptionManager.getInstance().getRace();
 
       // Auto-detect demo mode from the active running race
-      if (!isDemo && activeRace != null && activeRace.getRaceModel() != null) {
+      if (!scope.isDemo() && activeRace != null && activeRace.getRaceModel() != null) {
         if ("current".equals(raceId) || activeRace.getRaceModel().getEntityId().equals(raceId)) {
-          isDemo = activeRace.isDemoMode();
+          scope = RaceScope.fromBoolean(activeRace.isDemoMode());
         }
       }
 
@@ -1541,7 +1539,7 @@ public class DatabaseTaskHandler {
 
       PredictionEvaluationRecord eval =
           dbService.getPredictionEvaluationRecord(
-              databaseContext.getDatabase(), targetRaceId, isDemo);
+              databaseContext.getDatabase(), targetRaceId, scope.isDemo());
       if (eval == null) {
         ctx.status(404).result("Prediction evaluation record not found");
         return;

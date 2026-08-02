@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.antigravity.context.RaceScope;
 import com.antigravity.models.Driver;
 import com.antigravity.models.DriverStatistics;
 import com.antigravity.models.HeatRotationType;
@@ -327,5 +328,30 @@ public class DriverStatisticsTest {
 
     // Arrays should be sized to 2 (track lane count)
     assertEquals(2, statsP1.getLaneBestLapTimes().size());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetDriverStatisticsStrictScopeIsolation() {
+    MongoCollection<DriverStatistics> prodCol = mock(MongoCollection.class);
+    MongoCollection<DriverStatistics> demoCol = mock(MongoCollection.class);
+
+    when(mongoDatabase.getCollection(eq("driver_statistics"), eq(DriverStatistics.class)))
+        .thenReturn(prodCol);
+    when(mongoDatabase.getCollection(eq("demo_driver_statistics"), eq(DriverStatistics.class)))
+        .thenReturn(demoCol);
+
+    FindIterable<DriverStatistics> demoIterable = mock(FindIterable.class);
+    when(demoCol.find(any(Bson.class))).thenReturn(demoIterable);
+    when(demoIterable.first()).thenReturn(null);
+
+    // Query in DEMO scope
+    dbService.getDriverStatistics(mongoDatabase, "d1", "RACE123", RaceScope.DEMO);
+
+    // Verify demo_driver_statistics collection was accessed
+    verify(mongoDatabase).getCollection(eq("demo_driver_statistics"), eq(DriverStatistics.class));
+    // Verify production driver_statistics collection was NOT accessed (no fallback cross-read)
+    verify(mongoDatabase, times(0))
+        .getCollection(eq("driver_statistics"), eq(DriverStatistics.class));
   }
 }

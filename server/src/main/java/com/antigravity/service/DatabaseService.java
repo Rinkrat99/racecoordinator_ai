@@ -2,6 +2,7 @@
 package com.antigravity.service;
 
 import com.antigravity.context.DatabaseContext;
+import com.antigravity.context.RaceScope;
 import com.antigravity.models.AudioConfig;
 import com.antigravity.models.Driver;
 import com.antigravity.models.DriverStatistics;
@@ -805,13 +806,13 @@ public class DatabaseService {
   }
 
   public GlobalStatistics getGlobalStatistics(
-      MongoDatabase database, String raceEntityId, boolean isDemo) {
+      MongoDatabase database, String raceEntityId, RaceScope scope) {
     if (raceEntityId == null) {
       return new GlobalStatistics();
     }
     MongoCollection<GlobalStatistics> statsCollection =
         database.getCollection(
-            getCollectionName("global_statistics", isDemo), GlobalStatistics.class);
+            getCollectionName("global_statistics", scope), GlobalStatistics.class);
     GlobalStatistics stats =
         statsCollection.find(Filters.eq("race_entity_id", raceEntityId)).first();
     if (stats == null) {
@@ -820,9 +821,14 @@ public class DatabaseService {
     return stats;
   }
 
-  public List<RaceHistoryRecord> getRaceHistory(MongoDatabase database, boolean isDemo) {
+  public GlobalStatistics getGlobalStatistics(
+      MongoDatabase database, String raceEntityId, boolean isDemo) {
+    return getGlobalStatistics(database, raceEntityId, RaceScope.fromBoolean(isDemo));
+  }
+
+  public List<RaceHistoryRecord> getRaceHistory(MongoDatabase database, RaceScope scope) {
     MongoCollection<RaceHistoryRecord> collection =
-        database.getCollection(getCollectionName("race_history", isDemo), RaceHistoryRecord.class);
+        database.getCollection(getCollectionName("race_history", scope), RaceHistoryRecord.class);
     List<RaceHistoryRecord> history = new ArrayList<>();
     // You could sort by _id descending to get newest first natively, but BSON
     // default works for now.
@@ -830,10 +836,18 @@ public class DatabaseService {
     return history;
   }
 
-  public RaceHistoryRecord getRaceHistoryById(MongoDatabase database, String id, boolean isDemo) {
+  public List<RaceHistoryRecord> getRaceHistory(MongoDatabase database, boolean isDemo) {
+    return getRaceHistory(database, RaceScope.fromBoolean(isDemo));
+  }
+
+  public RaceHistoryRecord getRaceHistoryById(MongoDatabase database, String id, RaceScope scope) {
     MongoCollection<RaceHistoryRecord> collection =
-        database.getCollection(getCollectionName("race_history", isDemo), RaceHistoryRecord.class);
+        database.getCollection(getCollectionName("race_history", scope), RaceHistoryRecord.class);
     return collection.find(Filters.eq("_id", new ObjectId(id))).first();
+  }
+
+  public RaceHistoryRecord getRaceHistoryById(MongoDatabase database, String id, boolean isDemo) {
+    return getRaceHistoryById(database, id, RaceScope.fromBoolean(isDemo));
   }
 
   public void upsertAutoSave(MongoDatabase database, RaceSaveData data) {
@@ -865,9 +879,9 @@ public class DatabaseService {
     }
   }
 
-  public List<RaceSaveData> getSavedRaces(MongoDatabase database, boolean isDemo) {
+  public List<RaceSaveData> getSavedRaces(MongoDatabase database, RaceScope scope) {
     long startTime = System.currentTimeMillis();
-    String collectionName = getCollectionName("saved_races", isDemo);
+    String collectionName = getCollectionName("saved_races", scope);
     MongoCollection<RaceSaveData> collection =
         database.getCollection(collectionName, RaceSaveData.class);
 
@@ -919,23 +933,35 @@ public class DatabaseService {
     return saves;
   }
 
-  public RaceSaveData getSavedRace(MongoDatabase database, String saveName, boolean isDemo) {
+  public List<RaceSaveData> getSavedRaces(MongoDatabase database, boolean isDemo) {
+    return getSavedRaces(database, RaceScope.fromBoolean(isDemo));
+  }
+
+  public RaceSaveData getSavedRace(MongoDatabase database, String saveName, RaceScope scope) {
     if (database == null) {
       return null;
     }
     MongoCollection<RaceSaveData> collection =
-        database.getCollection(getCollectionName("saved_races", isDemo), RaceSaveData.class);
+        database.getCollection(getCollectionName("saved_races", scope), RaceSaveData.class);
     return collection.find(Filters.eq("saveName", saveName)).first();
   }
 
-  public boolean deleteSavedRace(MongoDatabase database, String saveName, boolean isDemo) {
+  public RaceSaveData getSavedRace(MongoDatabase database, String saveName, boolean isDemo) {
+    return getSavedRace(database, saveName, RaceScope.fromBoolean(isDemo));
+  }
+
+  public boolean deleteSavedRace(MongoDatabase database, String saveName, RaceScope scope) {
     if (database == null) {
       return false;
     }
     MongoCollection<RaceSaveData> collection =
-        database.getCollection(getCollectionName("saved_races", isDemo), RaceSaveData.class);
+        database.getCollection(getCollectionName("saved_races", scope), RaceSaveData.class);
     DeleteResult result = collection.deleteOne(Filters.eq("saveName", saveName));
     return result.getDeletedCount() > 0;
+  }
+
+  public boolean deleteSavedRace(MongoDatabase database, String saveName, boolean isDemo) {
+    return deleteSavedRace(database, saveName, RaceScope.fromBoolean(isDemo));
   }
 
   public void deleteAllRaceData(MongoDatabase database, String raceEntityId) {
@@ -1168,7 +1194,7 @@ public class DatabaseService {
 
   @SuppressWarnings("checkstyle:MethodLength")
   public DriverStatistics getDriverStatistics(
-      MongoDatabase database, String driverId, String raceId, boolean isDemo) {
+      MongoDatabase database, String driverId, String raceId, RaceScope scope) {
     if (database == null || driverId == null || driverId.isEmpty()) {
       return null;
     }
@@ -1187,8 +1213,8 @@ public class DatabaseService {
 
       Bson driverFilter = Filters.or(stableIdFilters);
 
-      // 1. Try to find the exact stats for this race in the primary collection first
-      String primaryCol = getCollectionName("driver_statistics", isDemo);
+      // 1. Try to find the exact stats for this race in the target scope collection ONLY
+      String primaryCol = getCollectionName("driver_statistics", scope);
       MongoCollection<DriverStatistics> col =
           database.getCollection(primaryCol, DriverStatistics.class);
       if (raceId != null && !raceId.isEmpty()) {
@@ -1197,23 +1223,9 @@ public class DatabaseService {
         if (stats != null) {
           return stats;
         }
-      }
 
-      // 2. Try to find the exact stats for this race in the fallback collection
-      String fallbackCol = getCollectionName("driver_statistics", !isDemo);
-      MongoCollection<DriverStatistics> fallback = null;
-      if (raceId != null && !raceId.isEmpty()) {
-        fallback = database.getCollection(fallbackCol, DriverStatistics.class);
-        Bson filter = Filters.and(driverFilter, Filters.eq("race_id", raceId));
-        DriverStatistics stats = fallback.find(filter).first();
-        if (stats != null) {
-          return stats;
-        }
-
-        // If a specific raceId was requested and no stats were found, return empty
-        // stats.
-        // We do not want to aggregate historical stats across all races into a new
-        // race.
+        // If a specific raceId was requested and no stats were found, return empty stats.
+        // We do not fall back to non-demo or cross-scope collections.
         DriverStatistics emptyStats = new DriverStatistics();
         emptyStats.setDriverId(driverId);
         emptyStats.setRaceId(raceId);
@@ -1226,8 +1238,8 @@ public class DatabaseService {
         return emptyStats;
       }
 
-      // 3. If raceId was null/empty,
-      // load all statistics documents for this driver and aggregate/merge them.
+      // 2. If raceId was null/empty,
+      // load all statistics documents for this driver in this scope and aggregate/merge them.
       List<DriverStatistics> statsList = new ArrayList<>();
 
       // Load from primary collection
@@ -1245,42 +1257,11 @@ public class DatabaseService {
         // Fallback for tests where find() might not be fully stubbed
       }
 
-      // Load from fallback collection
-      if (fallback == null) {
-        try {
-          fallback = database.getCollection(fallbackCol, DriverStatistics.class);
-        } catch (Exception e) {
-          // ignore
-        }
-      }
-      if (fallback != null) {
-        try {
-          DriverStatistics first = fallback.find(driverFilter).first();
-          if (first != null) {
-            try (com.mongodb.client.MongoCursor<DriverStatistics> cursor =
-                fallback.find(driverFilter).iterator()) {
-              while (cursor.hasNext()) {
-                statsList.add(cursor.next());
-              }
-            }
-          }
-        } catch (Exception e) {
-          // ignore
-        }
-      }
-
       if (statsList.isEmpty()) {
         // Fallback if the lists were empty but a mock/test only stubbed .find().first()
         try {
           DriverStatistics first = col.find(driverFilter).first();
           if (first != null) return first;
-        } catch (Exception e) {
-        }
-        try {
-          if (fallback != null) {
-            DriverStatistics first = fallback.find(driverFilter).first();
-            if (first != null) return first;
-          }
         } catch (Exception e) {
         }
         return null;
@@ -1367,6 +1348,11 @@ public class DatabaseService {
       logger.error("Failed to query driver statistics for driver: {}", driverId, e);
       return null;
     }
+  }
+
+  public DriverStatistics getDriverStatistics(
+      MongoDatabase database, String driverId, String raceId, boolean isDemo) {
+    return getDriverStatistics(database, driverId, raceId, RaceScope.fromBoolean(isDemo));
   }
 
   public DriverTrackStats getDriverTrackStats(
@@ -1656,7 +1642,14 @@ public class DatabaseService {
     }
   }
 
+  private String getCollectionName(String baseName, RaceScope scope) {
+    if (scope == null) {
+      scope = RaceScope.PRODUCTION;
+    }
+    return scope.getCollectionName(baseName);
+  }
+
   private String getCollectionName(String baseName, boolean isDemo) {
-    return isDemo ? "demo_" + baseName : baseName;
+    return getCollectionName(baseName, RaceScope.fromBoolean(isDemo));
   }
 }
