@@ -8,6 +8,7 @@ import com.antigravity.protocols.CarData;
 import com.antigravity.race.ClientSubscriptionManager;
 import com.antigravity.race.Race;
 import com.antigravity.race.RaceParticipant;
+import com.antigravity.race.prediction.PredictionEngine;
 import com.antigravity.service.DatabaseService;
 import com.antigravity.service.RacePredictionService;
 import java.time.OffsetDateTime;
@@ -84,7 +85,11 @@ public class RaceOver implements IRaceState {
                 RaceParticipant rp = sorted.get(i);
                 DriverProjection dp = new DriverProjection();
                 dp.setDriverId(
-                    rp.getDriver() != null ? rp.getDriver().getEntityId() : rp.getObjectId());
+                    PredictionEngine.getParticipantId(rp) != null
+                        ? PredictionEngine.getParticipantId(rp)
+                        : (rp.getDriver() != null
+                            ? rp.getDriver().getEntityId()
+                            : rp.getObjectId()));
                 dp.setDriverName(rp.getDriver() != null ? rp.getDriver().getName() : "");
                 dp.setProjectedRank(rp.getRank() > 0 ? rp.getRank() : i + 1);
                 dp.setProjectedLaps(rp.getTotalLaps());

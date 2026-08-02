@@ -1,6 +1,7 @@
 package com.antigravity.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -368,5 +369,53 @@ public class DatabaseServiceTest {
         com.antigravity.models.HeatRotationType.Custom, practiceRace.getHeatRotationType());
     assertTrue(practiceRace.isPractice());
     assertEquals(0, practiceRace.getHeatScoring().getFinishValue());
+  }
+
+  @Test
+  public void testBuildDriverTrackStatsFilter() {
+    Bson filter = DatabaseService.buildDriverTrackStatsFilter("2", "track1");
+    assertNotNull(filter);
+    String filterStr = filter.toBsonDocument().toString();
+    assertTrue(filterStr.contains("2"));
+    assertTrue(filterStr.contains("d_2"));
+    assertTrue(filterStr.contains("d:2"));
+    assertTrue(filterStr.contains("d2"));
+    assertTrue(filterStr.contains("track1"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testGetDriverTrackStats_FallbackToProduction() {
+    MongoCollection<com.antigravity.models.DriverTrackStats> demoCol = mock(MongoCollection.class);
+    MongoCollection<com.antigravity.models.DriverTrackStats> prodCol = mock(MongoCollection.class);
+
+    when(mongoDatabase.getCollection(
+            eq("demo_driver_track_stats"), eq(com.antigravity.models.DriverTrackStats.class)))
+        .thenReturn(demoCol);
+    when(mongoDatabase.getCollection(
+            eq("driver_track_stats"), eq(com.antigravity.models.DriverTrackStats.class)))
+        .thenReturn(prodCol);
+
+    FindIterable<com.antigravity.models.DriverTrackStats> demoIterable = mock(FindIterable.class);
+    FindIterable<com.antigravity.models.DriverTrackStats> prodIterable = mock(FindIterable.class);
+
+    when(demoCol.find(any(Bson.class))).thenReturn(demoIterable);
+    when(prodCol.find(any(Bson.class))).thenReturn(prodIterable);
+
+    when(demoIterable.first()).thenReturn(null); // Demo has no record yet
+
+    com.antigravity.models.DriverTrackStats prodStats =
+        new com.antigravity.models.DriverTrackStats();
+    prodStats.setDriverId("d_2");
+    prodStats.setTrackId("track1");
+    prodStats.setTotalLaps(259);
+    when(prodIterable.first()).thenReturn(prodStats);
+
+    com.antigravity.models.DriverTrackStats result =
+        dbService.getDriverTrackStats(mongoDatabase, "2", "track1", true);
+
+    assertNotNull(result);
+    assertEquals(259, result.getTotalLaps());
+    assertEquals("d_2", result.getDriverId());
   }
 }

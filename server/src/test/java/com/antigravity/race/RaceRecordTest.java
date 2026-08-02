@@ -386,6 +386,7 @@ public class RaceRecordTest {
             .track(track)
             .isDemoMode(true)
             .build();
+    minLapRace.injectProtocols(mock(ProtocolDelegate.class));
     minLapRace.changeState(new Racing());
 
     // 1. Reaction hit (1.0) + Lap 1 (4.0) -> effective 5.0

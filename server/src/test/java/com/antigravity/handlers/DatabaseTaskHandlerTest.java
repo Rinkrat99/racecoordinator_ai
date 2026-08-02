@@ -2,14 +2,19 @@ package com.antigravity.handlers;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.antigravity.context.DatabaseContext;
+import com.antigravity.models.DriverTrackStats;
 import com.antigravity.models.Race;
 import com.antigravity.models.RacePredictionRecord;
 import com.antigravity.models.Track;
+import com.antigravity.service.DatabaseService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.MongoDatabase;
 import io.javalin.Javalin;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -40,7 +45,11 @@ public class DatabaseTaskHandlerTest {
 
     Method method =
         DatabaseTaskHandler.class.getDeclaredMethod(
-            "isStalePredictionRecord", RacePredictionRecord.class, com.antigravity.race.Race.class);
+            "isStalePredictionRecord",
+            MongoDatabase.class,
+            RacePredictionRecord.class,
+            com.antigravity.race.Race.class,
+            boolean.class);
     method.setAccessible(true);
 
     RacePredictionRecord record = new RacePredictionRecord();
@@ -57,7 +66,7 @@ public class DatabaseTaskHandlerTest {
     preRace.setProjectedStandings(standings);
     record.setPreRace(preRace);
 
-    boolean isStale = (Boolean) method.invoke(handler, record, null);
+    boolean isStale = (Boolean) method.invoke(handler, null, record, null, false);
     assertTrue("Record should be stale if any rank is -1", isStale);
 
     // Test with valid ranks
@@ -71,7 +80,7 @@ public class DatabaseTaskHandlerTest {
     standings.add(dp1);
     standings.add(dp2);
 
-    isStale = (Boolean) method.invoke(handler, record, null);
+    isStale = (Boolean) method.invoke(handler, null, record, null, false);
     assertFalse(
         "Record should not be stale if ranks are valid and no empty lane/duplicates", isStale);
   }
@@ -84,7 +93,11 @@ public class DatabaseTaskHandlerTest {
 
     Method method =
         DatabaseTaskHandler.class.getDeclaredMethod(
-            "isStalePredictionRecord", RacePredictionRecord.class, com.antigravity.race.Race.class);
+            "isStalePredictionRecord",
+            MongoDatabase.class,
+            RacePredictionRecord.class,
+            com.antigravity.race.Race.class,
+            boolean.class);
     method.setAccessible(true);
 
     RacePredictionRecord record = new RacePredictionRecord();
@@ -110,7 +123,7 @@ public class DatabaseTaskHandlerTest {
             new com.antigravity.models.Driver("Driver 3", "D3", "d_3", null)));
     when(activeRace.getDrivers()).thenReturn(activeDrivers);
 
-    boolean isStale = (Boolean) method.invoke(handler, record, activeRace);
+    boolean isStale = (Boolean) method.invoke(handler, null, record, activeRace, false);
     assertTrue(
         "Record should be stale when active race drivers do not match prediction standings",
         isStale);
@@ -124,7 +137,11 @@ public class DatabaseTaskHandlerTest {
 
     Method method =
         DatabaseTaskHandler.class.getDeclaredMethod(
-            "isStalePredictionRecord", RacePredictionRecord.class, com.antigravity.race.Race.class);
+            "isStalePredictionRecord",
+            MongoDatabase.class,
+            RacePredictionRecord.class,
+            com.antigravity.race.Race.class,
+            boolean.class);
     method.setAccessible(true);
 
     RacePredictionRecord record = new RacePredictionRecord();
@@ -141,7 +158,7 @@ public class DatabaseTaskHandlerTest {
     preRace.setProjectedStandings(standings);
     record.setPreRace(preRace);
 
-    boolean isStale = (Boolean) method.invoke(handler, record, null);
+    boolean isStale = (Boolean) method.invoke(handler, null, record, null, false);
     assertTrue(
         "Record should be stale when totalSimulations <= 0 (missing diagnostic metadata)", isStale);
 
@@ -149,7 +166,7 @@ public class DatabaseTaskHandlerTest {
     dp1.setTotalSimulations(1000);
     dp2.setTotalSimulations(1000);
 
-    isStale = (Boolean) method.invoke(handler, record, null);
+    isStale = (Boolean) method.invoke(handler, null, record, null, false);
     assertFalse("Record should not be stale when totalSimulations > 0 and valid ranks", isStale);
   }
 
@@ -200,5 +217,102 @@ public class DatabaseTaskHandlerTest {
 
     org.mockito.Mockito.verify(mockCtx)
         .header("Cache-Control", "no-cache, no-store, must-revalidate");
+  }
+
+  @Test
+  public void testIsStalePredictionRecord_RaceOverNotStale() throws Exception {
+    DatabaseContext mockDbCtx = mock(DatabaseContext.class);
+    MongoDatabase mockMongoDb = mock(MongoDatabase.class);
+    Javalin mockJavalin = mock(Javalin.class);
+    DatabaseTaskHandler handler = new DatabaseTaskHandler(mockDbCtx, mockJavalin);
+
+    Method method =
+        DatabaseTaskHandler.class.getDeclaredMethod(
+            "isStalePredictionRecord",
+            MongoDatabase.class,
+            RacePredictionRecord.class,
+            com.antigravity.race.Race.class,
+            boolean.class);
+    method.setAccessible(true);
+
+    RacePredictionRecord record = new RacePredictionRecord();
+    record.setTimestamp(1000L);
+    RacePredictionRecord.PredictionSnapshot preRace = new RacePredictionRecord.PredictionSnapshot();
+    List<RacePredictionRecord.DriverProjection> standings = new ArrayList<>();
+    RacePredictionRecord.DriverProjection dp1 =
+        new RacePredictionRecord.DriverProjection("d_1", "Driver 1", 1, 100.0, 0.0, 0.6, 0.9);
+    dp1.setTotalSimulations(1000);
+    standings.add(dp1);
+    preRace.setProjectedStandings(standings);
+    record.setPreRace(preRace);
+
+    com.antigravity.models.Race raceModel =
+        new com.antigravity.models.Race.Builder().withTrackEntityId("track_1").build();
+    com.antigravity.race.Race activeRace = mock(com.antigravity.race.Race.class);
+    when(activeRace.getRaceModel()).thenReturn(raceModel);
+    when(activeRace.getState()).thenReturn(new com.antigravity.race.states.RaceOver());
+
+    boolean isStale = (Boolean) method.invoke(handler, mockMongoDb, record, activeRace, true);
+    assertFalse(
+        "Pre-race prediction record must remain static when race is in RaceOver state", isStale);
+  }
+
+  @Test
+  public void testIsStalePredictionRecord_NotStartedStaleWhenStatsUpdated() throws Exception {
+    DatabaseContext mockDbCtx = mock(DatabaseContext.class);
+    MongoDatabase mockMongoDb = mock(MongoDatabase.class);
+    Javalin mockJavalin = mock(Javalin.class);
+    DatabaseTaskHandler handler = new DatabaseTaskHandler(mockDbCtx, mockJavalin);
+
+    Method method =
+        DatabaseTaskHandler.class.getDeclaredMethod(
+            "isStalePredictionRecord",
+            MongoDatabase.class,
+            RacePredictionRecord.class,
+            com.antigravity.race.Race.class,
+            boolean.class);
+    method.setAccessible(true);
+
+    RacePredictionRecord record = new RacePredictionRecord();
+    record.setTimestamp(1000L);
+    RacePredictionRecord.PredictionSnapshot preRace = new RacePredictionRecord.PredictionSnapshot();
+    List<RacePredictionRecord.DriverProjection> standings = new ArrayList<>();
+    RacePredictionRecord.DriverProjection dp1 =
+        new RacePredictionRecord.DriverProjection("d_1", "Driver 1", 1, 100.0, 0.0, 0.6, 0.9);
+    dp1.setTotalSimulations(1000);
+    standings.add(dp1);
+    preRace.setProjectedStandings(standings);
+    record.setPreRace(preRace);
+
+    com.antigravity.models.Race raceModel =
+        new com.antigravity.models.Race.Builder().withTrackEntityId("track_1").build();
+    com.antigravity.race.Race activeRace = mock(com.antigravity.race.Race.class);
+    when(activeRace.getRaceModel()).thenReturn(raceModel);
+    when(activeRace.getState()).thenReturn(new com.antigravity.race.states.NotStarted());
+
+    List<com.antigravity.race.RaceParticipant> activeDrivers = new ArrayList<>();
+    activeDrivers.add(
+        new com.antigravity.race.RaceParticipant(
+            new com.antigravity.models.Driver("Driver 1", "D1", "d_1", null)));
+    when(activeRace.getDrivers()).thenReturn(activeDrivers);
+
+    DriverTrackStats mockStats = new DriverTrackStats();
+    mockStats.setDriverId("d_1");
+    mockStats.setTrackId("track_1");
+    mockStats.setLastUpdated(2000L);
+
+    DatabaseService mockService = mock(DatabaseService.class);
+    when(mockService.getDriverTrackStats(any(), eq("d_1"), eq("track_1"), eq(true)))
+        .thenReturn(mockStats);
+    DatabaseService.setInstance(mockService);
+
+    try {
+      boolean isStale = (Boolean) method.invoke(handler, mockMongoDb, record, activeRace, true);
+      assertTrue(
+          "Pre-race prediction record must be stale in NotStarted state when driver track stats updated",
+          isStale);
+    } finally {
+      DatabaseService.setInstance(new DatabaseService());
+    }
   }
 }

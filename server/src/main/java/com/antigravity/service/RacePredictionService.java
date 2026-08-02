@@ -58,6 +58,8 @@ public class RacePredictionService {
       return null;
     }
 
+    String trackId = raceModel != null ? raceModel.getTrackEntityId() : "";
+
     if (!force && database != null) {
       RacePredictionRecord existing =
           DatabaseService.getInstance().getRacePredictionRecord(database, raceId, isDemo);
@@ -92,8 +94,6 @@ public class RacePredictionService {
         }
       }
     }
-
-    String trackId = raceModel != null ? raceModel.getTrackEntityId() : "";
     Map<String, DriverTrackStats> statsMap = new HashMap<>();
 
     if (database != null && trackId != null && !trackId.isEmpty()) {

@@ -79,10 +79,11 @@
       <!-- Standings Predictions Table -->
       @if (predictionRecord?.pre_race) {
         <div class="standings-table-wrapper">
-          <div class="section-header-row">
-            <h2 class="section-title">
+          <div class="records-header">
+            <span class="records-title section-title">
               {{ "PRED_STANDINGS_TITLE" | translate }}
-            </h2>
+            </span>
+            <div class="records-subtitle-line"></div>
             <div class="prediction-info-banner">
               <span class="material-icons info-icon">info</span>
               <span class="banner-text">

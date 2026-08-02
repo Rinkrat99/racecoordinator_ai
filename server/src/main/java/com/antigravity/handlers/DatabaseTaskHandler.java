@@ -1353,11 +1353,24 @@ public class DatabaseTaskHandler {
   }
 
   private boolean isStalePredictionRecord(
-      RacePredictionRecord record, com.antigravity.race.Race activeRace) { // fqn-collision
+      MongoDatabase database,
+      RacePredictionRecord record,
+      com.antigravity.race.Race activeRace, // fqn-collision
+      boolean isDemo) {
     if (record == null || record.getPreRace() == null) {
       logger.debug("PREDICTION: Stale because record or preRace is null");
       return true;
     }
+    if (activeRace != null && activeRace.getState() != null) {
+      Object state = activeRace.getState();
+      if (state instanceof com.antigravity.race.states.Starting // fqn-collision
+          || state instanceof com.antigravity.race.states.Racing // fqn-collision
+          || state instanceof com.antigravity.race.states.HeatOver // fqn-collision
+          || state instanceof com.antigravity.race.states.RaceOver) { // fqn-collision
+        return false;
+      }
+    }
+
     List<RacePredictionRecord.DriverProjection> standings =
         record.getPreRace().getProjectedStandings();
     if (standings == null || standings.isEmpty()) {
@@ -1390,6 +1403,10 @@ public class DatabaseTaskHandler {
             "PREDICTION: Stale because active race drivers do not match prediction standings (active: {}, prediction: {})",
             activeDriverIds.size(),
             standingDriverIds.size());
+        return true;
+      }
+
+      if (isDriverTrackStatsUpdated(database, record, activeRace, isDemo)) {
         return true;
       }
     }
@@ -1427,11 +1444,42 @@ public class DatabaseTaskHandler {
 
     if (standings.size() > 1 && totalWinProb >= 0.0 && totalWinProb < 0.95) {
       logger.debug("PREDICTION: Stale because totalWinProb < 0.95: " + totalWinProb);
-      // return true; // Disabled because this causes an infinite loop of overwriting
-      // realtime
-      // snapshots
     }
 
+    return false;
+  }
+
+  private boolean isDriverTrackStatsUpdated(
+      MongoDatabase database,
+      RacePredictionRecord record,
+      com.antigravity.race.Race activeRace, // fqn-collision
+      boolean isDemo) {
+    if (activeRace == null || activeRace.getRaceModel() == null || database == null) {
+      return false;
+    }
+    String trackId = activeRace.getRaceModel().getTrackEntityId();
+    if (trackId == null || trackId.isEmpty() || activeRace.getDrivers() == null) {
+      return false;
+    }
+    long recordTimestamp = record.getTimestamp();
+    for (RaceParticipant rp : activeRace.getDrivers()) {
+      if (rp != null && !PredictionEngine.isParticipantEmpty(rp)) {
+        String driverId = PredictionEngine.getParticipantId(rp);
+        if (driverId != null && !driverId.isEmpty()) {
+          com.antigravity.models.DriverTrackStats dts = // fqn-collision
+              DatabaseService.getInstance()
+                  .getDriverTrackStats(database, driverId, trackId, isDemo);
+          if (dts != null && dts.getLastUpdated() > recordTimestamp) {
+            logger.info(
+                "PREDICTION: Stale in NotStarted state because driver {} track stats updated at {} > record timestamp {}",
+                driverId,
+                dts.getLastUpdated(),
+                recordTimestamp);
+            return true;
+          }
+        }
+      }
+    }
     return false;
   }
 
@@ -1469,7 +1517,7 @@ public class DatabaseTaskHandler {
         record = dbService.getRacePredictionRecord(database, targetRaceId, scope.isDemo());
       }
 
-      boolean isStale = isStalePredictionRecord(record, activeRace);
+      boolean isStale = isStalePredictionRecord(database, record, activeRace, scope.isDemo());
 
       if ((record == null || isStale || forceRecalc)
           && activeRace != null

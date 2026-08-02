@@ -115,7 +115,7 @@ describe("RacePredictionService", () => {
   });
 
   it("should handle error gracefully and return null when getPredictionEvaluation fails", () => {
-    service.getPredictionEvaluation("race_999").subscribe((result) => {
+    service.getPredictionEvaluation("race_999", false).subscribe((result) => {
       expect(result).toBeNull();
     });
 

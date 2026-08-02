@@ -83,7 +83,7 @@ export class RacePredictionService {
 
   getRacePredictions(
     raceId: string,
-    isDemo: boolean = false,
+    isDemo: boolean,
   ): Observable<RacePredictionRecord | null> {
     const baseUrl = this.dataService.serverUrl || "";
     const url = `${baseUrl}/api/predictions/races/${raceId}?isDemo=${isDemo}&t=${Date.now()}`;
@@ -94,7 +94,7 @@ export class RacePredictionService {
 
   getPredictionEvaluation(
     raceId: string,
-    isDemo: boolean = false,
+    isDemo: boolean,
   ): Observable<PredictionEvaluationRecord | null> {
     const baseUrl = this.dataService.serverUrl || "";
     const url = `${baseUrl}/api/predictions/evaluations/${raceId}?isDemo=${isDemo}&t=${Date.now()}`;

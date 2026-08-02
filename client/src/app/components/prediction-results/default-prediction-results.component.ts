@@ -97,7 +97,7 @@ export class DefaultPredictionResultsComponent implements OnInit, OnDestroy {
       });
 
     this.predictionService
-      .getPredictionEvaluation(raceId)
+      .getPredictionEvaluation(raceId, isDemo)
       .subscribe((evalRec) => {
         this.evaluationRecord = evalRec;
         this.cdr.markForCheck();

@@ -28,20 +28,24 @@ import com.antigravity.race.DriverHeatData;
 import com.antigravity.race.Heat;
 import com.antigravity.race.RaceParticipant;
 import com.antigravity.race.RaceSaveData;
+import com.antigravity.race.prediction.PredictionEngine;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.ReturnDocument;
+import com.mongodb.client.model.Sorts;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -1355,6 +1359,44 @@ public class DatabaseService {
     return getDriverStatistics(database, driverId, raceId, RaceScope.fromBoolean(isDemo));
   }
 
+  public static Bson buildDriverTrackStatsFilter(String driverId, String trackId) {
+    if (driverId == null || trackId == null) {
+      return Filters.eq("track_id", trackId);
+    }
+    Set<String> candidateIds = new LinkedHashSet<>();
+    candidateIds.add(driverId);
+
+    if (driverId.startsWith("d_")) {
+      String raw = driverId.substring(2);
+      candidateIds.add(raw);
+      candidateIds.add("d:" + raw);
+      candidateIds.add("d" + raw);
+    } else if (driverId.startsWith("d:")) {
+      String raw = driverId.substring(2);
+      candidateIds.add(raw);
+      candidateIds.add("d_" + raw);
+      candidateIds.add("d" + raw);
+    } else if (driverId.startsWith("d")
+        && driverId.length() > 1
+        && Character.isDigit(driverId.charAt(1))) {
+      String raw = driverId.substring(1);
+      candidateIds.add(raw);
+      candidateIds.add("d_" + raw);
+      candidateIds.add("d:" + raw);
+    } else {
+      candidateIds.add("d_" + driverId);
+      candidateIds.add("d:" + driverId);
+      candidateIds.add("d" + driverId);
+    }
+
+    List<Bson> idFilters = new ArrayList<>();
+    for (String id : candidateIds) {
+      idFilters.add(Filters.eq("driver_id", id));
+    }
+
+    return Filters.and(Filters.or(idFilters), Filters.eq("track_id", trackId));
+  }
+
   public DriverTrackStats getDriverTrackStats(
       MongoDatabase database, String driverId, String trackId, boolean isDemo) {
     if (database == null || driverId == null || trackId == null) {
@@ -1367,8 +1409,17 @@ public class DatabaseService {
       if (col == null) {
         return null;
       }
-      Bson filter = Filters.and(Filters.eq("driver_id", driverId), Filters.eq("track_id", trackId));
-      return col.find(filter).first();
+      Bson filter = buildDriverTrackStatsFilter(driverId, trackId);
+      DriverTrackStats stats = col.find(filter).first();
+      if (stats == null && isDemo) {
+        MongoCollection<DriverTrackStats> prodCol =
+            database.getCollection(
+                getCollectionName("driver_track_stats", false), DriverTrackStats.class);
+        if (prodCol != null) {
+          stats = prodCol.find(filter).first();
+        }
+      }
+      return stats;
     } catch (Exception e) {
       logger.error(
           "Failed to get driver track stats for driver: {}, track: {}", driverId, trackId, e);
@@ -1387,12 +1438,9 @@ public class DatabaseService {
       double minLapTime = race.getRaceModel().getMinLapTime();
 
       for (RaceParticipant rp : race.getDrivers()) {
-        if (rp.getDriver() == null
-            || rp.getDriver().getEntityId() == null
-            || rp.getDriver().getEntityId().isEmpty()) {
-          continue;
-        }
-        String driverId = rp.getDriver().getEntityId();
+        if (rp == null) continue;
+        String driverId = PredictionEngine.getParticipantId(rp);
+        if (driverId == null || driverId.isEmpty()) continue;
 
         DriverTrackStats stats = getDriverTrackStats(database, driverId, trackId, isDemo);
         if (stats == null) {
@@ -1413,11 +1461,8 @@ public class DatabaseService {
             if (heat.getDrivers() != null) {
               for (int laneIdx = 0; laneIdx < heat.getDrivers().size(); laneIdx++) {
                 DriverHeatData dhd = heat.getDrivers().get(laneIdx);
-                if (dhd.getDriver() != null) {
-                  String heatDriverId =
-                      dhd.getDriver().getDriver() != null
-                          ? dhd.getDriver().getDriver().getEntityId()
-                          : null;
+                if (dhd != null && dhd.getDriver() != null) {
+                  String heatDriverId = PredictionEngine.getParticipantId(dhd.getDriver());
                   if (driverId.equals(heatDriverId)) {
                     heatsCompleted++;
                     lapsCompleted += dhd.getLapCount();
@@ -1534,10 +1579,7 @@ public class DatabaseService {
       if (col == null) {
         return;
       }
-      Bson filter =
-          Filters.and(
-              Filters.eq("driver_id", stats.getDriverId()),
-              Filters.eq("track_id", stats.getTrackId()));
+      Bson filter = buildDriverTrackStatsFilter(stats.getDriverId(), stats.getTrackId());
       ReplaceOptions opts = new ReplaceOptions().upsert(true);
       col.replaceOne(filter, stats, opts);
     } catch (Exception e) {
@@ -1557,7 +1599,38 @@ public class DatabaseService {
       if (col == null) {
         return null;
       }
-      return col.find(Filters.eq("race_id", raceId)).first();
+      RacePredictionRecord record = null;
+      if ("current".equals(raceId)) {
+        record = col.find().sort(Sorts.descending("timestamp")).first();
+      } else {
+        record = col.find(Filters.eq("race_id", raceId)).first();
+      }
+
+      if (record == null && isDemo) {
+        MongoCollection<RacePredictionRecord> prodCol =
+            database.getCollection(
+                getCollectionName("race_predictions", false), RacePredictionRecord.class);
+        if (prodCol != null) {
+          if ("current".equals(raceId)) {
+            record = prodCol.find().sort(Sorts.descending("timestamp")).first();
+          } else {
+            record = prodCol.find(Filters.eq("race_id", raceId)).first();
+          }
+        }
+      } else if (record == null && !isDemo) {
+        MongoCollection<RacePredictionRecord> demoCol =
+            database.getCollection(
+                getCollectionName("race_predictions", true), RacePredictionRecord.class);
+        if (demoCol != null) {
+          if ("current".equals(raceId)) {
+            record = demoCol.find().sort(Sorts.descending("timestamp")).first();
+          } else {
+            record = demoCol.find(Filters.eq("race_id", raceId)).first();
+          }
+        }
+      }
+
+      return record;
     } catch (Exception e) {
       logger.error("Failed to get race prediction record for race: {}", raceId, e);
       return null;
@@ -1602,7 +1675,38 @@ public class DatabaseService {
       if (col == null) {
         return null;
       }
-      PredictionEvaluationRecord record = col.find(Filters.eq("race_id", raceId)).first();
+      PredictionEvaluationRecord record = null;
+      if ("current".equals(raceId)) {
+        record = col.find().sort(Sorts.descending("timestamp")).first();
+      } else {
+        record = col.find(Filters.eq("race_id", raceId)).first();
+      }
+
+      if (record == null && isDemo) {
+        MongoCollection<PredictionEvaluationRecord> prodCol =
+            database.getCollection(
+                getCollectionName("prediction_evaluations", false),
+                PredictionEvaluationRecord.class);
+        if (prodCol != null) {
+          if ("current".equals(raceId)) {
+            record = prodCol.find().sort(Sorts.descending("timestamp")).first();
+          } else {
+            record = prodCol.find(Filters.eq("race_id", raceId)).first();
+          }
+        }
+      } else if (record == null && !isDemo) {
+        MongoCollection<PredictionEvaluationRecord> demoCol =
+            database.getCollection(
+                getCollectionName("prediction_evaluations", true),
+                PredictionEvaluationRecord.class);
+        if (demoCol != null) {
+          if ("current".equals(raceId)) {
+            record = demoCol.find().sort(Sorts.descending("timestamp")).first();
+          } else {
+            record = demoCol.find(Filters.eq("race_id", raceId)).first();
+          }
+        }
+      }
 
       // If we found a record but it's a baseline "no data" evaluation (rank == -1),
       // it's meaningless and shouldn't be shown to the user. Delete it and return null.
@@ -1610,7 +1714,7 @@ public class DatabaseService {
           && record.getDriverEvaluations() != null
           && !record.getDriverEvaluations().isEmpty()
           && record.getDriverEvaluations().get(0).getProjectedRank() == -1) {
-        col.deleteOne(Filters.eq("race_id", raceId));
+        col.deleteOne(Filters.eq("race_id", record.getRaceId()));
         return null;
       }
 

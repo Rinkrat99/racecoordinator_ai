@@ -1,6 +1,7 @@
 package com.antigravity.race.prediction;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -125,6 +126,28 @@ public class PredictionEngineTest {
     assertEquals("race_101", eval.getRaceId());
     assertTrue(eval.getBrierScore() >= 0.0);
     assertEquals(0.0, eval.getRankMae(), 0.001);
+  }
+
+  @Test
+  public void testEvaluatePredictionAccuracy_DriverIdVariantMatching() {
+    PredictionSnapshot preRaceSnapshot =
+        engine.generatePreRacePrediction(null, participants, heats, statsMap);
+
+    // actualStandings uses integer string IDs ("1", "2") while preRaceSnapshot uses "d_1", "d_2" or
+    // "d1", "d2"
+    List<DriverProjection> actualStandings = new ArrayList<>();
+    actualStandings.add(new DriverProjection("1", "Alice", 1, 45.0, 180.0, 1.0, 1.0));
+    actualStandings.add(new DriverProjection("2", "Bob", 2, 40.0, 180.0, 0.0, 1.0));
+
+    PredictionEvaluationRecord eval =
+        engine.evaluatePredictionAccuracy("race_variant_102", preRaceSnapshot, actualStandings);
+
+    assertNotNull(eval);
+    assertNotNull(eval.getDriverEvaluations());
+    assertFalse(
+        "Driver evaluations must not be empty when matching driver ID variants",
+        eval.getDriverEvaluations().isEmpty());
+    assertEquals(2, eval.getDriverEvaluations().size());
   }
 
   @Test
