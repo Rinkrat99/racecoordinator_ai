@@ -278,12 +278,10 @@ export class RacedayHeatDriversComponent implements AfterViewInit, OnDestroy {
 
     if (this.type() === "on-deck") {
       const currentDriverIds = new Set(
-        cur.heatDrivers
-          ?.map((d) => d.driver?.objectId || d.driver?.entity_id)
-          .filter(Boolean) || [],
+        cur.heatDrivers?.map((d) => d.driver?.entity_id).filter(Boolean) || [],
       );
       return activeDrivers.filter((hd) => {
-        const id = hd.driver?.objectId || hd.driver?.entity_id;
+        const id = hd.driver?.entity_id;
         return id && !currentDriverIds.has(id);
       });
     }
@@ -336,6 +334,6 @@ export class RacedayHeatDriversComponent implements AfterViewInit, OnDestroy {
   }
 
   trackByDriver(index: number, hd: DriverHeatData): string {
-    return hd.driver?.objectId || hd.driver?.entity_id || String(index);
+    return hd.driver?.entity_id || String(index);
   }
 }

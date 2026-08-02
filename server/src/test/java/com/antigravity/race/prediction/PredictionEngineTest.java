@@ -129,23 +129,22 @@ public class PredictionEngineTest {
   }
 
   @Test
-  public void testEvaluatePredictionAccuracy_DriverIdVariantMatching() {
+  public void testEvaluatePredictionAccuracy_CanonicalDriverIdMatching() {
     PredictionSnapshot preRaceSnapshot =
         engine.generatePreRacePrediction(null, participants, heats, statsMap);
 
-    // actualStandings uses integer string IDs ("1", "2") while preRaceSnapshot uses "d_1", "d_2" or
-    // "d1", "d2"
+    // actualStandings uses canonical driver entity IDs ("d1", "d2") matching preRaceSnapshot
     List<DriverProjection> actualStandings = new ArrayList<>();
-    actualStandings.add(new DriverProjection("1", "Alice", 1, 45.0, 180.0, 1.0, 1.0));
-    actualStandings.add(new DriverProjection("2", "Bob", 2, 40.0, 180.0, 0.0, 1.0));
+    actualStandings.add(new DriverProjection("d1", "Alice", 1, 45.0, 180.0, 1.0, 1.0));
+    actualStandings.add(new DriverProjection("d2", "Bob", 2, 40.0, 180.0, 0.0, 1.0));
 
     PredictionEvaluationRecord eval =
-        engine.evaluatePredictionAccuracy("race_variant_102", preRaceSnapshot, actualStandings);
+        engine.evaluatePredictionAccuracy("race_canonical_102", preRaceSnapshot, actualStandings);
 
     assertNotNull(eval);
     assertNotNull(eval.getDriverEvaluations());
     assertFalse(
-        "Driver evaluations must not be empty when matching driver ID variants",
+        "Driver evaluations must not be empty when matching canonical driver IDs",
         eval.getDriverEvaluations().isEmpty());
     assertEquals(2, eval.getDriverEvaluations().size());
   }

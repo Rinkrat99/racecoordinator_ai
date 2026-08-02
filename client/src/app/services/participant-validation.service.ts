@@ -21,13 +21,12 @@ export class ParticipantValidationService {
   ): ValidationResult {
     const individualDriverIds = new Set<string>();
     const driverToTeamNames = new Map<string, string[]>(); // Driver ID -> Team Names
-    const EMPTY_LANE_ID = "EMPTY_LANE";
 
     // 1. Collect all participating driver IDs and their associations
     for (const p of participants) {
       if (this.isDriver(p)) {
-        const id = p.entity_id || (p as any).objectId || (p as any).entityId;
-        if (id && id !== EMPTY_LANE_ID) {
+        const id = p.entity_id;
+        if (!Driver.isEmpty(id)) {
           if (individualDriverIds.has(id)) {
             return {
               isValid: false,
@@ -40,7 +39,7 @@ export class ParticipantValidationService {
         }
       } else if (this.isTeam(p)) {
         for (const dId of p.driverIds) {
-          if (dId && dId !== EMPTY_LANE_ID) {
+          if (!Driver.isEmpty(dId)) {
             if (!driverToTeamNames.has(dId)) {
               driverToTeamNames.set(dId, []);
             }
@@ -51,7 +50,7 @@ export class ParticipantValidationService {
         if (p.team) {
           // Team participant
           for (const dId of p.team.driverIds) {
-            if (dId && dId !== EMPTY_LANE_ID) {
+            if (!Driver.isEmpty(dId)) {
               if (!driverToTeamNames.has(dId)) {
                 driverToTeamNames.set(dId, []);
               }
@@ -60,11 +59,8 @@ export class ParticipantValidationService {
           }
         } else {
           // Individual participant
-          const dId =
-            p.driver.entity_id ||
-            p.driver.objectId ||
-            (p.driver as any).entityId;
-          if (dId && dId !== EMPTY_LANE_ID) {
+          const dId = p.driver?.entity_id;
+          if (!Driver.isEmpty(dId)) {
             if (individualDriverIds.has(dId)) {
               return {
                 isValid: false,
@@ -82,12 +78,7 @@ export class ParticipantValidationService {
     // 2. Rule 1: Individual vs Team
     for (const dId of individualDriverIds) {
       if (driverToTeamNames.has(dId)) {
-        const driver = allDrivers.find(
-          (d) =>
-            d.entity_id === dId ||
-            d.objectId === dId ||
-            (d as any).entityId === dId,
-        );
+        const driver = allDrivers.find((d) => d.entity_id === dId);
         return {
           isValid: false,
           errorCode: "DUPE_INDIVIDUAL_TEAM",
@@ -100,12 +91,7 @@ export class ParticipantValidationService {
     // 3. Rule 2: Multiple Teams
     for (const [dId, teamNames] of driverToTeamNames.entries()) {
       if (teamNames.length > 1) {
-        const driver = allDrivers.find(
-          (d) =>
-            d.entity_id === dId ||
-            d.objectId === dId ||
-            (d as any).entityId === dId,
-        );
+        const driver = allDrivers.find((d) => d.entity_id === dId);
         return {
           isValid: false,
           errorCode: "DUPE_MULTIPLE_TEAMS",

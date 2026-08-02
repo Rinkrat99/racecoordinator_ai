@@ -41,7 +41,7 @@ export function cloneHeat(heat: Heat): Heat {
 }
 
 export function createParticipantFromDriver(driver: Driver): RaceParticipant {
-  const id = driver.entity_id || driver.objectId || (driver as any).entityId;
+  const id = driver.entity_id;
   return new RaceParticipant(
     `new-driver-${id}-${Math.random().toString(36).substring(7)}`,
     driver,
@@ -177,7 +177,7 @@ export function convertParticipantsToProto(
         name: p.driver.name,
         nickname: p.driver.nickname,
         avatarUrl: p.driver.avatarUrl,
-        model: { entityId: p.driver.entity_id || p.driver.objectId },
+        model: { entityId: p.driver.entity_id },
       },
       seed: p.seed,
     };
@@ -228,10 +228,7 @@ export function getModifyHeatsValidationError(
     if (isHeatStarted(originalH)) {
       for (const dhd of originalH.heatDrivers) {
         // Skip empty lanes
-        if (
-          !dhd.participant ||
-          dhd.participant.driver.objectId === "EMPTY_LANE"
-        ) {
+        if (!dhd.participant || Driver.isEmpty(dhd.participant.driver)) {
           continue;
         }
         const stillInRace = localParticipants.some(
@@ -252,7 +249,7 @@ export function getModifyHeatsValidationError(
     for (const h of localHeats) {
       for (const dhd of h.heatDrivers) {
         const p = dhd.participant;
-        if (!p || p.objectId === "EMPTY_LANE" || p.objectId === "") continue;
+        if (!p || Driver.isEmpty(p.driver)) continue;
 
         if (
           participantGroups.has(p.objectId) &&

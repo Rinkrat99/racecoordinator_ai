@@ -879,31 +879,6 @@ public class PredictionEngine {
 
         actualRankMap.put(rawId, rank);
         actualLapsMap.put(rawId, laps);
-
-        if (rawId.startsWith("d_")) {
-          String s = rawId.substring(2);
-          actualRankMap.put(s, rank);
-          actualRankMap.put("d:" + s, rank);
-          actualRankMap.put("d" + s, rank);
-          actualLapsMap.put(s, laps);
-          actualLapsMap.put("d:" + s, laps);
-          actualLapsMap.put("d" + s, laps);
-        } else if (rawId.startsWith("d:")) {
-          String s = rawId.substring(2);
-          actualRankMap.put(s, rank);
-          actualRankMap.put("d_" + s, rank);
-          actualRankMap.put("d" + s, rank);
-          actualLapsMap.put(s, laps);
-          actualLapsMap.put("d_" + s, laps);
-          actualLapsMap.put("d" + s, laps);
-        } else {
-          actualRankMap.put("d_" + rawId, rank);
-          actualRankMap.put("d:" + rawId, rank);
-          actualRankMap.put("d" + rawId, rank);
-          actualLapsMap.put("d_" + rawId, laps);
-          actualLapsMap.put("d:" + rawId, laps);
-          actualLapsMap.put("d" + rawId, laps);
-        }
       }
     }
 

@@ -49,10 +49,6 @@ export class Driver implements Model {
         : { type: "preset", url: "default_penalty" };
   }
 
-  get objectId(): string {
-    return this.entity_id;
-  }
-
   isEmpty(): boolean {
     return Driver.isEmpty(this);
   }
@@ -60,16 +56,15 @@ export class Driver implements Model {
   static isEmpty(driver: any): boolean {
     if (!driver) return true;
     const id =
-      driver.entity_id ||
-      driver.entityId ||
-      driver.id ||
-      driver.model?.entity_id ||
-      driver.model?.entityId;
+      typeof driver === "string"
+        ? driver
+        : driver.entity_id ||
+          driver.entityId ||
+          driver.id ||
+          driver.model?.entity_id ||
+          driver.model?.entityId;
     if (id === EMPTY_DRIVER_ID) return true;
-    if (id !== undefined && id !== "") return false;
-
-    // TODO(aufderheide): Remove this.  Fix the f'ing mocks.
-    // For mocks/incomplete objects without an ID, fallback to checking if it has any name
+    if (id) return false;
     return !driver.name && !driver.nickname && !driver.model?.name;
   }
 }

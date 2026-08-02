@@ -31,20 +31,18 @@ export class DriverConverter {
       return this.getEmptyDriver();
     }
 
-    const objectId = proto.model?.entityId;
+    const entityId = proto.model?.entityId;
 
-    // Is Reference if name is missing but objectId is present
-    const isReference = !proto.name && !!objectId;
+    // Is Reference if name is missing but entityId is present
+    const isReference = !proto.name && !!entityId;
 
     if (isReference) {
-      const cached = this.cache.get(objectId);
+      const cached = this.cache.get(entityId);
       if (cached) return cached;
-      if (objectId === EMPTY_DRIVER_ID) return this.getEmptyDriver();
+      if (entityId === EMPTY_DRIVER_ID) return this.getEmptyDriver();
     }
 
-    // TODO(aufderheide): Here's a name check validating empty lane.  This isn't the worst
-    // because it's looking for an empty string which is not a valid name, but it's not great.
-    const finalId = objectId || (proto.name ? "" : EMPTY_DRIVER_ID);
+    const finalId = entityId || (proto.name ? "" : EMPTY_DRIVER_ID);
 
     if (finalId) {
       const cached = this.cache.get(finalId);

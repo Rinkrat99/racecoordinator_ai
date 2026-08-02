@@ -147,7 +147,15 @@ public class Driver extends Model {
     return penaltyAudio;
   }
 
+  public static boolean isEmptyId(String id) {
+    return id == null || id.isEmpty() || EMPTY_DRIVER_ID.equals(id);
+  }
+
+  public static boolean isEmpty(Driver driver) {
+    return driver == null || isEmptyId(driver.getEntityId());
+  }
+
   public boolean isEmpty() {
-    return EMPTY_DRIVER_ID.equals(getEntityId());
+    return isEmpty(this);
   }
 }

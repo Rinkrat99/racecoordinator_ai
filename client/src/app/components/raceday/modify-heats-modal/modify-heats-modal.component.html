@@ -475,21 +475,11 @@
                               >
                                 @for (tm of getTeammates(dhd); track tm) {
                                   <option
-                                    [value]="
-                                      tm.entity_id ||
-                                      tm.objectId ||
-                                      $any(tm).entityId
-                                    "
+                                    [value]="tm.entity_id"
                                     [selected]="
-                                      (tm.entity_id ||
-                                        tm.objectId ||
-                                        $any(tm).entityId) ===
+                                      tm.entity_id ===
                                       (dhd.actualDriver?.entity_id ||
-                                        dhd.actualDriver?.objectId ||
-                                        $any(dhd.actualDriver)?.entityId ||
-                                        dhd.participant.driver.entity_id ||
-                                        dhd.participant.driver.objectId ||
-                                        $any(dhd.participant.driver).entityId)
+                                        dhd.participant.driver.entity_id)
                                     "
                                     style="
                                       background-color: #1a2332;
@@ -498,14 +488,7 @@
                                     "
                                   >
                                     {{ tm.nickname || tm.name }}
-                                    {{
-                                      getDriverStats(
-                                        dhd,
-                                        tm.entity_id ||
-                                          tm.objectId ||
-                                          $any(tm).entityId
-                                      )
-                                    }}
+                                    {{ getDriverStats(dhd, tm.entity_id) }}
                                   </option>
                                 }
                               </select>

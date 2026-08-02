@@ -397,10 +397,7 @@ export class ModifyHeatsModalComponent implements OnInit, OnDestroy {
   private updateDriverPool() {
     this.driverPool = this.localParticipants.filter((p) => {
       // 1. Must be a real participant (not a placeholder empty lane)
-      const isPlaceholder =
-        (p.driver?.entity_id === "EMPTY_LANE" ||
-          (p.driver as any)?.entityId === "EMPTY_LANE") &&
-        !p.team;
+      const isPlaceholder = Driver.isEmpty(p.driver) && !p.team;
       if (isPlaceholder) return false;
 
       return true;
@@ -412,15 +409,12 @@ export class ModifyHeatsModalComponent implements OnInit, OnDestroy {
     const participantTeamIds = new Set<string>();
 
     this.localParticipants.forEach((p) => {
-      const dId =
-        p.driver?.entity_id ||
-        p.driver?.objectId ||
-        (p.driver as any)?.entityId;
+      const dId = p.driver?.entity_id;
       if (dId && dId !== "EMPTY_LANE") {
         participantDriverIds.add(dId);
       }
       const team = p.team;
-      const tId = team?.entity_id || team?.objectId || (team as any)?.entityId;
+      const tId = team?.entity_id;
       if (tId && team) {
         participantTeamIds.add(tId);
         const driverIds = team.driverIds || (team as any).driver_ids || [];
@@ -429,7 +423,7 @@ export class ModifyHeatsModalComponent implements OnInit, OnDestroy {
     });
 
     this.databaseDrivers = this.allDrivers.filter((d) => {
-      const id = d.entity_id || d.objectId || (d as any).entityId;
+      const id = d.entity_id;
       return id && id !== "EMPTY_LANE" && !participantDriverIds.has(id);
     });
 
@@ -508,7 +502,7 @@ export class ModifyHeatsModalComponent implements OnInit, OnDestroy {
     const team = dhd.participant.team;
     const driverIds = team.driverIds || (team as any).driver_ids || [];
     return this.allDrivers.filter((d) => {
-      const id = d.entity_id || d.objectId || (d as any).entityId;
+      const id = d.entity_id;
       return driverIds.includes(id);
     });
   }
@@ -527,7 +521,7 @@ export class ModifyHeatsModalComponent implements OnInit, OnDestroy {
     const select = event.target as HTMLSelectElement;
     const selectedDriverId = select.value;
     const driver = this.allDrivers.find((d) => {
-      const id = d.entity_id || d.objectId || (d as any).entityId;
+      const id = d.entity_id;
       return id === selectedDriverId;
     });
     if (driver) {

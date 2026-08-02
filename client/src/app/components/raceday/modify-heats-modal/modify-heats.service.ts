@@ -85,10 +85,7 @@ export class ModifyHeatsService {
           // Dragged to the end: find the last non-placeholder in updatedParticipants
           for (let i = updatedParticipants.length - 1; i >= 0; i--) {
             const p = updatedParticipants[i];
-            const isPlaceholder =
-              (p.driver?.entity_id === "EMPTY_LANE" ||
-                (p.driver as any)?.entityId === "EMPTY_LANE") &&
-              !p.team;
+            const isPlaceholder = Driver.isEmpty(p.driver) && !p.team;
             if (!isPlaceholder) {
               toIdx = i;
               break;
@@ -347,10 +344,7 @@ export class ModifyHeatsService {
         toIdx = participants.length;
         for (let i = 0; i < participants.length; i++) {
           const p = participants[i];
-          const isPlaceholder =
-            (p.driver?.entity_id === "EMPTY_LANE" ||
-              (p.driver as any)?.entityId === "EMPTY_LANE") &&
-            !p.team;
+          const isPlaceholder = Driver.isEmpty(p.driver) && !p.team;
           if (isPlaceholder) {
             toIdx = i;
             break;
@@ -547,10 +541,7 @@ export class ModifyHeatsService {
     let toIdx = updatedParticipants.length;
     for (let i = 0; i < updatedParticipants.length; i++) {
       const p = updatedParticipants[i];
-      const isPlaceholder =
-        (p.driver?.entity_id === "EMPTY_LANE" ||
-          (p.driver as any)?.entityId === "EMPTY_LANE") &&
-        !p.team;
+      const isPlaceholder = Driver.isEmpty(p.driver) && !p.team;
       if (isPlaceholder) {
         toIdx = i;
         break;
