@@ -22,11 +22,37 @@ permissions:
   contents: write
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - id: check
+        run: |
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -n "$LATEST_TAG" ]; then
+              COMMITS=$(git rev-list --count "$LATEST_TAG..HEAD")
+              if [ "$COMMITS" -eq 0 ]; then
+                echo "No new commits since $LATEST_TAG. Skipping daily build."
+                echo "should_run=false" >> $GITHUB_OUTPUT
+                exit 0
+              fi
+            fi
+          fi
+          echo "should_run=true" >> $GITHUB_OUTPUT
+
   run-tests:
+    needs: check-changes
+    if: ${{ needs.check-changes.outputs.should_run == 'true' }}
     uses: ./.github/workflows/ci.yml
 
   build-artifacts:
-    needs: run-tests
+    needs: [check-changes, run-tests]
+    if: ${{ needs.check-changes.outputs.should_run == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -87,7 +113,8 @@ jobs:
           path: release/
 
   build-windows:
-    needs: build-artifacts
+    needs: [check-changes, build-artifacts]
+    if: ${{ needs.check-changes.outputs.should_run == 'true' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -124,7 +151,8 @@ jobs:
           path: Output/
 
   build-mac:
-    needs: build-artifacts
+    needs: [check-changes, build-artifacts]
+    if: ${{ needs.check-changes.outputs.should_run == 'true' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
@@ -144,8 +172,8 @@ jobs:
           path: release/RaceCoordinator_Mac.dmg
 
   publish-release:
-    needs: [build-windows, build-mac, build-artifacts]
-    if: ${{ github.event.inputs.skip_release != 'true' }}
+    needs: [check-changes, build-windows, build-mac, build-artifacts]
+    if: ${{ needs.check-changes.outputs.should_run == 'true' && github.event.inputs.skip_release != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download Windows Installers
