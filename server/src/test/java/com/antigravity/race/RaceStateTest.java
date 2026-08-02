@@ -2,6 +2,7 @@ package com.antigravity.race;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.eq;
@@ -866,5 +867,44 @@ public class RaceStateTest {
         "Timer should have triggered broadcastTime",
         latch.await(2, java.util.concurrent.TimeUnit.SECONDS));
     assertFalse("Ticker thread should not be interrupted by exit()", wasInterrupted.get());
+  }
+
+  @Test
+  public void testImmediateCleanupWhenDirectorExplicitlyUnsubscribes() throws Exception {
+    ClientSubscriptionManager mgr = ClientSubscriptionManager.getInstance();
+
+    Session mockSession1 = mock(Session.class);
+    Session mockSession2 = mock(Session.class);
+    when(mockSession1.isOpen()).thenReturn(true);
+    when(mockSession1.getRemote()).thenReturn(mock(RemoteEndpoint.class));
+    when(mockSession2.isOpen()).thenReturn(true);
+    when(mockSession2.getRemote()).thenReturn(mock(RemoteEndpoint.class));
+
+    java.net.InetSocketAddress localhostAddr = new java.net.InetSocketAddress("127.0.0.1", 8080);
+    when(mockSession1.getRemoteAddress()).thenReturn(localhostAddr);
+    when(mockSession2.getRemoteAddress()).thenReturn(localhostAddr);
+
+    WsContext ctx1 = new WsContext("s1", mockSession1) {};
+    WsContext ctx2 = new WsContext("s2", mockSession2) {};
+
+    mgr.addSession(ctx1);
+    mgr.addSession(ctx2);
+    mgr.handleRaceSubscription(
+        ctx1, RaceSubscriptionRequest.newBuilder().setSubscribe(true).build());
+    mgr.handleRaceSubscription(
+        ctx2, RaceSubscriptionRequest.newBuilder().setSubscribe(true).build());
+
+    // Director 1 explicitly unsubscribes
+    mgr.handleRaceSubscription(
+        ctx1, RaceSubscriptionRequest.newBuilder().setSubscribe(false).build());
+
+    // Director 2 disconnects without explicit unsubscribe (session removed)
+    mgr.removeSession(ctx2);
+
+    // Race should immediately be cleaned up (set to null) without waiting for grace period
+    assertNull("Race should be cleaned up immediately", mgr.getRace());
+
+    // Cleanup sessions
+    mgr.removeSession(ctx1);
   }
 }

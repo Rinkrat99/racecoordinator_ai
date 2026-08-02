@@ -182,10 +182,12 @@ describe("DefaultHeatResultsComponent", () => {
 
     // Call pagehide
     component.onPageHide(null);
+    expect(mockRaceConnectionService.disconnect).toHaveBeenCalledWith(true);
     expect(mockWindow.close).toHaveBeenCalled();
     expect(component["driverResultsWindows"].length).toBe(0);
 
     // Test ngOnDestroy close
+    mockRaceConnectionService.disconnect.calls.reset();
     const mockWindow2 = jasmine.createSpyObj("Window", ["close"]);
     mockWindow2.closed = false;
     (window.open as jasmine.Spy).and.returnValue(mockWindow2);
@@ -193,6 +195,7 @@ describe("DefaultHeatResultsComponent", () => {
     expect(component["driverResultsWindows"].length).toBe(1);
 
     component.ngOnDestroy();
+    expect(mockRaceConnectionService.disconnect).toHaveBeenCalledWith(true);
     expect(mockWindow2.close).toHaveBeenCalled();
     expect(component["driverResultsWindows"].length).toBe(0);
   });

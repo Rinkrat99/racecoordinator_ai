@@ -1,6 +1,7 @@
 import {
   ChangeDetectorRef,
   Component,
+  HostListener,
   inject,
   OnDestroy,
   OnInit,
@@ -139,7 +140,13 @@ export class DriverViewComponent implements OnInit, OnDestroy {
     if (this.viewerRaceEndedHandler) {
       this.viewerRaceEndedHandler.stopListening();
     }
+    this.raceConnectionService.disconnect(true);
     this.subscriptions.forEach((sub) => sub.unsubscribe());
+  }
+
+  @HostListener("window:pagehide")
+  onPageHide() {
+    this.raceConnectionService.disconnect(true);
   }
 
   private loadData() {

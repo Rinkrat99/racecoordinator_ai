@@ -43,6 +43,7 @@ public class ClientSubscriptionManager {
   private ScheduledFuture<?> autoShutdownFuture;
   private int autoShutdownDelaySeconds = 5;
   private Runnable autoShutdownAction = () -> System.exit(0);
+  private volatile boolean lastDirectorExplicitlyUnsubscribed = false;
 
   void setAutoShutdownAction(Runnable action) {
     this.autoShutdownAction = action;
@@ -109,6 +110,8 @@ public class ClientSubscriptionManager {
   }
 
   public synchronized void setRace(Race race) {
+    cancelPendingCleanup();
+    this.lastDirectorExplicitlyUnsubscribed = false;
     if (race != null && this.currentProtocol != null) {
       throw new IllegalStateException("Cannot set race while protocol is active");
     }
@@ -280,6 +283,9 @@ public class ClientSubscriptionManager {
 
   public void handleRaceSubscription(WsContext ctx, RaceSubscriptionRequest request) {
     if (request.getSubscribe()) {
+      if (isDirectorSession(ctx)) {
+        this.lastDirectorExplicitlyUnsubscribed = false;
+      }
       cancelPendingCleanup();
       raceDataSubscribers.add(ctx);
       logger.info("Client subscribed to race data. Subscribers: {}", raceDataSubscribers.size());
@@ -296,7 +302,11 @@ public class ClientSubscriptionManager {
         ctx.send(ByteBuffer.wrap(snapshot.toByteArray()));
       }
     } else {
+      boolean wasDirector = isDirectorSession(ctx);
       raceDataSubscribers.remove(ctx);
+      if (wasDirector) {
+        this.lastDirectorExplicitlyUnsubscribed = true;
+      }
       logger.info(
           "Client unsubscribed from race data. Subscribers: {}", raceDataSubscribers.size());
       checkAndStopRace(true);
@@ -306,9 +316,10 @@ public class ClientSubscriptionManager {
   private synchronized void checkAndStopRace(boolean explicitUnsubscribe) {
     if (currentRace != null && !hasDirectorSubscribers()) {
       if (!isShuttingDown) {
+        boolean immediateCleanup = explicitUnsubscribe || lastDirectorExplicitlyUnsubscribed;
         // If there are NO sessions at all (not even splash screen), we should stop quickly
         long gracePeriod =
-            explicitUnsubscribe
+            immediateCleanup
                 ? 0
                 : (sessions.isEmpty()
                     ? Math.min(1, cleanupGracePeriodSeconds)

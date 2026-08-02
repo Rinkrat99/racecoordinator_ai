@@ -1,5 +1,6 @@
 import { HttpClientTestingModule } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
 import { of } from "rxjs";
 import { RaceService } from "@app/services/race.service";
 import { RaceConnectionService } from "@app/services/race-connection.service";
@@ -15,6 +16,8 @@ describe("PredictionResultsComponent", () => {
 
   const mockRaceConnectionService = {
     race$: of(null),
+    connect: jasmine.createSpy("connect"),
+    disconnect: jasmine.createSpy("disconnect"),
   };
 
   const mockRaceService = {
@@ -54,6 +57,9 @@ describe("PredictionResultsComponent", () => {
   };
 
   beforeEach(async () => {
+    mockRaceConnectionService.disconnect.calls.reset();
+    mockRaceConnectionService.connect.calls.reset();
+
     TestBed.overrideComponent(DefaultPredictionResultsComponent, {
       set: {
         providers: [
@@ -88,5 +94,19 @@ describe("PredictionResultsComponent", () => {
 
   it("should create component", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should force disconnect on ngOnDestroy and onPageHide", () => {
+    const defaultDebugEl = fixture.debugElement.query(
+      By.directive(DefaultPredictionResultsComponent),
+    );
+    const defaultComponent =
+      defaultDebugEl.componentInstance as DefaultPredictionResultsComponent;
+    defaultComponent.ngOnDestroy();
+    expect(mockRaceConnectionService.disconnect).toHaveBeenCalledWith(true);
+
+    mockRaceConnectionService.disconnect.calls.reset();
+    defaultComponent.onPageHide();
+    expect(mockRaceConnectionService.disconnect).toHaveBeenCalledWith(true);
   });
 });

@@ -2576,6 +2576,7 @@ export class DefaultRacedayComponent
 
   @HostListener("window:pagehide", ["$event"])
   onPageHide(_event: any) {
+    this.raceConnectionService.disconnect(true);
     if (this.leaderBoardWindow) {
       this.leaderBoardWindow.close();
       this.leaderBoardWindow = null;

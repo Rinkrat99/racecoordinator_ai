@@ -2,6 +2,7 @@ import { CommonModule } from "@angular/common";
 import {
   ChangeDetectorRef,
   Component,
+  HostListener,
   Inject,
   OnDestroy,
   OnInit,
@@ -69,9 +70,19 @@ export class DefaultPredictionResultsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (typeof this.raceConnectionService?.disconnect === "function") {
+      this.raceConnectionService.disconnect(true);
+    }
     this.subscriptions.unsubscribe();
     this.retryTimeouts.forEach((t) => clearTimeout(t));
     this.retryTimeouts = [];
+  }
+
+  @HostListener("window:pagehide")
+  onPageHide() {
+    if (typeof this.raceConnectionService?.disconnect === "function") {
+      this.raceConnectionService.disconnect(true);
+    }
   }
 
   private scheduleEvaluationReloads() {

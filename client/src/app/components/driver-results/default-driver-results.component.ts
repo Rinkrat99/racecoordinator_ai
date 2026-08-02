@@ -1,5 +1,11 @@
 import { CommonModule, DecimalPipe } from "@angular/common";
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from "@angular/core";
+import {
+  ChangeDetectorRef,
+  Component,
+  HostListener,
+  OnDestroy,
+  OnInit,
+} from "@angular/core";
 import { ActivatedRoute, RouterModule } from "@angular/router";
 import { Subscription } from "rxjs";
 import {
@@ -226,8 +232,13 @@ export class DefaultDriverResultsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.raceConnectionService.disconnect();
+    this.raceConnectionService.disconnect(true);
     this.subscriptions.forEach((sub) => sub.unsubscribe());
+  }
+
+  @HostListener("window:pagehide")
+  onPageHide() {
+    this.raceConnectionService.disconnect(true);
   }
 
   protected getScoreFormat(): string {
