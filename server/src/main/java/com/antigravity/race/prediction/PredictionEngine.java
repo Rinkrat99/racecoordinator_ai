@@ -281,6 +281,7 @@ public class PredictionEngine {
     return compileSnapshot(
         participants,
         scheduledHeats,
+        driverStatsMap,
         winCounts,
         podiumCounts,
         totalProjectedLaps,
@@ -506,6 +507,7 @@ public class PredictionEngine {
   private PredictionSnapshot compileSnapshot(
       List<RaceParticipant> participants,
       List<Heat> scheduledHeats,
+      Map<String, DriverTrackStats> driverStatsMap,
       Map<String, Integer> winCounts,
       Map<String, Integer> podiumCounts,
       Map<String, Double> totalProjectedLaps,
@@ -553,6 +555,9 @@ public class PredictionEngine {
       dp.setProjectedTimeSeconds(numSimulations > 0 ? Math.round(avgTime * 10.0) / 10.0 : -1.0);
       dp.setWinProbability(numSimulations > 0 ? Math.round(winProb * 1000.0) / 1000.0 : -1.0);
       dp.setPodiumProbability(numSimulations > 0 ? Math.round(podiumProb * 1000.0) / 1000.0 : -1.0);
+
+      populateDriverDiagnostics(
+          dp, driverId, driverStatsMap, driverHeatStates, winCounts, numSimulations);
 
       driverProjections.add(dp);
     }
@@ -616,6 +621,57 @@ public class PredictionEngine {
         podiumProbabilities,
         driverProjections,
         heatForecasts);
+  }
+
+  private void populateDriverDiagnostics(
+      DriverProjection dp,
+      String driverId,
+      Map<String, DriverTrackStats> driverStatsMap,
+      Map<String, DriverHeatState> driverHeatStates,
+      Map<String, Integer> winCounts,
+      int numSimulations) {
+    if (driverStatsMap != null && driverStatsMap.containsKey(driverId)) {
+      DriverTrackStats stats = driverStatsMap.get(driverId);
+      dp.setPriorMedianLapTime(Math.round(stats.getOverallMedianLapTime() * 1000.0) / 1000.0);
+      dp.setHistoricalLaps(stats.getTotalLaps());
+      if (stats.getLaneStats() != null) {
+        Map<String, Double> laneMap = new HashMap<>();
+        double sumStdDev = 0;
+        int stdDevCount = 0;
+        for (DriverTrackStats.LanePaceStats lps : stats.getLaneStats()) {
+          if (lps.getMedianLapTime() > 0) {
+            laneMap.put(
+                "Lane " + (lps.getLaneIndex() + 1),
+                Math.round(lps.getMedianLapTime() * 1000.0) / 1000.0);
+          }
+          if (lps.getStdDev() > 0) {
+            sumStdDev += lps.getStdDev();
+            stdDevCount++;
+          }
+        }
+        dp.setPerLaneMedians(laneMap);
+        if (stdDevCount > 0) {
+          dp.setPriorStdDev(Math.round((sumStdDev / stdDevCount) * 1000.0) / 1000.0);
+        }
+      }
+    }
+
+    if (driverHeatStates != null && driverHeatStates.containsKey(driverId)) {
+      DriverHeatState dhs = driverHeatStates.get(driverId);
+      if (dhs != null && dhs.allRaceLapTimes != null && !dhs.allRaceLapTimes.isEmpty()) {
+        dp.setEmpiricalLaps(dhs.allRaceLapTimes.size());
+        List<Double> laps = new ArrayList<>(dhs.allRaceLapTimes);
+        Collections.sort(laps);
+        double empMedian = laps.get(laps.size() / 2);
+        if (laps.size() % 2 == 0) {
+          empMedian = (empMedian + laps.get(laps.size() / 2 - 1)) / 2.0;
+        }
+        dp.setEmpiricalMedianLapTime(Math.round(empMedian * 1000.0) / 1000.0);
+      }
+    }
+
+    dp.setSimulatedWins(winCounts.getOrDefault(driverId, 0));
+    dp.setTotalSimulations(numSimulations);
   }
 
   private SimulationResult simulateHeatForDriver(

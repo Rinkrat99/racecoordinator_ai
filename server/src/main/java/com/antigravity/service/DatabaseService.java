@@ -1621,6 +1621,24 @@ public class DatabaseService {
     }
   }
 
+  public void deletePredictionEvaluationRecord(
+      MongoDatabase database, String raceId, boolean isDemo) {
+    if (database == null || raceId == null) {
+      return;
+    }
+    try {
+      MongoCollection<PredictionEvaluationRecord> col =
+          database.getCollection(
+              getCollectionName("prediction_evaluations", isDemo),
+              PredictionEvaluationRecord.class);
+      if (col != null) {
+        col.deleteMany(Filters.eq("race_id", raceId));
+      }
+    } catch (Exception e) {
+      logger.error("Failed to delete prediction evaluation record for race: {}", raceId, e);
+    }
+  }
+
   public void savePredictionEvaluationRecord(
       MongoDatabase database, PredictionEvaluationRecord record, boolean isDemo) {
     if (database == null || record == null || record.getRaceId() == null) {

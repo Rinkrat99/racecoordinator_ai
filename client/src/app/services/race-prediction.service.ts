@@ -11,6 +11,14 @@ export interface DriverProjection {
   projected_time_seconds: number;
   win_probability: number;
   podium_probability: number;
+  prior_median_lap_time?: number;
+  prior_std_dev?: number;
+  historical_laps?: number;
+  per_lane_medians?: { [laneName: string]: number };
+  empirical_laps?: number;
+  empirical_median_lap_time?: number;
+  simulated_wins?: number;
+  total_simulations?: number;
 }
 
 export interface HeatForecast {
@@ -89,7 +97,7 @@ export class RacePredictionService {
     isDemo: boolean = false,
   ): Observable<PredictionEvaluationRecord | null> {
     const baseUrl = this.dataService.serverUrl || "";
-    const url = `${baseUrl}/api/predictions/evaluations/${raceId}?isDemo=${isDemo}`;
+    const url = `${baseUrl}/api/predictions/evaluations/${raceId}?isDemo=${isDemo}&t=${Date.now()}`;
     return this.http
       .get<PredictionEvaluationRecord>(url)
       .pipe(catchError(() => of(null)));

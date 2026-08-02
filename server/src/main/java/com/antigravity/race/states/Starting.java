@@ -1,11 +1,14 @@
 package com.antigravity.race.states;
 
+import com.antigravity.context.DatabaseContext;
 import com.antigravity.proto.Lap;
 import com.antigravity.proto.RaceData;
 import com.antigravity.proto.RaceFlag;
 import com.antigravity.protocols.CarData;
+import com.antigravity.race.ClientSubscriptionManager;
 import com.antigravity.race.DriverHeatData;
 import com.antigravity.race.Race;
+import com.antigravity.service.DatabaseService;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,6 +39,18 @@ public class Starting implements IRaceState {
 
     // Set auto-start fired to prevent re-triggering from NotStarted
     race.setAutoStartFired(true);
+
+    if (!race.hasRacedInCurrentHeat()
+        && race.getRaceModel() != null
+        && race.getRaceModel().getEntityId() != null) {
+      ClientSubscriptionManager csm = ClientSubscriptionManager.getInstance();
+      DatabaseContext dbCtx = csm != null ? csm.getDatabaseContext() : null;
+      if (dbCtx != null && dbCtx.getDatabase() != null) {
+        DatabaseService.getInstance()
+            .deletePredictionEvaluationRecord(
+                dbCtx.getDatabase(), race.getRaceModel().getEntityId(), race.isDemoMode());
+      }
+    }
 
     double startTimeVal =
         race.hasRacedInCurrentHeat()

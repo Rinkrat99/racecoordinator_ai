@@ -75,6 +75,20 @@
 .record-label {
   font-size: 12px;
   color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.help-icon {
+  font-size: 14px;
+  color: #64748b;
+  cursor: help;
+  transition: color 0.2s ease;
+}
+
+.record-card:hover .help-icon {
+  color: #38bdf8;
 }
 
 .record-value {
@@ -86,17 +100,52 @@
 .gold-text { color: #fbbf24; }
 .magenta-text { color: #f43f5e; }
 
+.section-header-row {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 768px) {
+  .section-header-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 .section-title {
   font-size: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   color: #cbd5e1;
+}
+
+.prediction-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid #334155;
+  border-left: 3px solid #38bdf8;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #94a3b8;
+  max-width: 600px;
+}
+
+.info-icon {
+  font-size: 18px;
+  color: #38bdf8;
+  flex-shrink: 0;
 }
 
 .standings-table-wrapper {
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: 70vh;
+  overflow-y: visible;
   border-radius: 8px;
+  padding-bottom: 80px;
 }
 
 .prediction-table {
@@ -119,15 +168,33 @@
   position: sticky;
   top: 0;
   z-index: 2;
+  cursor: help;
 }
 
 .prediction-table tr {
   border-bottom: 1px solid #334155;
+  position: relative;
 }
 
 .gold-row { background: rgba(251, 191, 36, 0.08); }
 .silver-row { background: rgba(148, 163, 184, 0.08); }
 .bronze-row { background: rgba(217, 119, 6, 0.08); }
+
+.laps-cell-content {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.laps-value {
+  font-weight: 600;
+}
+
+.pace-subtext {
+  font-size: 12px;
+  color: #38bdf8;
+  font-weight: 500;
+}
 
 .prob-bar-container {
   position: relative;
@@ -152,6 +219,111 @@
   font-size: 12px;
   font-weight: 700;
   color: #ffffff;
+}
+
+.driver-cell-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.driver-name {
+  font-weight: 600;
+}
+
+.diagnostic-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.diag-icon {
+  font-size: 16px;
+  color: #64748b;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.diagnostic-trigger:hover .diag-icon {
+  color: #38bdf8;
+  transform: scale(1.2);
+}
+
+/* Viewport-fixed popover unclipped by any parent overflow container */
+.diagnostic-card-popover,
+.fixed-popover {
+  display: block;
+  position: fixed;
+  z-index: 999999;
+  width: 350px;
+  background: #0f172a;
+  border: 1px solid #38bdf8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.95), 0 0 25px rgba(56, 189, 248, 0.35);
+  backdrop-filter: blur(16px);
+  pointer-events: none;
+}
+
+.popover-header {
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+}
+
+.popover-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.diag-section {
+  margin-bottom: 10px;
+}
+
+.diag-section:last-child {
+  margin-bottom: 0;
+}
+
+.diag-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.diag-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.diag-key {
+  color: #64748b;
+}
+
+.diag-val {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.font-small {
+  font-size: 10px;
+}
+
+.cyan {
+  color: #38bdf8;
 }
 
 /* Custom scrollbar styling */

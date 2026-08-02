@@ -7,10 +7,12 @@ import {
   OnInit,
 } from "@angular/core";
 import { Subscription } from "rxjs";
+import { TranslatePipe } from "@app/pipes/translate.pipe";
 import { RaceState } from "@app/proto/antigravity";
 import { RaceService } from "@app/services/race.service";
 import { RaceConnectionService } from "@app/services/race-connection.service";
 import {
+  DriverProjection,
   PredictionEvaluationRecord,
   RacePredictionRecord,
   RacePredictionService,
@@ -22,12 +24,16 @@ import { TranslationService } from "@app/services/translation.service";
   selector: "app-default-prediction-results",
   templateUrl: "./default-prediction-results.component.html",
   styleUrls: ["./default-prediction-results.component.css"],
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
 })
 export class DefaultPredictionResultsComponent implements OnInit, OnDestroy {
   predictionRecord: RacePredictionRecord | null = null;
   evaluationRecord: PredictionEvaluationRecord | null = null;
   isLoading = true;
+  isRaceOver = false;
+  hoveredDriverProj: DriverProjection | null = null;
+  popoverTop = 0;
+  popoverLeft = 0;
   private subscriptions: Subscription = new Subscription();
   private retryTimeouts: any[] = [];
 
@@ -43,17 +49,22 @@ export class DefaultPredictionResultsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.loadPredictions();
+    if (typeof this.raceConnectionService?.connect === "function") {
+      this.raceConnectionService.connect();
+    }
 
     if (this.raceConnectionService?.raceState$) {
       this.subscriptions.add(
         this.raceConnectionService.raceState$.subscribe((state) => {
+          this.isRaceOver = state === RaceState.RACE_OVER;
           this.loadPredictions();
           if (state === RaceState.RACE_OVER) {
             this.scheduleEvaluationReloads();
           }
         }),
       );
+    } else {
+      this.loadPredictions();
     }
   }
 
@@ -64,7 +75,7 @@ export class DefaultPredictionResultsComponent implements OnInit, OnDestroy {
   }
 
   private scheduleEvaluationReloads() {
-    const delays = [500, 1500, 3000];
+    const delays = [300, 1000, 2000, 4000];
     delays.forEach((delay) => {
       const timeout = setTimeout(() => {
         this.loadPredictions();
@@ -98,5 +109,65 @@ export class DefaultPredictionResultsComponent implements OnInit, OnDestroy {
       return "--%";
     }
     return Math.round(prob * 100) + "%";
+  }
+
+  getImpliedPace(proj: DriverProjection | undefined): string {
+    if (
+      !proj ||
+      !proj.projected_laps ||
+      proj.projected_laps <= 0 ||
+      !proj.projected_time_seconds ||
+      proj.projected_time_seconds <= 0
+    ) {
+      return "";
+    }
+    const pace = (proj.projected_time_seconds / proj.projected_laps).toFixed(2);
+    return this.translationService.translate("PRED_AT_PACE", { pace });
+  }
+
+  formatLaneMedians(proj: DriverProjection | undefined): string {
+    if (!proj || !proj.per_lane_medians) {
+      return "";
+    }
+    return Object.entries(proj.per_lane_medians)
+      .map(([lane, val]) => `${lane}: ${val}s`)
+      .join(", ");
+  }
+
+  getLaneMediansKeys(proj: DriverProjection | undefined): string[] {
+    if (!proj || !proj.per_lane_medians) {
+      return [];
+    }
+    return Object.keys(proj.per_lane_medians);
+  }
+
+  onDriverHover(event: MouseEvent, proj: DriverProjection) {
+    const target = event.currentTarget as HTMLElement;
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    this.hoveredDriverProj = proj;
+
+    let top = rect.top - 10;
+    let left = rect.left + rect.width + 12;
+
+    const popoverHeight = 280;
+    if (top + popoverHeight > window.innerHeight - 10) {
+      top = window.innerHeight - popoverHeight - 10;
+    }
+    if (top < 10) {
+      top = 10;
+    }
+
+    const popoverWidth = 350;
+    if (left + popoverWidth > window.innerWidth - 10) {
+      left = rect.left - popoverWidth - 12;
+    }
+
+    this.popoverTop = top;
+    this.popoverLeft = left;
+  }
+
+  onDriverLeave() {
+    this.hoveredDriverProj = null;
   }
 }

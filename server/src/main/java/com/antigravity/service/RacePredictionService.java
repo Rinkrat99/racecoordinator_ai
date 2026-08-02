@@ -66,11 +66,15 @@ public class RacePredictionService {
             existing.getPreRace().getProjectedStandings();
         if (standings != null && !standings.isEmpty()) {
           Set<String> existingIds = new HashSet<>();
+          boolean hasDiagnostics = true;
           for (RacePredictionRecord.DriverProjection dp : standings) {
             if (dp != null
                 && dp.getDriverId() != null
                 && !"EMPTY_LANE".equalsIgnoreCase(dp.getDriverId())) {
               existingIds.add(dp.getDriverId());
+              if (dp.getTotalSimulations() <= 0) {
+                hasDiagnostics = false;
+              }
             }
           }
           Set<String> currentIds = new HashSet<>();
@@ -82,7 +86,7 @@ public class RacePredictionService {
               }
             }
           }
-          if (existingIds.equals(currentIds)) {
+          if (existingIds.equals(currentIds) && hasDiagnostics) {
             return existing;
           }
         }
@@ -187,6 +191,7 @@ public class RacePredictionService {
       }
 
       DatabaseService.getInstance().saveRacePredictionRecord(database, record, isDemo);
+      DatabaseService.getInstance().deletePredictionEvaluationRecord(database, raceId, isDemo);
     }
 
     return snapshot;

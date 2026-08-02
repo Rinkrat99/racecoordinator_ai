@@ -129,4 +129,28 @@ public class RacePredictionServiceTest {
     assertNotNull(updatedRecord);
     org.junit.Assert.assertEquals(3, updatedRecord.getPreRace().getProjectedStandings().size());
   }
+
+  @Test
+  public void testDriverProjectionSerialization() throws Exception {
+    com.fasterxml.jackson.databind.ObjectMapper mapper =
+        new com.fasterxml.jackson.databind.ObjectMapper();
+
+    java.util.Map<String, Double> laneMap = new HashMap<>();
+    laneMap.put("Lane 1", 3.25);
+
+    RacePredictionRecord.DriverProjection dp =
+        new RacePredictionRecord.DriverProjection(
+            "d1", "Alice", 1, 45.0, 180.0, 0.99, 1.0, 3.25, 0.25, 38, laneMap, 10, 3.20, 992, 1000);
+
+    String json = mapper.writeValueAsString(dp);
+    RacePredictionRecord.DriverProjection deserialized =
+        mapper.readValue(json, RacePredictionRecord.DriverProjection.class);
+
+    org.junit.Assert.assertEquals(992, deserialized.getSimulatedWins());
+    org.junit.Assert.assertEquals(1000, deserialized.getTotalSimulations());
+    org.junit.Assert.assertEquals(3.25, deserialized.getPriorMedianLapTime(), 0.001);
+    org.junit.Assert.assertEquals(0.25, deserialized.getPriorStdDev(), 0.001);
+    org.junit.Assert.assertEquals(38, deserialized.getHistoricalLaps());
+    org.junit.Assert.assertEquals(1, deserialized.getPerLaneMedians().size());
+  }
 }

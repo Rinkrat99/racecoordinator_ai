@@ -1401,6 +1401,12 @@ public class DatabaseTaskHandler {
         logger.debug("PREDICTION: Stale because driver projection is null");
         return true;
       }
+      if (dp.getTotalSimulations() <= 0) {
+        logger.debug(
+            "PREDICTION: Stale because DriverProjection is missing diagnostic metadata for driver: {}",
+            dp.getDriverId());
+        return true;
+      }
       if ("EMPTY_LANE".equalsIgnoreCase(dp.getDriverId())
           || "Empty Lane".equalsIgnoreCase(dp.getDriverName())) {
         logger.debug("PREDICTION: Stale because empty lane driver found");
@@ -1518,6 +1524,7 @@ public class DatabaseTaskHandler {
 
   private void getPredictionEvaluationRecord(Context ctx) {
     try {
+      ctx.header("Cache-Control", "no-cache, no-store, must-revalidate");
       String raceId = ctx.pathParam("id");
       RaceScope scope = RequestContextUtils.getRaceScope(ctx);
       DatabaseService dbService = DatabaseService.getInstance();
@@ -1535,6 +1542,19 @@ public class DatabaseTaskHandler {
       String targetRaceId = raceId;
       if ("current".equals(raceId) && activeRace != null && activeRace.getRaceModel() != null) {
         targetRaceId = activeRace.getRaceModel().getEntityId();
+      }
+
+      if (activeRace != null && activeRace.getRaceModel() != null) {
+        String activeEntityId = activeRace.getRaceModel().getEntityId();
+        if ("current".equals(raceId)
+            || (activeEntityId != null && activeEntityId.equals(targetRaceId))) {
+          if (!(activeRace.getState()
+              instanceof com.antigravity.race.states.RaceOver)) { // fqn-collision
+            ctx.status(404)
+                .result("Prediction evaluation unavailable while race is pre-race or in-race");
+            return;
+          }
+        }
       }
 
       PredictionEvaluationRecord eval =

@@ -219,6 +219,38 @@ public class RacePredictionRecord {
     @JsonProperty("podium_probability")
     private double podiumProbability;
 
+    @BsonProperty("prior_median_lap_time")
+    @JsonProperty("prior_median_lap_time")
+    private double priorMedianLapTime = -1.0;
+
+    @BsonProperty("prior_std_dev")
+    @JsonProperty("prior_std_dev")
+    private double priorStdDev = -1.0;
+
+    @BsonProperty("historical_laps")
+    @JsonProperty("historical_laps")
+    private int historicalLaps = 0;
+
+    @BsonProperty("per_lane_medians")
+    @JsonProperty("per_lane_medians")
+    private Map<String, Double> perLaneMedians = new HashMap<>();
+
+    @BsonProperty("empirical_laps")
+    @JsonProperty("empirical_laps")
+    private int empiricalLaps = 0;
+
+    @BsonProperty("empirical_median_lap_time")
+    @JsonProperty("empirical_median_lap_time")
+    private double empiricalMedianLapTime = -1.0;
+
+    @BsonProperty("simulated_wins")
+    @JsonProperty("simulated_wins")
+    private int simulatedWins = 0;
+
+    @BsonProperty("total_simulations")
+    @JsonProperty("total_simulations")
+    private int totalSimulations = 0;
+
     public DriverProjection() {}
 
     @BsonCreator
@@ -232,7 +264,19 @@ public class RacePredictionRecord {
             double projectedTimeSeconds,
         @BsonProperty("win_probability") @JsonProperty("win_probability") double winProbability,
         @BsonProperty("podium_probability") @JsonProperty("podium_probability")
-            double podiumProbability) {
+            double podiumProbability,
+        @BsonProperty("prior_median_lap_time") @JsonProperty("prior_median_lap_time")
+            Double priorMedianLapTime,
+        @BsonProperty("prior_std_dev") @JsonProperty("prior_std_dev") Double priorStdDev,
+        @BsonProperty("historical_laps") @JsonProperty("historical_laps") Integer historicalLaps,
+        @BsonProperty("per_lane_medians") @JsonProperty("per_lane_medians")
+            Map<String, Double> perLaneMedians,
+        @BsonProperty("empirical_laps") @JsonProperty("empirical_laps") Integer empiricalLaps,
+        @BsonProperty("empirical_median_lap_time") @JsonProperty("empirical_median_lap_time")
+            Double empiricalMedianLapTime,
+        @BsonProperty("simulated_wins") @JsonProperty("simulated_wins") Integer simulatedWins,
+        @BsonProperty("total_simulations") @JsonProperty("total_simulations")
+            Integer totalSimulations) {
       this.driverId = driverId;
       this.driverName = driverName;
       this.projectedRank = projectedRank;
@@ -240,6 +284,40 @@ public class RacePredictionRecord {
       this.projectedTimeSeconds = projectedTimeSeconds;
       this.winProbability = winProbability;
       this.podiumProbability = podiumProbability;
+      this.priorMedianLapTime = priorMedianLapTime != null ? priorMedianLapTime : -1.0;
+      this.priorStdDev = priorStdDev != null ? priorStdDev : -1.0;
+      this.historicalLaps = historicalLaps != null ? historicalLaps : 0;
+      this.perLaneMedians = perLaneMedians != null ? perLaneMedians : new HashMap<>();
+      this.empiricalLaps = empiricalLaps != null ? empiricalLaps : 0;
+      this.empiricalMedianLapTime = empiricalMedianLapTime != null ? empiricalMedianLapTime : -1.0;
+      this.simulatedWins = simulatedWins != null ? simulatedWins : 0;
+      this.totalSimulations = totalSimulations != null ? totalSimulations : 0;
+    }
+
+    public DriverProjection(
+        String driverId,
+        String driverName,
+        int projectedRank,
+        double projectedLaps,
+        double projectedTimeSeconds,
+        double winProbability,
+        double podiumProbability) {
+      this(
+          driverId,
+          driverName,
+          projectedRank,
+          projectedLaps,
+          projectedTimeSeconds,
+          winProbability,
+          podiumProbability,
+          -1.0,
+          -1.0,
+          0,
+          new HashMap<>(),
+          0,
+          -1.0,
+          0,
+          0);
     }
 
     public String getDriverId() {
@@ -296,6 +374,70 @@ public class RacePredictionRecord {
 
     public void setPodiumProbability(double podiumProbability) {
       this.podiumProbability = podiumProbability;
+    }
+
+    public double getPriorMedianLapTime() {
+      return priorMedianLapTime;
+    }
+
+    public void setPriorMedianLapTime(double priorMedianLapTime) {
+      this.priorMedianLapTime = priorMedianLapTime;
+    }
+
+    public double getPriorStdDev() {
+      return priorStdDev;
+    }
+
+    public void setPriorStdDev(double priorStdDev) {
+      this.priorStdDev = priorStdDev;
+    }
+
+    public int getHistoricalLaps() {
+      return historicalLaps;
+    }
+
+    public void setHistoricalLaps(int historicalLaps) {
+      this.historicalLaps = historicalLaps;
+    }
+
+    public Map<String, Double> getPerLaneMedians() {
+      return perLaneMedians;
+    }
+
+    public void setPerLaneMedians(Map<String, Double> perLaneMedians) {
+      this.perLaneMedians = perLaneMedians != null ? perLaneMedians : new HashMap<>();
+    }
+
+    public int getEmpiricalLaps() {
+      return empiricalLaps;
+    }
+
+    public void setEmpiricalLaps(int empiricalLaps) {
+      this.empiricalLaps = empiricalLaps;
+    }
+
+    public double getEmpiricalMedianLapTime() {
+      return empiricalMedianLapTime;
+    }
+
+    public void setEmpiricalMedianLapTime(double empiricalMedianLapTime) {
+      this.empiricalMedianLapTime = empiricalMedianLapTime;
+    }
+
+    public int getSimulatedWins() {
+      return simulatedWins;
+    }
+
+    public void setSimulatedWins(int simulatedWins) {
+      this.simulatedWins = simulatedWins;
+    }
+
+    public int getTotalSimulations() {
+      return totalSimulations;
+    }
+
+    public void setTotalSimulations(int totalSimulations) {
+      this.totalSimulations = totalSimulations;
     }
   }
 
