@@ -161,7 +161,13 @@ export class DefaultPredictionResultsComponent implements OnInit, OnDestroy {
     let top = rect.top - 10;
     let left = rect.left + rect.width + 12;
 
-    const popoverHeight = 280;
+    const popoverHeight = 300;
+    const popoverWidth = 360;
+
+    if (left + popoverWidth > window.innerWidth - 10) {
+      left = rect.left - popoverWidth - 12;
+    }
+
     if (top + popoverHeight > window.innerHeight - 10) {
       top = window.innerHeight - popoverHeight - 10;
     }
@@ -169,10 +175,7 @@ export class DefaultPredictionResultsComponent implements OnInit, OnDestroy {
       top = 10;
     }
 
-    const popoverWidth = 350;
-    if (left + popoverWidth > window.innerWidth - 10) {
-      left = rect.left - popoverWidth - 12;
-    }
+    left = Math.max(10, Math.min(left, window.innerWidth - popoverWidth - 10));
 
     this.popoverTop = top;
     this.popoverLeft = left;
