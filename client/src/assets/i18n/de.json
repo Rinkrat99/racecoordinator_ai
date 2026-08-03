@@ -1540,7 +1540,7 @@
   "PRED_LAPS_SUFFIX": "Runden",
   "PRED_AT_PACE": "(@ {{pace}}s/Runde)",
   "PRED_DIAG_TRIGGER_TITLE": "Hovern für Datenanalyse-Diagnose",
-  "PRED_DIAG_TITLE": "🔬 MODELL-DIAGNOSE: {{name}}",
+  "PRED_DIAG_TITLE": "🔬 MODELL-DIAGNOSE",
   "PRED_DIAG_HISTORICAL_PRIOR": "HISTORISCHE PRIOR-DATEN (BAYES)",
   "PRED_DIAG_PRIOR_MEDIAN": "Prior Median-Tempo:",
   "PRED_DIAG_COLD_START": "N/A (Kaltstart)",

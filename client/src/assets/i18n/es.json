@@ -1540,7 +1540,7 @@
   "PRED_LAPS_SUFFIX": "Vueltas",
   "PRED_AT_PACE": "(@ {{pace}}s/vuelta)",
   "PRED_DIAG_TRIGGER_TITLE": "Pasa el ratón para ver los diagnósticos científicos",
-  "PRED_DIAG_TITLE": "🔬 DIAGNÓSTICO DEL MODELO: {{name}}",
+  "PRED_DIAG_TITLE": "🔬 DIAGNÓSTICO DEL MODELO",
   "PRED_DIAG_HISTORICAL_PRIOR": "PRIOR HISTÓRICO (BAYESIANO)",
   "PRED_DIAG_PRIOR_MEDIAN": "Ritmo Mediano Prior:",
   "PRED_DIAG_COLD_START": "N/D (Inicio en Frío)",

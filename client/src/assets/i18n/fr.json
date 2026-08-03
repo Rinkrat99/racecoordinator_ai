@@ -1540,7 +1540,7 @@
   "PRED_LAPS_SUFFIX": "Tours",
   "PRED_AT_PACE": "(@ {{pace}}s/tour)",
   "PRED_DIAG_TRIGGER_TITLE": "Survoler pour les diagnostics informatiques",
-  "PRED_DIAG_TITLE": "🔬 DIAGNOSTICS DU MODÈLE : {{name}}",
+  "PRED_DIAG_TITLE": "🔬 DIAGNOSTICS DU MODÈLE",
   "PRED_DIAG_HISTORICAL_PRIOR": "A PRIORI HISTORIQUE (BAYÉSIEN)",
   "PRED_DIAG_PRIOR_MEDIAN": "Rythme Médian a Priori :",
   "PRED_DIAG_COLD_START": "N/A (Démarrage à Froid)",

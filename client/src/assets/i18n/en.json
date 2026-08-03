@@ -1547,7 +1547,7 @@
   "PRED_LAPS_SUFFIX": "Laps",
   "PRED_AT_PACE": "(@ {{pace}}s/lap)",
   "PRED_DIAG_TRIGGER_TITLE": "Hover for Data Scientist Diagnostics",
-  "PRED_DIAG_TITLE": "🔬 MODEL DIAGNOSTICS: {{name}}",
+  "PRED_DIAG_TITLE": "🔬 MODEL DIAGNOSTICS",
   "PRED_DIAG_HISTORICAL_PRIOR": "HISTORICAL PRIOR (BAYESIAN)",
   "PRED_DIAG_PRIOR_MEDIAN": "Prior Median Pace:",
   "PRED_DIAG_COLD_START": "N/A (Cold Start)",

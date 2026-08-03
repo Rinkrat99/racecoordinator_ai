@@ -199,13 +199,12 @@
       [style.left.px]="popoverLeft"
     >
       <div class="popover-header">
-        <span class="popover-title"
-          >🔬
-          {{
-            "PRED_DIAG_TITLE"
-              | translate: { name: hoveredDriverProj.driver_name }
-          }}</span
-        >
+        <div class="popover-title">
+          {{ "PRED_DIAG_TITLE" | translate }}
+        </div>
+        <div class="popover-driver-name">
+          {{ hoveredDriverProj.driver_name }}
+        </div>
       </div>
       <div class="popover-body">
         <div class="diag-section">
@@ -230,7 +229,7 @@
             <span class="diag-val mono">{{
               hoveredDriverProj.prior_std_dev &&
               hoveredDriverProj.prior_std_dev > 0
-                ? "&plusmn;" + hoveredDriverProj.prior_std_dev + "s"
+                ? "±" + hoveredDriverProj.prior_std_dev + "s"
                 : "N/A"
             }}</span>
           </div>

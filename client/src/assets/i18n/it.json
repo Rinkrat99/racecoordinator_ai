@@ -1540,7 +1540,7 @@
   "PRED_LAPS_SUFFIX": "Giri",
   "PRED_AT_PACE": "(@ {{pace}}s/giro)",
   "PRED_DIAG_TRIGGER_TITLE": "Passa il cursore per i dati di diagnostica scientifica",
-  "PRED_DIAG_TITLE": "🔬 DIAGNOSTICA DEL MODELLO: {{name}}",
+  "PRED_DIAG_TITLE": "🔬 DIAGNOSTICA DEL MODELLO",
   "PRED_DIAG_HISTORICAL_PRIOR": "PRIOR STORICO (BAYESIANO)",
   "PRED_DIAG_PRIOR_MEDIAN": "Passo Medio Prior:",
   "PRED_DIAG_COLD_START": "N/D (Avvio a Freddo)",

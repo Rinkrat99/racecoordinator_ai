@@ -1540,7 +1540,7 @@
   "PRED_LAPS_SUFFIX": "Ronden",
   "PRED_AT_PACE": "(@ {{pace}}s/ronde)",
   "PRED_DIAG_TRIGGER_TITLE": "Beweeg de muis voor data-analyse diagnose",
-  "PRED_DIAG_TITLE": "🔬 MODELDIAGNOSTIEK: {{name}}",
+  "PRED_DIAG_TITLE": "🔬 MODELDIAGNOSTIEK",
   "PRED_DIAG_HISTORICAL_PRIOR": "HISTORISCHE PRIOR (BAYESIAANS)",
   "PRED_DIAG_PRIOR_MEDIAN": "Prior Mediaantempo:",
   "PRED_DIAG_COLD_START": "N.v.t. (Koude Start)",

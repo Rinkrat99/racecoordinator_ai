@@ -462,14 +462,26 @@
   margin-bottom: 12px;
   border-bottom: 1px solid rgba(0, 229, 255, 0.2);
   padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .popover-title {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   color: #00e5ff;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+.popover-driver-name {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  word-break: break-word;
 }
 
 .diag-section {

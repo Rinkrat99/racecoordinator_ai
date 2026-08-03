@@ -1540,7 +1540,7 @@
   "PRED_LAPS_SUFFIX": "Voltas",
   "PRED_AT_PACE": "(@ {{pace}}s/volta)",
   "PRED_DIAG_TRIGGER_TITLE": "Passe o mouse para diagnósticos científicos",
-  "PRED_DIAG_TITLE": "🔬 DIAGNÓSTICO DO MODELO: {{name}}",
+  "PRED_DIAG_TITLE": "🔬 DIAGNÓSTICO DO MODELO",
   "PRED_DIAG_HISTORICAL_PRIOR": "PRIOR HISTÓRICO (BAYESIANO)",
   "PRED_DIAG_PRIOR_MEDIAN": "Ritmo Mediano Prior:",
   "PRED_DIAG_COLD_START": "N/D (Início a Frio)",
