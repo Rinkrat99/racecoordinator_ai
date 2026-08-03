@@ -25,7 +25,7 @@ public class PowerManager {
       this.firstLanePower = new boolean[numLanes];
       Arrays.fill(this.firstLanePower, true);
       this.desiredLanePower = new boolean[numLanes];
-      Arrays.fill(this.desiredLanePower, false);
+      Arrays.fill(this.desiredLanePower, true);
     }
   }
 
@@ -56,6 +56,7 @@ public class PowerManager {
     for (ProtocolState state : protocolStates) {
       state.firstMainPower = true;
       Arrays.fill(state.firstLanePower, true);
+      Arrays.fill(state.desiredLanePower, true);
     }
   }
 

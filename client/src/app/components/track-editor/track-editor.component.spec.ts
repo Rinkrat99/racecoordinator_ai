@@ -619,6 +619,23 @@ describe("TrackEditorComponent", () => {
       expect(component.isDirtyState()).toBeFalse();
       expect(component.lanes[0].length).toBe(150);
     }));
+
+    it("should not be dirty when loaded without user edits", () => {
+      expect(component.isDirtyState()).toBeFalse();
+      expect(component.hasChanges()).toBeFalse();
+    });
+
+    it("should navigate back immediately when going back with no unsaved changes", () => {
+      expect(component.isDirtyState()).toBeFalse();
+      component.onBackClicked();
+
+      expect(dataService.updateTrack).not.toHaveBeenCalled();
+      expect(component.showDiscardConfirm).toBeFalse();
+      expect(router.navigate).toHaveBeenCalledWith(
+        ["/track-manager"],
+        jasmine.any(Object),
+      );
+    });
   });
 
   describe("Guided Help", () => {

@@ -72,6 +72,21 @@ public class PowerManagerTest {
   }
 
   @Test
+  public void testDefaultDesiredLanePowerIsTrue() {
+    when(protocol.hasMainRelay()).thenReturn(true);
+    when(protocol.hasPerLaneRelays()).thenReturn(true);
+
+    // Turn Main Power ON immediately without prior calls to setLanePower
+    powerManager.setMainPower(true);
+
+    // Should turn ON main relay AND all per-lane relays because desired lane power defaults to true
+    verify(protocol).setMainPower(true);
+    for (int i = 0; i < numLanes; i++) {
+      verify(protocol).setLanePower(true, i);
+    }
+  }
+
+  @Test
   public void testSetMainPowerWithOnlyLaneRelays() {
     // Setup protocol with ONLY per-lane relays
     when(protocol.hasMainRelay()).thenReturn(false);

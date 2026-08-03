@@ -541,9 +541,6 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       this.trackName = this.editingTrack.name;
       this.numTrackSections = this.editingTrack.num_track_sections;
       this.lanes = [...this.editingTrack.lanes];
-
-      // Now initialize tracking with a fully populated model
-      this.undoManager.initialize(this.editingTrack);
     } else {
       this.editingTrack = new Track({
         entity_id: "new",
@@ -558,7 +555,6 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
       this.arduinoConfigs = [];
       this.trackmateConfigs = [];
       this.phidgetConfigs = [];
-      this.undoManager.initialize(this.editingTrack);
     }
 
     this.isLoading = false;
@@ -566,6 +562,9 @@ export class TrackEditorComponent implements OnInit, OnDestroy, DirtyComponent {
     if (!this.isDestroyed) {
       this.cdr.detectChanges();
     }
+
+    // Now initialize tracking with a fully populated and normalized snapshot
+    this.undoManager.initialize(this.createSnapshot());
 
     // Initialize all interfaces on the server
     this.initializeInterfaces();
