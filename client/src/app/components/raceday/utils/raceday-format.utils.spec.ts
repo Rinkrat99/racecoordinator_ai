@@ -119,8 +119,23 @@ describe("RacedayFormatUtils", () => {
   });
 
   describe("formatValue - Predictions", () => {
-    it("should return --% if prob is less than 0", () => {
-      const mockHd = { winProbability: -1 } as any;
+    it("should return -- without % sign for empty lane", () => {
+      const mockHd = { actualDriver: null } as any;
+      const result = RacedayFormatUtils.formatValue(
+        "winProbability",
+        undefined,
+        mockHd,
+        undefined,
+        ctx,
+      );
+      expect(result).toBe("--");
+    });
+
+    it("should return --% if prob is less than 0 for valid driver", () => {
+      const mockHd = {
+        actualDriver: { name: "Driver 1" },
+        winProbability: -1,
+      } as any;
       const result = RacedayFormatUtils.formatValue(
         "winProbability",
         -1,

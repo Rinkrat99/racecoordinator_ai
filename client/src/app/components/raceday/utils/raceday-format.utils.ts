@@ -235,7 +235,7 @@ export class RacedayFormatUtils {
       const prob =
         (hd as any).winProbability ?? (hd.participant as any)?.winProbability;
       if (prob !== undefined && prob >= 0) return `${Math.round(prob * 100)}%`;
-      if (RacedayFormatUtils.isEmptyDriver(hd)) return "--%";
+      if (RacedayFormatUtils.isEmptyDriver(hd)) return "--";
       return "--%";
     } else if (baseKey === "projectedRank") {
       const rank =
