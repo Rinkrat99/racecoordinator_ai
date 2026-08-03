@@ -361,12 +361,7 @@ public class CsvExporter {
     if (Double.isNaN(val) || Double.isInfinite(val)) {
       return String.valueOf(val);
     }
-    BigDecimal bd = BigDecimal.valueOf(val).setScale(3, RoundingMode.HALF_UP);
-    String str = bd.stripTrailingZeros().toPlainString();
-    if (!str.contains(".")) {
-      return str + ".0";
-    }
-    return str;
+    return BigDecimal.valueOf(val).setScale(3, RoundingMode.HALF_UP).toPlainString();
   }
 
   private static String formatListValue(List<?> list) {

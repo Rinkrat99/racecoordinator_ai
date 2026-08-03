@@ -106,9 +106,9 @@ public class RaceTeamExportTest {
     // 4. Export to CSV
     String csv = CsvExporter.export(race);
 
-    // 5. Verify Lap times exist in the CSV and are limited to 3 decimal places
-    assertTrue("CSV should contain teammate lap time 10.5", csv.contains("10.5"));
-    assertTrue("CSV should contain teammate lap time 12.3", csv.contains("12.3"));
+    // 5. Verify Lap times exist in the CSV and are padded to 3 decimal places
+    assertTrue("CSV should contain teammate lap time 10.500", csv.contains("10.500"));
+    assertTrue("CSV should contain teammate lap time 12.300", csv.contains("12.300"));
     assertTrue("CSV should contain rounded lap time 5.482", csv.contains("5.482"));
     org.junit.Assert.assertFalse(
         "CSV should NOT contain high precision lap time 5.4819876", csv.contains("5.4819876"));
