@@ -22,10 +22,10 @@ public class TrackmateProtocol extends AbstractSerialProtocol {
 
   private static final byte START_COMMAND = 0x53; // 'S'
 
-  // NC Relay turns track power on with 'E'
-  private static final byte DEENERGIZE_COMMAND = 0x45; // 'E'
-  // NC Relay turns track power off with 'R'
-  private static final byte ENERGIZE_COMMAND = 0x52; // 'R'
+  // Energize main relay ('E' / 0x45) turns track power on for NO relay
+  private static final byte ENERGIZE_COMMAND = 0x45; // 'E'
+  // De-energize main relay ('R' / 0x52) turns track power off for NO relay
+  private static final byte DEENERGIZE_COMMAND = 0x52; // 'R'
   private static final byte TERMINATOR_LF = 0x0A;
   private static final byte TERMINATOR_CR = 0x0D;
 
@@ -257,17 +257,15 @@ public class TrackmateProtocol extends AbstractSerialProtocol {
   @Override
   public void setMainPower(boolean on) {
     super.setMainPower(on);
-    boolean powerState = config.normallyClosedRelays ? !on : on;
-    byte command = powerState ? ENERGIZE_COMMAND : DEENERGIZE_COMMAND;
+    boolean energize = config.normallyClosedRelays ? !on : on;
+    byte command = energize ? ENERGIZE_COMMAND : DEENERGIZE_COMMAND;
     logger.info(
-        "Setting main power. on: "
-            + on
-            + ", NC: "
-            + config.normallyClosedRelays
-            + ", State: "
-            + powerState
-            + ", Command: "
-            + (char) command);
+        "Setting main power. Requested ON: {}, NC: {}, Energize: {}, Command: {} (0x{})",
+        on,
+        config.normallyClosedRelays,
+        energize,
+        (char) command,
+        String.format("%02X", command));
     writeData(new byte[] {command, TERMINATOR_LF});
   }
 
@@ -289,13 +287,14 @@ public class TrackmateProtocol extends AbstractSerialProtocol {
     }
     byte commandPrefix = (byte) 0x6E; // 'n'
 
+    String bitmaskBin = String.format("%8s", Integer.toBinaryString(bitmask)).replace(' ', '0');
     logger.info(
-        "Setting lane power. NC: {},  Lane: {}, On: {}, Command: {}, Bitmask: {}",
-        config.normallyClosedRelays,
-        lane,
+        "Setting lane power. Requested ON: {}, 0-based LaneIndex: {}, NC: {}, Bitmask: 0x{} (bin: {})",
         on,
-        (char) commandPrefix,
-        bitmask);
+        lane,
+        config.normallyClosedRelays,
+        String.format("%02X", bitmask),
+        bitmaskBin);
     byte[] message = new byte[] {commandPrefix, (byte) bitmask, TERMINATOR_LF};
     writeData(message);
   }

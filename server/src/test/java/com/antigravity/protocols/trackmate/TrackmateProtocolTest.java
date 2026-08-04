@@ -213,11 +213,11 @@ public class TrackmateProtocolTest {
     protocol.open();
     serialConnection.allWrittenData.clear();
 
-    protocol.setMainPower(true); // Turn ON, normally closed is FALSE, so ENERGIZE (R)
-    assertArrayEquals(new byte[] {0x52, 0x0A}, serialConnection.lastWrittenData);
-
-    protocol.setMainPower(false); // Turn OFF, DEENERGIZE (E)
+    protocol.setMainPower(true); // Turn ON, normally closed is FALSE, so ENERGIZE (E / 0x45)
     assertArrayEquals(new byte[] {0x45, 0x0A}, serialConnection.lastWrittenData);
+
+    protocol.setMainPower(false); // Turn OFF, DEENERGIZE (R / 0x52)
+    assertArrayEquals(new byte[] {0x52, 0x0A}, serialConnection.lastWrittenData);
   }
 
   @Test
@@ -228,11 +228,11 @@ public class TrackmateProtocolTest {
     protocol.open();
     serialConnection.allWrittenData.clear();
 
-    protocol.setMainPower(true); // Turn ON, normally closed is TRUE, so DEENERGIZE (E)
-    assertArrayEquals(new byte[] {0x45, 0x0A}, serialConnection.lastWrittenData);
-
-    protocol.setMainPower(false); // Turn OFF, ENERGIZE (R)
+    protocol.setMainPower(true); // Turn ON, normally closed is TRUE, so DEENERGIZE (R / 0x52)
     assertArrayEquals(new byte[] {0x52, 0x0A}, serialConnection.lastWrittenData);
+
+    protocol.setMainPower(false); // Turn OFF, ENERGIZE (E / 0x45)
+    assertArrayEquals(new byte[] {0x45, 0x0A}, serialConnection.lastWrittenData);
   }
 
   @Test
@@ -269,6 +269,33 @@ public class TrackmateProtocolTest {
     protocol.setLanePower(
         false, 0); // Turn Lane 0 OFF (energize relay 0, de-energize relay 1). bitmask = 1
     assertArrayEquals(new byte[] {0x6E, 0x01, 0x0A}, serialConnection.lastWrittenData);
+  }
+
+  @Test
+  public void testSetLanePower_FourLanes_NormallyClosedTrue() {
+    config.normallyClosedRelays = true;
+    config.numLanes = 4;
+    config.lapPinBehaviors = new ArrayList<>();
+    for (int i = 0; i < 4; i++) {
+      config.lapPinBehaviors.add(PinBehavior.BEHAVIOR_LAP_BASE_VALUE + i);
+    }
+    protocol = new TestableTrackmateProtocol(config, 4, scheduler, serialConnection);
+    protocol.setListener(listener);
+    protocol.open();
+    serialConnection.allWrittenData.clear();
+
+    // Turn Lane 0 ON (lane 0 de-energized = 0, lanes 1,2,3 energized = 1). bitmask = 14 (0x0E)
+    protocol.setLanePower(true, 0);
+    assertArrayEquals(new byte[] {0x6E, 0x0E, 0x0A}, serialConnection.lastWrittenData);
+
+    // Turn Lane 1 ON (lanes 0,1 de-energized = 0, lanes 2,3 energized = 1). bitmask = 12 (0x0C)
+    protocol.setLanePower(true, 1);
+    assertArrayEquals(new byte[] {0x6E, 0x0C, 0x0A}, serialConnection.lastWrittenData);
+
+    // Turn Lane 0 OFF (lane 0 energized = 1, lane 1 de-energized = 0, lanes 2,3 energized = 1).
+    // bitmask = 13 (0x0D)
+    protocol.setLanePower(false, 0);
+    assertArrayEquals(new byte[] {0x6E, 0x0D, 0x0A}, serialConnection.lastWrittenData);
   }
 
   @Test
