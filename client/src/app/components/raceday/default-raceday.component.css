@@ -397,8 +397,7 @@ app-default-raceday {
   .reset-btn:hover {
     background: rgba(239, 68, 68, 0.3);
     border-color: #ef4444;
-  }
-}
+  }}
 @media print {
   .dashboard-wrapper {
     height: auto !important;

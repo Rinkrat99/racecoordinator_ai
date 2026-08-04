@@ -190,6 +190,26 @@ export class DefaultRacedayComponent
     return this.race?.group_options?.enabled || false;
   }
 
+  get isEvent(): boolean {
+    return !!(this.race as any)?.is_event;
+  }
+
+  get eventName(): string {
+    return (this.race as any)?.event_name || "";
+  }
+
+  get currentEventRaceIndex(): number {
+    return ((this.race as any)?.current_event_race_index || 0) + 1;
+  }
+
+  get totalEventRaces(): number {
+    return (this.race as any)?.total_event_races || 0;
+  }
+
+  get autoAdvanceRemainingSeconds(): number {
+    return (this.race as any)?.auto_advance_remaining_seconds || 0;
+  }
+
   /**
    * Update leaderboard entries while maintaining stable DOM order.
    * Existing entries are updated in-place; new ones are appended.
@@ -465,7 +485,11 @@ export class DefaultRacedayComponent
         return totalTime - this.autoStartRemaining < warmupTime;
       }
     }
-    if (this.autoAdvanceRemaining > 0 && this.race) {
+    if (
+      this.autoAdvanceRemaining > 0 &&
+      this.race &&
+      this.raceState !== RaceState.RACE_OVER
+    ) {
       const warmupTime = this.race.auto_advance_warmup_time || 0;
       const totalTime = this.race.auto_advance_time || 0;
       if (warmupTime > 0 && totalTime > 0) {
@@ -1016,7 +1040,10 @@ export class DefaultRacedayComponent
     this.subscriptions.push(
       this.raceConnectionService.raceTime$.subscribe((raceTime) => {
         this.autoStartRemaining = raceTime.autoStartRemaining || 0;
-        this.autoAdvanceRemaining = raceTime.autoAdvanceRemaining || 0;
+        this.autoAdvanceRemaining =
+          raceTime.autoAdvanceRemaining ||
+          (this.race as any)?.auto_advance_remaining_seconds ||
+          0;
 
         const actualRaceTime = raceTime.time || 0;
         let time = actualRaceTime;
@@ -1736,8 +1763,41 @@ export class DefaultRacedayComponent
         race.track,
         race.track?.lanes,
       );
+      const isNewRace =
+        !this.race ||
+        this.race.entity_id !== race.entity_id ||
+        (this.race as any)?.current_event_race_index !==
+          (race as any)?.current_event_race_index;
+
       this.race = race;
       this.track = race.track;
+
+      if (isNewRace) {
+        // Reset timer state ONLY when advancing to a new race
+        this.autoStartRemaining = 0;
+        this.autoAdvanceRemaining =
+          (race as any)?.auto_advance_remaining_seconds || 0;
+        this.time = this.autoAdvanceRemaining;
+        this.previousTime = this.time;
+        this.timeFormat = "1.0-0";
+        this.playedSecondsLeft.clear();
+        this.playedHalfway = false;
+      } else {
+        const remaining = (race as any)?.auto_advance_remaining_seconds;
+        if (remaining !== undefined && remaining !== null) {
+          this.autoAdvanceRemaining = remaining;
+          if (remaining > 0) {
+            this.time = remaining;
+          }
+        }
+      }
+
+      if (
+        race.entity_id &&
+        typeof this.themeService?.activateForRace === "function"
+      ) {
+        this.themeService.activateForRace(race.entity_id);
+      }
       this.generateAllLaneQrCodes();
 
       if (this.currentRacedayLayout && this.currentRacedayLayout.widgets) {
@@ -3101,7 +3161,7 @@ export class DefaultRacedayComponent
         }
       }
 
-      if (s === RS.HEAT_OVER) {
+      if (s === RS.HEAT_OVER || s === RS.RACE_OVER) {
         if (!this.isNextHeatDisabled) {
           this.onMenuSelect("NEXT_HEAT");
         }
@@ -3395,7 +3455,15 @@ export class DefaultRacedayComponent
     if (this.authService.currentRole === Role.VIEWER) {
       return true;
     }
-    return this.raceState !== RaceState.HEAT_OVER;
+    const isEventWithNextRace =
+      !!(this.race as any)?.is_event &&
+      ((this.race as any)?.current_event_race_index ?? 0) + 1 <
+        ((this.race as any)?.total_event_races ?? 0);
+
+    return (
+      this.raceState !== RaceState.HEAT_OVER &&
+      !(this.raceState === RaceState.RACE_OVER && isEventWithNextRace)
+    );
   }
 
   isDriverFinished(
@@ -4596,6 +4664,7 @@ export class DefaultRacedayComponent
     const allTypes: WidgetType[] = [
       "menu-bar",
       "race-name",
+      "event-name",
       "heat-info",
       "track-name",
       "branding",
@@ -4660,13 +4729,26 @@ export class DefaultRacedayComponent
       this.draggedWidgetType === "next-heat" ||
       this.draggedWidgetType === "image";
 
+    const isHeaderWidget =
+      this.draggedWidgetType === "event-name" ||
+      this.draggedWidgetType === "race-name" ||
+      this.draggedWidgetType === "track-name" ||
+      this.draggedWidgetType === "heat-info";
+
     const isActionButton = this.draggedWidgetType?.startsWith("action-");
 
-    const width = isLeaderboardOrDeck ? 384 : isActionButton ? 170 : 400;
-    const height =
-      this.draggedWidgetType === "leaderboard" ||
-      this.draggedWidgetType === "group-leaderboard" ||
-      this.draggedWidgetType === "image"
+    const width = isHeaderWidget
+      ? 200
+      : isLeaderboardOrDeck
+        ? 384
+        : isActionButton
+          ? 170
+          : 400;
+    const height = isHeaderWidget
+      ? 18
+      : this.draggedWidgetType === "leaderboard" ||
+          this.draggedWidgetType === "group-leaderboard" ||
+          this.draggedWidgetType === "image"
         ? 239
         : isActionButton
           ? 80

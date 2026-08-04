@@ -36,7 +36,10 @@
               <div class="setup-menu-dropdown-item" (click)="openRaceManager()">
                 {{ "RDS_MENU_RACE" | translate }}
               </div>
-              <div class="setup-menu-dropdown-item disabled">
+              <div
+                class="setup-menu-dropdown-item"
+                (click)="openEventManager()"
+              >
                 {{ "RDS_MENU_EVENT" | translate }}
               </div>
               <div
@@ -627,13 +630,16 @@
       <!-- Right Panel: Race Configuration (Beautiful Dark Cards and Neon start) -->
       <div class="preview-panel">
         <div class="quick-start-grid">
-          @for (race of quickStartRaces; track race; let i = $index) {
+          @for (race of quickStartRaces; track race.entity_id; let i = $index) {
             <div
               class="race-card"
               id="race-card-{{ i }}"
-              [class.active]="selectedRace?.entity_id === race.entity_id"
+              [class.active]="
+                selectedRace?.entity_id === race.entity_id ||
+                selectedEvent?.entity_id === race.entity_id
+              "
               [ngClass]="getRaceCardBackgroundClass(i)"
-              (click)="selectRace(race)"
+              (click)="selectQuickStartItem(race)"
             >
               <div class="card-content">
                 <div class="card-title">{{ race.name }}</div>
@@ -651,6 +657,56 @@
           </div>
 
           <div class="all-races-selector">
+            <div class="custom-dropdown-container">
+              <div class="dropdown-trigger" (click)="toggleDropdown($event)">
+                <span class="selected-value">{{
+                  selectedEvent?.name || selectedRace?.name || "Select a Race"
+                }}</span>
+                <div class="dropdown-arrow" [class.open]="isDropdownOpen">
+                  ▼
+                </div>
+              </div>
+              @if (isDropdownOpen) {
+                <div class="dropdown-menu">
+                  @for (race of filteredRaces; track race.entity_id) {
+                    <div
+                      class="dropdown-item"
+                      (click)="selectRace(race)"
+                      [class.selected]="
+                        selectedRace?.entity_id === race.entity_id
+                      "
+                    >
+                      {{ race.name }}
+                    </div>
+                  }
+                  @if (filteredEvents.length > 0) {
+                    <div class="dropdown-header">
+                      {{ "RDS_MENU_EVENT" | translate }}
+                    </div>
+                    @for (ev of filteredEvents; track ev.entity_id) {
+                      <div
+                        class="dropdown-item event-item"
+                        (click)="selectEvent(ev)"
+                        [class.selected]="
+                          selectedEvent?.entity_id === ev.entity_id
+                        "
+                      >
+                        {{ ev.name }} ({{ ev.races ? ev.races.length : 0 }}
+                        races)
+                      </div>
+                    }
+                  }
+                  @if (
+                    filteredRaces.length === 0 && filteredEvents.length === 0
+                  ) {
+                    <div class="dropdown-no-results">
+                      No races or events found
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
             <div class="search-wrapper">
               <input
                 type="text"
@@ -671,33 +727,104 @@
                 />
               </svg>
             </div>
+          </div>
 
-            <div class="custom-dropdown-container">
-              <div class="dropdown-trigger" (click)="toggleDropdown($event)">
-                <span class="selected-value">{{
-                  selectedRace?.name || "Select a Race"
-                }}</span>
-                <div class="dropdown-arrow" [class.open]="isDropdownOpen">
-                  ▼
+          @if (selectedEvent) {
+            <div class="event-details-card">
+              <div class="event-detail-title">{{ selectedEvent.name }}</div>
+              <div class="event-detail-sub">
+                Auto-Advance: {{ selectedEvent.auto_advance_time || 0 }}s
+              </div>
+              <div class="event-races-summary">
+                @for (
+                  item of selectedEvent.races;
+                  track item;
+                  let idx = $index
+                ) {
+                  <div class="event-race-item">
+                    <span
+                      >Race {{ idx + 1 }}:
+                      {{ getRaceName(getItemRaceId(item)) }}</span
+                    >
+                    <span class="limit-tag">
+                      @if (getItemMaxDrivers(item) > 0) {
+                        Max {{ getItemMaxDrivers(item) }} drivers
+                      } @else {
+                        Unlimited
+                      }
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          } @else if (selectedRace) {
+            <div class="event-details-card race-summary-card">
+              <div class="event-detail-title">{{ selectedRace.name }}</div>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ "RM_LABEL_HEAT_RANKING" | translate }}:</span
+                  >
+                  <span class="summary-value">{{
+                    getHeatRankingDisplay(selectedRace)
+                  }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ "RM_LABEL_FINISH_METHOD" | translate }}:</span
+                  >
+                  <span class="summary-value">{{
+                    formatEnumDisplay(
+                      $any(selectedRace).heat_scoring?.finish_method
+                    )
+                  }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ "RM_LABEL_HEAT_ROTATION" | translate }}:</span
+                  >
+                  <span class="summary-value">{{
+                    getHeatRotationTypeDisplay(
+                      $any(selectedRace).heat_rotation_type
+                    )
+                  }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ "RM_LABEL_OVERALL_RANKING" | translate }}:</span
+                  >
+                  <span class="summary-value">{{
+                    getOverallRankingDisplay(selectedRace)
+                  }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ "RM_LABEL_FINISH_VALUE" | translate }}:</span
+                  >
+                  <span class="summary-value">{{
+                    getFinishValueDisplay(selectedRace)
+                  }}</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-label"
+                    >{{ "RM_LABEL_FUEL_RACE" | translate }}:</span
+                  >
+                  <span class="summary-value">{{
+                    $any(selectedRace).fuel_options?.enabled ||
+                    $any(selectedRace).digital_fuel_options?.enabled
+                      ? ("GEN_YES" | translate)
+                      : ("GEN_NO" | translate)
+                  }}</span>
                 </div>
               </div>
-              @if (isDropdownOpen) {
-                <div class="dropdown-menu">
-                  @for (race of filteredRaces; track race) {
-                    <div
-                      class="dropdown-item"
-                      (click)="selectRace(race)"
-                      [class.selected]="
-                        selectedRace?.entity_id === race.entity_id
-                      "
-                    >
-                      {{ race.name }}
-                    </div>
-                  }
-                </div>
-              }
             </div>
-          </div>
+          }
+
+          @if (getEventDriverLimitWarning()) {
+            <div class="event-warning-banner">
+              {{ getEventDriverLimitWarning() }}
+            </div>
+          }
         </div>
 
         <div class="action-footer" id="race-controls">

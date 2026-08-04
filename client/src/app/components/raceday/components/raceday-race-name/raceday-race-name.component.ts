@@ -30,6 +30,31 @@ export class RacedayRaceNameComponent implements AfterViewInit, OnDestroy {
   private valueText = viewChild<ElementRef<HTMLElement>>("valueText");
   private resizeObserver?: ResizeObserver;
 
+  get isEvent(): boolean {
+    return !!(this.race() as any)?.is_event;
+  }
+
+  get eventName(): string {
+    return (this.race() as any)?.event_name || "";
+  }
+
+  get currentEventRaceIndex(): number {
+    return ((this.race() as any)?.current_event_race_index || 0) + 1;
+  }
+
+  get totalEventRaces(): number {
+    return (this.race() as any)?.total_event_races || 0;
+  }
+
+  get formattedRaceName(): string {
+    const r = this.race();
+    if (!r) return "";
+    if (this.isEvent) {
+      return `${r.name} ${this.currentEventRaceIndex} / ${this.totalEventRaces}`;
+    }
+    return r.name;
+  }
+
   constructor() {
     effect(() => {
       this.race();
@@ -56,11 +81,9 @@ export class RacedayRaceNameComponent implements AfterViewInit, OnDestroy {
 
   private fitText() {
     const panelEl = this.infoPanel()?.nativeElement;
-    const labelEl = this.labelText()?.nativeElement;
-    const valueEl = this.valueText()?.nativeElement;
     const widgetData = this.widget();
 
-    if (!panelEl || !labelEl || !valueEl) return;
+    if (!panelEl) return;
 
     const isAuto = !widgetData || widgetData.scaleMode === "auto";
     if (!isAuto) {
@@ -69,11 +92,15 @@ export class RacedayRaceNameComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    const labelString = labelEl.textContent?.trim() || "";
-    const valueString = valueEl.textContent?.trim() || "";
+    const labelEls = panelEl.querySelectorAll<HTMLElement>(".label-text");
+    const valueEls = panelEl.querySelectorAll<HTMLElement>(".value-text");
 
-    const labelStyle = window.getComputedStyle(labelEl);
-    const valueStyle = window.getComputedStyle(valueEl);
+    if (labelEls.length === 0 && valueEls.length === 0) return;
+
+    const labelStyle =
+      labelEls.length > 0 ? window.getComputedStyle(labelEls[0]) : null;
+    const valueStyle =
+      valueEls.length > 0 ? window.getComputedStyle(valueEls[0]) : null;
 
     const labelRatio = 55 / 80;
 
@@ -82,15 +109,28 @@ export class RacedayRaceNameComponent implements AfterViewInit, OnDestroy {
     let totalTextWidth = 100;
 
     if (context) {
-      context.font = `${labelStyle.fontWeight || "600"} ${100 * labelRatio}px ${labelStyle.fontFamily || "sans-serif"}`;
-      const labelWidth = context.measureText(labelString).width || 0;
+      let labelWidth = 0;
+      if (labelStyle) {
+        context.font = `${labelStyle.fontWeight || "600"} ${100 * labelRatio}px ${labelStyle.fontFamily || "sans-serif"}`;
+        labelEls.forEach((el) => {
+          const str = el.textContent?.trim() || "";
+          labelWidth += context.measureText(str.toUpperCase()).width || 0;
+        });
+      }
 
-      context.font = `${valueStyle.fontWeight || "700"} 100px ${valueStyle.fontFamily || "sans-serif"}`;
-      const valueWidth = context.measureText(valueString).width || 0;
+      let valueWidth = 0;
+      if (valueStyle) {
+        context.font = `${valueStyle.fontWeight || "700"} 100px ${valueStyle.fontFamily || "sans-serif"}`;
+        valueEls.forEach((el) => {
+          const str = el.textContent?.trim() || "";
+          valueWidth += context.measureText(str).width || 0;
+        });
+      }
 
       const marginWidth = (8 / 18) * 100;
+      const marginCount = labelEls.length + valueEls.length - 1;
       totalTextWidth =
-        labelWidth + valueWidth + (labelWidth > 0 ? marginWidth : 0);
+        labelWidth + valueWidth + Math.max(0, marginCount) * marginWidth;
     }
 
     const textHeight = 100;
