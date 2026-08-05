@@ -22,10 +22,8 @@ public class TrackmateProtocol extends AbstractSerialProtocol {
 
   private static final byte START_COMMAND = 0x53; // 'S'
 
-  // Energize main relay ('E' / 0x45) turns track power on for NO relay
-  private static final byte ENERGIZE_COMMAND = 0x45; // 'E'
-  // De-energize main relay ('R' / 0x52) turns track power off for NO relay
-  private static final byte DEENERGIZE_COMMAND = 0x52; // 'R'
+  private static final byte MAIN_POWER_ON_COMMAND = 0x52; // 'R'
+  private static final byte MAIN_POWER_OFF_COMMAND = 0x45; // 'E'
   private static final byte TERMINATOR_LF = 0x0A;
   private static final byte TERMINATOR_CR = 0x0D;
 
@@ -257,13 +255,18 @@ public class TrackmateProtocol extends AbstractSerialProtocol {
   @Override
   public void setMainPower(boolean on) {
     super.setMainPower(on);
-    boolean energize = config.normallyClosedRelays ? !on : on;
-    byte command = energize ? ENERGIZE_COMMAND : DEENERGIZE_COMMAND;
+    byte command;
+    if (config.normallyClosedRelays) {
+      command =
+          on ? MAIN_POWER_OFF_COMMAND : MAIN_POWER_ON_COMMAND; // 'E' for ON, 'R' for OFF in NC mode
+    } else {
+      command =
+          on ? MAIN_POWER_ON_COMMAND : MAIN_POWER_OFF_COMMAND; // 'R' for ON, 'E' for OFF in NO mode
+    }
     logger.info(
-        "Setting main power. Requested ON: {}, NC: {}, Energize: {}, Command: {} (0x{})",
+        "Setting main power. Requested ON: {}, NC: {}, Command: {} (0x{})",
         on,
         config.normallyClosedRelays,
-        energize,
         (char) command,
         String.format("%02X", command));
     writeData(new byte[] {command, TERMINATOR_LF});
