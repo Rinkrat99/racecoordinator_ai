@@ -13,6 +13,7 @@ import {
   ElementRef,
   HostListener,
   inject,
+  input,
   OnInit,
   output,
   ViewChild,
@@ -1519,6 +1520,8 @@ export class DefaultRacedaySetupComponent implements OnInit {
     this.helpLinkService.openHelp("");
   }
 
+  isUpdateBannerVisible = input<boolean>(false);
+
   openAbout() {
     this.closeHelpDropdown();
     // Communicate with parent RacedaySetupComponent
@@ -1530,6 +1533,15 @@ export class DefaultRacedaySetupComponent implements OnInit {
   }
 
   requestAbout = output<void>();
+
+  onCheckForUpdates() {
+    if (this.isUpdateBannerVisible()) return;
+    this.closeFileDropdown();
+    this.closeHelpDropdown();
+    this.requestCheckForUpdates.emit();
+  }
+
+  requestCheckForUpdates = output<void>();
 
   openDatabaseManager() {
     this.closeFileDropdown();

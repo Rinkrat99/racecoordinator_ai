@@ -617,6 +617,11 @@ public class App {
       app.get(
           "/api/update/check",
           ctx -> {
+            boolean force = Boolean.parseBoolean(ctx.queryParam("force"));
+            if (force) {
+              configService.setSkippedUpdateVersion("");
+              updateService.clearCache();
+            }
             ctx.json(updateService.checkForUpdates());
           });
 

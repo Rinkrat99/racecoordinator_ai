@@ -616,6 +616,21 @@ describe("DefaultRacedaySetupComponent", () => {
     expect(component.isHelpDropdownOpen).toBeFalse();
   });
 
+  it("should emit requestCheckForUpdates when onCheckForUpdates is called and banner is not visible", () => {
+    spyOn(component.requestCheckForUpdates, "emit");
+    fixture.componentRef.setInput("isUpdateBannerVisible", false);
+    component.onCheckForUpdates();
+    expect(component.requestCheckForUpdates.emit).toHaveBeenCalled();
+    expect(component.isFileDropdownOpen).toBeFalse();
+  });
+
+  it("should not emit requestCheckForUpdates when onCheckForUpdates is called and banner is visible", () => {
+    spyOn(component.requestCheckForUpdates, "emit");
+    fixture.componentRef.setInput("isUpdateBannerVisible", true);
+    component.onCheckForUpdates();
+    expect(component.requestCheckForUpdates.emit).not.toHaveBeenCalled();
+  });
+
   it("should call openHelp with empty string and close dropdown when openHelpCenter is called", () => {
     component.openHelpCenter();
     expect(mockHelpLinkService.openHelp).toHaveBeenCalledWith("");
