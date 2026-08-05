@@ -1219,5 +1219,27 @@ describe("DefaultRacedaySetupComponent", () => {
       expect(component.quickStartRaces[0].entity_id).toBe("e1");
       expect(component.quickStartRaces[0].name).toBe("Endurance 500");
     });
+
+    it("should correctly return finish method and finish value for a race in event summary", () => {
+      component.races = [
+        {
+          entity_id: "r1",
+          name: "Sprint 10",
+          heat_scoring: { finish_method: "Lap", finish_value: 10 },
+        },
+        {
+          entity_id: "r2",
+          name: "Timed 60",
+          heat_scoring: { finish_method: "Timed", finish_value: 60 },
+        },
+      ] as any;
+
+      expect(component.getRaceFinishMethod("r1")).toBe("Lap");
+      expect(component.getRaceFinishValue("r1")).toBe("10");
+      expect(component.getRaceFinishMethod("r2")).toBe("Timed");
+      expect(component.getRaceFinishValue("r2")).toBe("60");
+      expect(component.getRaceFinishMethod("invalid")).toBe("");
+      expect(component.getRaceFinishValue("invalid")).toBe("");
+    });
   });
 });
