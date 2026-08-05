@@ -273,15 +273,13 @@ public class TrackmateProtocol extends AbstractSerialProtocol {
   public void setLanePower(boolean on, int lane) {
     super.setLanePower(on, lane);
     // Trackmate supports per-lane relays via 'n' (0x6E) and a bitmask.
-    // 'n' sets the energize state for relays (bit = 1 to energize, bit = 0 to de-energize).
-    // For Normally Open relays (NC=false): energize (1) = power ON, de-energize (0) = power OFF.
-    // For Normally Closed relays (NC=true): de-energize (0) = power ON, energize (1) = power OFF.
+    // 'n' sets the power state for relays (bit = 1 for power ON, bit = 0 for power OFF).
+    // The hardware handles NO vs NC relay logic internally based on configuration ('I0'/'I1').
     int bitmask = 0;
     for (int i = 0; i < getNumLanes(); i++) {
       Boolean lanePower = lastLanePower.get(i);
       boolean lanePowerOn = lanePower != null && lanePower;
-      boolean energize = config.normallyClosedRelays ? !lanePowerOn : lanePowerOn;
-      if (energize) {
+      if (lanePowerOn) {
         bitmask |= (1 << i);
       }
     }

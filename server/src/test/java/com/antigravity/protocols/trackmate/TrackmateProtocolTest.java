@@ -258,17 +258,14 @@ public class TrackmateProtocolTest {
     protocol.open();
     serialConnection.allWrittenData.clear();
 
-    protocol.setLanePower(
-        true,
-        0); // Turn Lane 0 ON (de-energize relay 0, relay 1 unpowered = energized). bitmask = 2
-    assertArrayEquals(new byte[] {0x6E, 0x02, 0x0A}, serialConnection.lastWrittenData);
-
-    protocol.setLanePower(true, 1); // Turn Lane 1 ON (de-energize relay 0 & 1). bitmask = 0
-    assertArrayEquals(new byte[] {0x6E, 0x00, 0x0A}, serialConnection.lastWrittenData);
-
-    protocol.setLanePower(
-        false, 0); // Turn Lane 0 OFF (energize relay 0, de-energize relay 1). bitmask = 1
+    protocol.setLanePower(true, 0); // Turn Lane 0 ON. bitmask = 1
     assertArrayEquals(new byte[] {0x6E, 0x01, 0x0A}, serialConnection.lastWrittenData);
+
+    protocol.setLanePower(true, 1); // Turn Lane 1 ON. bitmask = 3
+    assertArrayEquals(new byte[] {0x6E, 0x03, 0x0A}, serialConnection.lastWrittenData);
+
+    protocol.setLanePower(false, 0); // Turn Lane 0 OFF. bitmask = 2
+    assertArrayEquals(new byte[] {0x6E, 0x02, 0x0A}, serialConnection.lastWrittenData);
   }
 
   @Test
@@ -284,18 +281,17 @@ public class TrackmateProtocolTest {
     protocol.open();
     serialConnection.allWrittenData.clear();
 
-    // Turn Lane 0 ON (lane 0 de-energized = 0, lanes 1,2,3 energized = 1). bitmask = 14 (0x0E)
+    // Turn Lane 0 ON. bitmask = 1 (0x01)
     protocol.setLanePower(true, 0);
-    assertArrayEquals(new byte[] {0x6E, 0x0E, 0x0A}, serialConnection.lastWrittenData);
+    assertArrayEquals(new byte[] {0x6E, 0x01, 0x0A}, serialConnection.lastWrittenData);
 
-    // Turn Lane 1 ON (lanes 0,1 de-energized = 0, lanes 2,3 energized = 1). bitmask = 12 (0x0C)
+    // Turn Lane 1 ON. bitmask = 3 (0x03)
     protocol.setLanePower(true, 1);
-    assertArrayEquals(new byte[] {0x6E, 0x0C, 0x0A}, serialConnection.lastWrittenData);
+    assertArrayEquals(new byte[] {0x6E, 0x03, 0x0A}, serialConnection.lastWrittenData);
 
-    // Turn Lane 0 OFF (lane 0 energized = 1, lane 1 de-energized = 0, lanes 2,3 energized = 1).
-    // bitmask = 13 (0x0D)
+    // Turn Lane 0 OFF. bitmask = 2 (0x02)
     protocol.setLanePower(false, 0);
-    assertArrayEquals(new byte[] {0x6E, 0x0D, 0x0A}, serialConnection.lastWrittenData);
+    assertArrayEquals(new byte[] {0x6E, 0x02, 0x0A}, serialConnection.lastWrittenData);
   }
 
   @Test
