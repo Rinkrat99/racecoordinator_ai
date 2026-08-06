@@ -284,7 +284,7 @@ public class TrackmateProtocol extends AbstractSerialProtocol {
         bitmask |= (1 << i);
       }
     }
-    byte commandPrefix = (byte) 0x6E; // 'n'
+    byte commandPrefix = config.normallyClosedRelays ? (byte) 0x6E : (byte) 0x66; // 'n' or 'f'
 
     String bitmaskStr = Integer.toString(bitmask);
     byte[] bitmaskBytes = bitmaskStr.getBytes(StandardCharsets.US_ASCII);
