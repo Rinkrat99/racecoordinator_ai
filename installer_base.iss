@@ -90,6 +90,7 @@ var
   ResultCode: Integer;
   TempFile: String;
   ParamsFromFile: String;
+  AnsiParamsFromFile: AnsiString;
   AppVbsPath: String;
   VbsPos: Integer;
 begin
@@ -112,9 +113,9 @@ begin
 
   if FileExists(TempFile) then
   begin
-    LoadStringFromFile(TempFile, ParamsFromFile);
+    LoadStringFromFile(TempFile, AnsiParamsFromFile);
     DeleteFile(TempFile);
-    ParamsFromFile := Trim(ParamsFromFile);
+    ParamsFromFile := Trim(String(AnsiParamsFromFile));
   end;
 
   if (ParamsFromFile <> '') and ((Pos('--port', ParamsFromFile) > 0) or (Pos('--mongo-port', ParamsFromFile) > 0)) then
