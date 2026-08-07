@@ -100,7 +100,7 @@ begin
     Exit;
   end;
 
-  AppVbsPath := '"""' + ExpandConstant('{app}\start_win.vbs') + '"""';
+  AppVbsPath := '"' + ExpandConstant('{app}\start_win.vbs') + '"';
   TempFile := ExpandConstant('{tmp}\existing_shortcut_args.txt');
   ParamsFromFile := '';
 
