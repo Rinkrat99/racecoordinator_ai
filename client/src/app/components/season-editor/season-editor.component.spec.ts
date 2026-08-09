@@ -323,6 +323,33 @@ describe("SeasonEditorComponent", () => {
     );
   });
 
+  it("should render modal-race-list with title attribute on race item names when add finished race modal is open", () => {
+    const dataService = TestBed.inject(DataService);
+    spyOn(dataService, "getAllFinishedRaceHistory").and.returnValue(
+      of([
+        {
+          original_entity_id: "r_test_1",
+          timestamp: 10000,
+          model: { name: "Test Grand Prix With Long Title" },
+          drivers: [],
+        },
+      ]),
+    );
+
+    component.openAddRaceModal();
+    fixture.detectChanges();
+
+    const listEl = fixture.nativeElement.querySelector(".modal-race-list");
+    expect(listEl).toBeTruthy();
+
+    const nameEl = fixture.nativeElement.querySelector(".race-item-name");
+    expect(nameEl).toBeTruthy();
+    expect(nameEl.getAttribute("title")).toBe(
+      "Test Grand Prix With Long Title",
+    );
+    expect(nameEl.textContent.trim()).toBe("Test Grand Prix With Long Title");
+  });
+
   it("should have password manager ignore attributes on season name input field", () => {
     const inputEl = fixture.nativeElement.querySelector("#season-name");
     expect(inputEl).toBeTruthy();

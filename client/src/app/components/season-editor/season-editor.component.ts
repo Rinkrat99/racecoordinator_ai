@@ -226,7 +226,16 @@ export class SeasonEditorComponent
         const tagSeasonRaces = (s: Season) => {
           if (!s || !s.races) return;
           for (const r of s.races) {
-            r.is_demo = true;
+            const raceId = r.race_id;
+            const timestamp = r.timestamp;
+            const isDemo = Boolean(
+              r.is_demo ||
+              demoHistorySet.has(String(raceId)) ||
+              demoHistorySet.has(String(timestamp)) ||
+              demoHistorySet.has(`${raceId}_${timestamp}`) ||
+              String(raceId).startsWith("demo_"),
+            );
+            r.is_demo = isDemo;
           }
         };
 
@@ -401,7 +410,9 @@ export class SeasonEditorComponent
             const key = `${rec.race_id}_${rec.timestamp}`;
             if (!currentKeys.has(key)) {
               if (availableMap.has(key)) {
-                availableMap.get(key)!.is_demo = rec.is_demo;
+                if (!rec.is_demo) {
+                  availableMap.get(key)!.is_demo = false;
+                }
               } else {
                 availableMap.set(key, rec);
               }
@@ -426,7 +437,14 @@ export class SeasonEditorComponent
       item.statistics?.startMillis ||
       item.timestamp ||
       (item.id?.timestamp ? item.id.timestamp * 1000 : Date.now());
-    const isDemo = item.is_demo !== false && item.isDemo !== false;
+    const isDemo = Boolean(
+      item.is_demo ||
+      item.isDemo ||
+      item.demo ||
+      item.isDemoMode ||
+      (item.model && (item.model.demoMode || item.model.isDemoMode)) ||
+      String(raceId).startsWith("demo_"),
+    );
 
     const driverResults: any[] = [];
     if (item.drivers && Array.isArray(item.drivers)) {
@@ -471,9 +489,6 @@ export class SeasonEditorComponent
   private finalizeAvailableRaces(
     availableMap: Map<string, SeasonRaceRecord>,
   ): void {
-    availableMap.forEach((rec) => {
-      rec.is_demo = true;
-    });
     this.availableFinishedRaces = Array.from(availableMap.values()).sort(
       (a, b) => (b.timestamp || 0) - (a.timestamp || 0),
     );
