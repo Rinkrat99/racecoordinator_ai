@@ -214,11 +214,11 @@ public class TrackmateProtocolTest {
     protocol.open();
     serialConnection.allWrittenData.clear();
 
-    protocol.setMainPower(true); // Turn ON in NO mode sends 'R' (0x52)
-    assertArrayEquals(new byte[] {0x52, 0x0A}, serialConnection.lastWrittenData);
-
-    protocol.setMainPower(false); // Turn OFF in NO mode sends 'E' (0x45)
+    protocol.setMainPower(true); // Turn ON in NO mode sends 'E' (0x45)
     assertArrayEquals(new byte[] {0x45, 0x0A}, serialConnection.lastWrittenData);
+
+    protocol.setMainPower(false); // Turn OFF in NO mode sends 'R' (0x52)
+    assertArrayEquals(new byte[] {0x52, 0x0A}, serialConnection.lastWrittenData);
   }
 
   @Test
@@ -229,11 +229,11 @@ public class TrackmateProtocolTest {
     protocol.open();
     serialConnection.allWrittenData.clear();
 
-    protocol.setMainPower(true); // Turn ON in NC mode sends 'E' (0x45)
-    assertArrayEquals(new byte[] {0x45, 0x0A}, serialConnection.lastWrittenData);
-
-    protocol.setMainPower(false); // Turn OFF in NC mode sends 'R' (0x52)
+    protocol.setMainPower(true); // Turn ON in NC mode sends 'R' (0x52)
     assertArrayEquals(new byte[] {0x52, 0x0A}, serialConnection.lastWrittenData);
+
+    protocol.setMainPower(false); // Turn OFF in NC mode sends 'E' (0x45)
+    assertArrayEquals(new byte[] {0x45, 0x0A}, serialConnection.lastWrittenData);
   }
 
   @Test

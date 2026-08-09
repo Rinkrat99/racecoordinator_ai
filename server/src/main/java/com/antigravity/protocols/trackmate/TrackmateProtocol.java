@@ -262,10 +262,10 @@ public class TrackmateProtocol extends AbstractSerialProtocol {
     byte command;
     if (config.normallyClosedRelays) {
       command =
-          on ? MAIN_POWER_OFF_COMMAND : MAIN_POWER_ON_COMMAND; // 'E' for ON, 'R' for OFF in NC mode
+          on ? MAIN_POWER_ON_COMMAND : MAIN_POWER_OFF_COMMAND; // 'R' for ON, 'E' for OFF in NO mode
     } else {
       command =
-          on ? MAIN_POWER_ON_COMMAND : MAIN_POWER_OFF_COMMAND; // 'R' for ON, 'E' for OFF in NO mode
+          on ? MAIN_POWER_OFF_COMMAND : MAIN_POWER_ON_COMMAND; // 'E' for ON, 'R' for OFF in NC mode
     }
     logger.info(
         "Setting main power. Requested ON: {}, NC: {}, Command: {} (0x{})",
