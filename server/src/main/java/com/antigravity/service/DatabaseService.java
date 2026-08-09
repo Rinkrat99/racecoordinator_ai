@@ -33,6 +33,7 @@ import com.antigravity.race.Heat;
 import com.antigravity.race.RaceParticipant;
 import com.antigravity.race.RaceSaveData;
 import com.antigravity.race.prediction.PredictionEngine;
+import com.antigravity.util.SeasonPointsCalculator;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
@@ -593,6 +594,14 @@ public class DatabaseService {
       record.setHeats(runtimeRace.getHeats());
       record.setAccumulatedRaceTime(runtimeRace.getRaceTime());
       record.setStatistics(runtimeRace.getStatistics());
+
+      try {
+        List<SeasonDriverResult> driverResults =
+            SeasonPointsCalculator.calculateDriverResultsForRace(runtimeRace);
+        record.setDriverResults(driverResults);
+      } catch (Exception ex) {
+        logger.warn("Could not calculate driver results for race history record", ex);
+      }
 
       collection.insertOne(record);
       logger.info("Race successfully saved to {}", collection.getNamespace().getCollectionName());

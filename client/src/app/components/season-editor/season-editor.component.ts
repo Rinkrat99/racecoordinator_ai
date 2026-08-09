@@ -449,8 +449,84 @@ export class SeasonEditorComponent
       String(raceId).startsWith("demo_"),
     );
 
+    return {
+      race_id: raceId,
+      race_name: item.model?.name || "Completed Race",
+      timestamp: timestamp,
+      is_demo: isDemo,
+      driver_results: this.extractDriverResultsFromHistory(item),
+    };
+  }
+
+  private extractDriverResultsFromHistory(item: any): any[] {
     const driverResults: any[] = [];
+    const existingResults = item.driver_results || item.driverResults;
+    if (
+      existingResults &&
+      Array.isArray(existingResults) &&
+      existingResults.length > 0
+    ) {
+      existingResults.forEach((r: any) => {
+        driverResults.push({
+          driver_id: r.driver_id || r.driverId || "",
+          driver_name: r.driver_name || r.driverName || "",
+          overall_rank:
+            r.overall_rank !== undefined ? r.overall_rank : r.overallRank || 1,
+          overall_points:
+            r.overall_points !== undefined
+              ? r.overall_points
+              : r.overallPoints || 0,
+          heat_points:
+            r.heat_points !== undefined ? r.heat_points : r.heatPoints || 0,
+          total_points:
+            r.total_points !== undefined ? r.total_points : r.totalPoints || 0,
+        });
+      });
+      return driverResults;
+    }
+
     if (item.drivers && Array.isArray(item.drivers)) {
+      const seasonScoring =
+        item.model?.season_scoring || item.model?.seasonScoring || {};
+      const posPointsList: number[] = seasonScoring.position_points ||
+        seasonScoring.positionPoints || [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+      const heatPosPointsList: number[] =
+        seasonScoring.heat_position_points ||
+        seasonScoring.heatPositionPoints ||
+        [];
+
+      // Calculate heat position points per driver across heats
+      const driverHeatPointsMap = new Map<string, number>();
+      if (
+        item.heats &&
+        Array.isArray(item.heats) &&
+        heatPosPointsList.length > 0
+      ) {
+        item.heats.forEach((heat: any) => {
+          if (heat && heat.drivers && Array.isArray(heat.drivers)) {
+            const heatDrivers = [...heat.drivers].sort((a: any, b: any) => {
+              const aLaps = a.laps ? a.laps.length : 0;
+              const bLaps = b.laps ? b.laps.length : 0;
+              if (aLaps !== bLaps) return bLaps - aLaps;
+              return (a.totalTime || 0) - (b.totalTime || 0);
+            });
+            heatDrivers.forEach((hd: any, laneIdx: number) => {
+              const dId =
+                hd.driverId ||
+                hd.driver_id ||
+                (hd.driver ? hd.driver.entity_id || hd.driver.entityId : "");
+              if (dId && laneIdx < heatPosPointsList.length) {
+                const pts = Number(heatPosPointsList[laneIdx]) || 0;
+                driverHeatPointsMap.set(
+                  dId,
+                  (driverHeatPointsMap.get(dId) || 0) + pts,
+                );
+              }
+            });
+          }
+        });
+      }
+
       item.drivers.forEach((d: any, idx: number) => {
         const driverName =
           d.actualDriver?.name ||
@@ -464,10 +540,13 @@ export class SeasonEditorComponent
           d.driver_id ||
           `d_${idx}`;
         const overallRank = d.driver?.rank || d.rank || idx + 1;
-        const overallPts = d.driver?.overall_points || d.overall_points || 0;
-        const heatPts = d.driver?.heat_points || d.heat_points || 0;
-        const totalPts =
-          d.driver?.total_points || d.total_points || overallPts + heatPts;
+        const rankIdx = overallRank - 1;
+        const overallPts =
+          rankIdx >= 0 && rankIdx < posPointsList.length
+            ? Number(posPointsList[rankIdx]) || 0
+            : 0;
+        const heatPts = driverHeatPointsMap.get(driverId) || 0;
+        const totalPts = overallPts + heatPts;
 
         driverResults.push({
           driver_id: driverId,
@@ -480,13 +559,7 @@ export class SeasonEditorComponent
       });
     }
 
-    return {
-      race_id: raceId,
-      race_name: item.model?.name || "Completed Race",
-      timestamp: timestamp,
-      is_demo: isDemo,
-      driver_results: driverResults,
-    };
+    return driverResults;
   }
 
   private finalizeAvailableRaces(

@@ -77,6 +77,37 @@ public class DatabaseServiceTest {
     assertEquals("Test Race", record.getModel().getName());
     assertEquals(12.5f, record.getAccumulatedRaceTime(), 0.001f);
     assertEquals(4, record.getDrivers().size());
+    assertNotNull(record.getDriverResults());
+  }
+
+  @Test
+  public void testSaveRaceHistory_CalculatesAndAttachesDriverResults() {
+    com.antigravity.models.Race model =
+        new com.antigravity.models.Race.Builder()
+            .withName("Grand Prix")
+            .withEntityId("GP1")
+            .build();
+    Driver driver = new Driver("Dave", "D", "DaveID", new org.bson.types.ObjectId());
+    List<RaceParticipant> drivers = new ArrayList<>();
+    RaceParticipant rp = new RaceParticipant(driver);
+    rp.setRank(1);
+    drivers.add(rp);
+
+    Race runtimeRace =
+        new Race.Builder().model(model).drivers(drivers).track(dbService.getFactoryTrack()).build();
+
+    dbService.saveRaceHistory(mongoDatabase, runtimeRace);
+
+    ArgumentCaptor<RaceHistoryRecord> captor = ArgumentCaptor.forClass(RaceHistoryRecord.class);
+    verify(historyCollection, org.mockito.Mockito.atLeastOnce()).insertOne(captor.capture());
+
+    RaceHistoryRecord record = captor.getValue();
+    assertNotNull(record);
+    assertNotNull(record.getDriverResults());
+    assertTrue(!record.getDriverResults().isEmpty());
+    assertEquals("DaveID", record.getDriverResults().get(0).getDriverId());
+    assertEquals(1, record.getDriverResults().get(0).getOverallRank());
+    assertEquals(25, record.getDriverResults().get(0).getOverallPoints());
   }
 
   @Test

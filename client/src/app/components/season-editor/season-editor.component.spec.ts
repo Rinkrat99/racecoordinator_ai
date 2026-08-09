@@ -494,4 +494,52 @@ describe("SeasonEditorComponent", () => {
     const record = component["buildRaceRecordFromHistory"](historyItem);
     expect(record.timestamp).toBe(expectedMillis);
   });
+
+  it("should calculate position points for drivers from season_scoring when driver_results is absent in history item", () => {
+    const historyItem = {
+      original_entity_id: "race_777",
+      model: {
+        name: "Formula 1 Cup",
+        season_scoring: {
+          position_points: [25, 18, 15],
+          heat_position_points: [3, 1],
+        },
+      },
+      drivers: [
+        { driver: { entity_id: "d1", name: "Driver 1" }, rank: 1 },
+        { driver: { entity_id: "d2", name: "Driver 2" }, rank: 2 },
+      ],
+    };
+
+    const record = component["buildRaceRecordFromHistory"](historyItem);
+    expect(record.driver_results.length).toBe(2);
+    expect(record.driver_results[0].overall_points).toBe(25);
+    expect(record.driver_results[0].total_points).toBe(25);
+    expect(record.driver_results[1].overall_points).toBe(18);
+    expect(record.driver_results[1].total_points).toBe(18);
+  });
+
+  it("should preserve pre-calculated driver_results when present on history item", () => {
+    const historyItem = {
+      original_entity_id: "race_666",
+      model: { name: "Pro Cup" },
+      driver_results: [
+        {
+          driver_id: "d10",
+          driver_name: "Pro 10",
+          overall_rank: 1,
+          overall_points: 30,
+          heat_points: 5,
+          total_points: 35,
+        },
+      ],
+    };
+
+    const record = component["buildRaceRecordFromHistory"](historyItem);
+    expect(record.driver_results.length).toBe(1);
+    expect(record.driver_results[0].driver_id).toBe("d10");
+    expect(record.driver_results[0].overall_points).toBe(30);
+    expect(record.driver_results[0].heat_points).toBe(5);
+    expect(record.driver_results[0].total_points).toBe(35);
+  });
 });
