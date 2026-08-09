@@ -435,6 +435,9 @@ export class SeasonEditorComponent
       "hist_race";
     const timestamp =
       item.statistics?.startMillis ||
+      (item.statistics?.startTime
+        ? new Date(item.statistics.startTime).getTime()
+        : 0) ||
       item.timestamp ||
       (item.id?.timestamp ? item.id.timestamp * 1000 : Date.now());
     const isDemo = Boolean(

@@ -618,6 +618,7 @@ public class DatabaseService {
       MongoDatabase database,
       String seasonId,
       String raceName,
+      long timestamp,
       boolean isDemo,
       List<SeasonDriverResult> driverResults) {
     if (seasonId == null
@@ -636,9 +637,9 @@ public class DatabaseService {
       }
       List<SeasonRaceRecord> races = season.getRaces();
       String nextRaceId = String.valueOf(races.size() + 1);
+      long recordTimestamp = timestamp > 0 ? timestamp : System.currentTimeMillis();
       SeasonRaceRecord newRecord =
-          new SeasonRaceRecord(
-              nextRaceId, raceName, System.currentTimeMillis(), isDemo, driverResults);
+          new SeasonRaceRecord(nextRaceId, raceName, recordTimestamp, isDemo, driverResults);
       races.add(newRecord);
 
       Season updatedSeason =
@@ -660,8 +661,17 @@ public class DatabaseService {
       MongoDatabase database,
       String seasonId,
       String raceName,
+      boolean isDemo,
       List<SeasonDriverResult> driverResults) {
-    commitRaceToSeason(database, seasonId, raceName, false, driverResults);
+    commitRaceToSeason(database, seasonId, raceName, 0L, isDemo, driverResults);
+  }
+
+  public void commitRaceToSeason(
+      MongoDatabase database,
+      String seasonId,
+      String raceName,
+      List<SeasonDriverResult> driverResults) {
+    commitRaceToSeason(database, seasonId, raceName, 0L, false, driverResults);
   }
 
   public void saveRaceRecords(

@@ -418,4 +418,37 @@ public class DatabaseServiceTest {
     assertEquals(259, result.getTotalLaps());
     assertEquals("d_2", result.getDriverId());
   }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testCommitRaceToSeason_UsesExplicitStartTimestamp() {
+    MongoCollection<com.antigravity.models.Season> seasonsCollection = mock(MongoCollection.class);
+    when(mongoDatabase.getCollection(eq("seasons"), eq(com.antigravity.models.Season.class)))
+        .thenReturn(seasonsCollection);
+
+    FindIterable<com.antigravity.models.Season> seasonIterable = mock(FindIterable.class);
+    when(seasonsCollection.find(any(Bson.class))).thenReturn(seasonIterable);
+
+    com.antigravity.models.Season season =
+        new com.antigravity.models.Season("2026 Season", 0, new ArrayList<>(), "S1", null);
+    when(seasonIterable.first()).thenReturn(season);
+
+    long expectedStartTime = 1700000000000L;
+    List<com.antigravity.models.SeasonRaceRecord.SeasonDriverResult> results = new ArrayList<>();
+    results.add(
+        new com.antigravity.models.SeasonRaceRecord.SeasonDriverResult(
+            "d1", "Driver 1", 1, 10, 0, 10));
+
+    dbService.commitRaceToSeason(
+        mongoDatabase, "S1", "GP Race 1", expectedStartTime, false, results);
+
+    ArgumentCaptor<com.antigravity.models.Season> seasonCaptor =
+        ArgumentCaptor.forClass(com.antigravity.models.Season.class);
+    verify(seasonsCollection).replaceOne(any(Bson.class), seasonCaptor.capture());
+
+    com.antigravity.models.Season updatedSeason = seasonCaptor.getValue();
+    assertNotNull(updatedSeason);
+    assertEquals(1, updatedSeason.getRaces().size());
+    assertEquals(expectedStartTime, updatedSeason.getRaces().get(0).getTimestamp());
+  }
 }

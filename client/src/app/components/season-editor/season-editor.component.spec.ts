@@ -463,4 +463,35 @@ describe("SeasonEditorComponent", () => {
     await harness.setName("Spring Series");
     expect(component.editingSeason.name).toBe("Spring Series");
   });
+
+  it("should extract statistics.startMillis for SeasonRaceRecord timestamp in buildRaceRecordFromHistory", () => {
+    const historyItem = {
+      original_entity_id: "race_999",
+      model: { name: "Sprint Cup" },
+      statistics: {
+        startMillis: 1710000000000,
+        startTime: "2024-03-09T10:00:00Z",
+      },
+      id: { timestamp: 1710000120 }, // 2 minutes later
+    };
+
+    const record = component["buildRaceRecordFromHistory"](historyItem);
+    expect(record.timestamp).toBe(1710000000000);
+  });
+
+  it("should fall back to parsing statistics.startTime ISO string if startMillis is absent", () => {
+    const isoString = "2024-05-15T14:30:00.000Z";
+    const expectedMillis = new Date(isoString).getTime();
+    const historyItem = {
+      original_entity_id: "race_888",
+      model: { name: "Indy Cup" },
+      statistics: {
+        startTime: isoString,
+      },
+      id: { timestamp: 1710000120 },
+    };
+
+    const record = component["buildRaceRecordFromHistory"](historyItem);
+    expect(record.timestamp).toBe(expectedMillis);
+  });
 });
