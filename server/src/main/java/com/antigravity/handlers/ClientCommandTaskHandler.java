@@ -4,6 +4,7 @@ import com.antigravity.auth.Role;
 import com.antigravity.context.DatabaseContext;
 import com.antigravity.context.RaceScope;
 import com.antigravity.converters.ArduinoConfigConverter;
+import com.antigravity.converters.BartConfigConverter;
 import com.antigravity.converters.PhidgetConfigConverter;
 import com.antigravity.converters.TrackmateConfigConverter;
 import com.antigravity.models.AnalyticsToggleRequest;
@@ -45,6 +46,9 @@ import com.antigravity.protocols.ProtocolDelegate;
 import com.antigravity.protocols.TestInterfaceListener;
 import com.antigravity.protocols.arduino.ArduinoConfig;
 import com.antigravity.protocols.arduino.ArduinoProtocol;
+import com.antigravity.protocols.bart.BartConfig;
+import com.antigravity.protocols.bart.BartProtocol;
+import com.antigravity.protocols.interfaces.BleConnection;
 import com.antigravity.protocols.interfaces.SerialConnection;
 import com.antigravity.protocols.phidget.PhidgetConfig;
 import com.antigravity.protocols.phidget.PhidgetProtocol;
@@ -164,6 +168,7 @@ public class ClientCommandTaskHandler {
         this::changeLane,
         Role.DIRECTOR);
     app.get("/api/serial-ports", this::getSerialPorts, Role.VIEWER);
+    app.get("/api/ble-devices", this::getBleDevices, Role.VIEWER);
     app.get("/api/phidgets", this::getPhidgetDevices, Role.VIEWER);
     app.get("/api/races/current/export-csv", this::exportRaceCsv, Role.VIEWER);
     app.post("/api/races/current/export-xls", this::exportRaceXls, Role.VIEWER);
@@ -846,6 +851,17 @@ public class ClientCommandTaskHandler {
         protocols.add(phidget);
       }
 
+      List<com.antigravity.proto.BartConfig> bartConfigsList = // fqn-collision
+          request.getBartConfigsList();
+      for (int i = 0; i < bartConfigsList.size(); i++) {
+        com.antigravity.proto.BartConfig protoConfig = bartConfigsList.get(i); // fqn-collision
+        BartConfig config = BartConfigConverter.fromProto(protoConfig);
+        BartProtocol bart = new BartProtocol(config, request.getLaneCount());
+        bart.setInterfaceIndex(interfaceIndex++);
+        bart.setListener(new TestInterfaceListener());
+        protocols.add(bart);
+      }
+
       ProtocolDelegate finalProtocol;
       if (protocols.size() >= 1) {
         finalProtocol = new ProtocolDelegate(protocols);
@@ -982,6 +998,30 @@ public class ClientCommandTaskHandler {
       ctx.json(ports);
     } catch (Exception e) {
       logger.error("Error getting serial ports", e);
+      ctx.status(500).result("Internal Server Error: " + e.getMessage());
+    }
+  }
+
+  private void getBleDevices(Context ctx) {
+    try {
+      List<String> devices = BleConnection.getDiscoveredBleDevices();
+      logger.debug(
+          "GET /api/ble-devices - Raw hardware discovered BLE devices (count={}): {}",
+          devices.size(),
+          devices);
+      List<String> bartDevices = new ArrayList<>();
+      for (String dev : devices) {
+        if (dev != null && dev.toUpperCase().startsWith("BART")) {
+          bartDevices.add(dev);
+        }
+      }
+      logger.debug(
+          "GET /api/ble-devices - Filtered BART devices (count={}): {}",
+          bartDevices.size(),
+          bartDevices);
+      ctx.json(bartDevices);
+    } catch (Exception e) {
+      logger.error("Error getting BLE devices", e);
       ctx.status(500).result("Internal Server Error: " + e.getMessage());
     }
   }

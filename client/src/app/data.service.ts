@@ -15,6 +15,7 @@ import { Event } from "@app/models/event";
 import { Season } from "@app/models/season";
 import {
   ArduinoConfig,
+  BartConfig,
   PhidgetConfig,
   TrackmateConfig,
 } from "@app/models/track";
@@ -99,6 +100,8 @@ import {
 } from "@app/proto/antigravity";
 import { LoggerService } from "@app/services/logger.service";
 import { SettingsService } from "@app/services/settings.service";
+
+import { BartConfigConverter } from "./converters/bart_config.converter";
 
 @Injectable({
   providedIn: "root",
@@ -411,6 +414,10 @@ export class DataService {
     return this.http.get<string[]>(`${this.baseUrl}/api/serial-ports`);
   }
 
+  getBleDevices(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.baseUrl}/api/ble-devices`);
+  }
+
   getPhidgetDevices(): Observable<IPhidgetDeviceInfo[]> {
     return this.http
       .get(`${this.baseUrl}/api/phidgets`, { responseType: "arraybuffer" })
@@ -466,6 +473,7 @@ export class DataService {
     trackmateConfigs: TrackmateConfig[],
     phidgetConfigsOrLaneCount: any[] | number = [],
     laneCountParam?: number,
+    bartConfigs: BartConfig[] = [],
   ): Observable<InitializeInterfaceResponse> {
     let phidgetConfigs: any[] = [];
     let laneCount = 0;
@@ -481,6 +489,7 @@ export class DataService {
       configs: this.mapArduinoConfigsToProto(configs),
       trackmateConfigs: this.mapTrackmateConfigsToProto(trackmateConfigs),
       phidgetConfigs: this.mapPhidgetConfigsToProto(phidgetConfigs),
+      bartConfigs: this.mapBartConfigsToProto(bartConfigs),
       laneCount,
     });
     const buffer = InitializeInterfaceRequest.encode(request).finish();
@@ -589,6 +598,10 @@ export class DataService {
         }),
       ) || []
     );
+  }
+
+  private mapBartConfigsToProto(configs: BartConfig[]) {
+    return (configs || []).map((c) => BartConfigConverter.toProto(c));
   }
 
   updateInterfaceConfig(
