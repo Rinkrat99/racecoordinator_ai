@@ -626,6 +626,7 @@ export class SeasonEditorComponent
               relativeTo: this.route,
               queryParams: { id: savedSeason.entity_id },
               queryParamsHandling: "merge",
+              replaceUrl: true,
             });
           }
         }

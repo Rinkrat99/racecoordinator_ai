@@ -107,6 +107,7 @@ describe("SeasonEditorComponent", () => {
 
   it("should auto-save season on state commit if valid and reset hasChanges() to false", () => {
     const dataService = TestBed.inject(DataService);
+    const router = TestBed.inject(Router);
     spyOn(dataService, "createSeason").and.callThrough();
 
     component.editingSeason.name = "New Auto-Saved Season";
@@ -116,6 +117,66 @@ describe("SeasonEditorComponent", () => {
     expect(dataService.createSeason).toHaveBeenCalled();
     expect(component.hasChanges()).toBeFalse();
     expect(component.isDirty).toBeFalse();
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: jasmine.anything(),
+      queryParams: { id: "s1" },
+      queryParamsHandling: "merge",
+      replaceUrl: true,
+    });
+  });
+
+  it("should navigate with replaceUrl: true when auto-saving a new season to prevent duplicate browser history entries", () => {
+    const dataService = TestBed.inject(DataService);
+    const router = TestBed.inject(Router);
+    (router.navigate as jasmine.Spy).calls.reset();
+    spyOn(dataService, "createSeason").and.returnValue(
+      of({
+        entity_id: "new_s_999",
+        name: "New Season Saved",
+        drops: 0,
+        races: [],
+      }),
+    );
+
+    component.editingSeason = {
+      name: "New Season Saved",
+      drops: 0,
+      races: [],
+    };
+    component.autoSaveSeason();
+
+    expect(dataService.createSeason).toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith([], {
+      relativeTo: jasmine.anything(),
+      queryParams: { id: "new_s_999" },
+      queryParamsHandling: "merge",
+      replaceUrl: true,
+    });
+  });
+
+  it("should not trigger URL navigation when auto-saving an existing season", () => {
+    const dataService = TestBed.inject(DataService);
+    const router = TestBed.inject(Router);
+    (router.navigate as jasmine.Spy).calls.reset();
+    spyOn(dataService, "updateSeason").and.returnValue(
+      of({
+        entity_id: "existing_s_123",
+        name: "Updated Season",
+        drops: 1,
+        races: [],
+      }),
+    );
+
+    component.editingSeason = {
+      entity_id: "existing_s_123",
+      name: "Updated Season",
+      drops: 1,
+      races: [],
+    };
+    component.autoSaveSeason();
+
+    expect(dataService.updateSeason).toHaveBeenCalled();
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it("should handle confirmDiscard modal confirm event via template binding", async () => {
