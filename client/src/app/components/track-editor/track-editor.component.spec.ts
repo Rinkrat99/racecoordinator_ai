@@ -595,6 +595,7 @@ describe("TrackEditorComponent", () => {
       component.trackmateConfigs,
       component.phidgetConfigs,
       component.lanes.length,
+      component.bartConfigs,
     );
   });
 
