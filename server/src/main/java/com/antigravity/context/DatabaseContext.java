@@ -219,6 +219,8 @@ public class DatabaseContext {
     long teamCount = db.getCollection("teams").countDocuments();
     long trackCount = db.getCollection("tracks").countDocuments();
     long raceCount = db.getCollection("races").countDocuments();
+    long eventCount = db.getCollection("events").countDocuments();
+    long seasonCount = db.getCollection("seasons").countDocuments();
     long assetCount = db.getCollection("assets").countDocuments();
 
     Document stats = db.runCommand(new Document("dbStats", 1));
@@ -267,6 +269,8 @@ public class DatabaseContext {
         teamCount,
         trackCount,
         raceCount,
+        eventCount,
+        seasonCount,
         assetCount,
         sizeBytes,
         raceRecordCount,
@@ -388,6 +392,8 @@ public class DatabaseContext {
     public long teamCount;
     public long trackCount;
     public long raceCount;
+    public long eventCount;
+    public long seasonCount;
     public long assetCount;
     public double sizeBytes;
     public long raceRecordCount;
@@ -401,6 +407,8 @@ public class DatabaseContext {
         long teamCount,
         long trackCount,
         long raceCount,
+        long eventCount,
+        long seasonCount,
         long assetCount,
         double sizeBytes,
         long raceRecordCount,
@@ -412,6 +420,8 @@ public class DatabaseContext {
       this.teamCount = teamCount;
       this.trackCount = trackCount;
       this.raceCount = raceCount;
+      this.eventCount = eventCount;
+      this.seasonCount = seasonCount;
       this.assetCount = assetCount;
       this.sizeBytes = sizeBytes;
       this.raceRecordCount = raceRecordCount;

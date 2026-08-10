@@ -440,6 +440,32 @@ public class DatabaseContextTest {
     assertEquals("import test", new String(Files.readAllBytes(targetAssetFile.toPath())));
   }
 
+  @Test
+  public void testGetDatabaseStatsIncludesEventsAndSeasons() {
+    String dbName = "TEST_DB_STATS_EVT_SEASON";
+    databaseContext.createDatabase(dbName);
+    databaseContext.switchDatabase(dbName);
+
+    databaseContext
+        .getDatabase()
+        .getCollection("events")
+        .insertOne(new Document("name", "Event 1"));
+    databaseContext
+        .getDatabase()
+        .getCollection("events")
+        .insertOne(new Document("name", "Event 2"));
+    databaseContext
+        .getDatabase()
+        .getCollection("seasons")
+        .insertOne(new Document("name", "Season 1"));
+
+    DatabaseContext.DatabaseStats stats = databaseContext.getDatabaseStats(dbName);
+
+    assertNotNull(stats);
+    assertEquals(2, stats.eventCount);
+    assertEquals(1, stats.seasonCount);
+  }
+
   private static class CustomMongod extends Mongod {
     private final File artifactDir;
     private final File databaseDir;
