@@ -104,9 +104,7 @@ export class DefaultDriverStationComponent implements OnInit, OnDestroy {
       const val = this.inputLaneIndex();
       if (val !== undefined) {
         this.laneIndex = val;
-        if (this.heat) {
-          this.loadRaceData();
-        }
+        this.loadRaceData();
       }
     });
   }

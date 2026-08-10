@@ -224,5 +224,37 @@ describe("RacedayMenuBarComponent", () => {
         label: " - Jesse",
       });
     });
+
+    it("should fall back to driver name when entity_id is empty", () => {
+      fixture.componentRef.setInput("participants", [
+        {
+          driver: {
+            name: "Bank Farter",
+            entity_id: "",
+            isEmpty: () => false,
+          },
+        },
+        {
+          driver: {
+            name: "Sports mode",
+            entity_id: "",
+            isEmpty: () => false,
+          },
+        },
+      ]);
+      const options = component.driverViewMenuOptions;
+
+      expect(options.length).toBe(2);
+      expect(options[0]).toEqual({
+        id: "Bank Farter",
+        value: "Bank Farter",
+        label: "Bank Farter",
+      });
+      expect(options[1]).toEqual({
+        id: "Sports mode",
+        value: "Sports mode",
+        label: "Sports mode",
+      });
+    });
   });
 });

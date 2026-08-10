@@ -2219,17 +2219,25 @@ export class DefaultRacedayComponent
 
   getDriverViewQrCodeUrl(hd: DriverHeatData): string {
     const entityId =
-      hd.participant?.team?.entity_id ||
       hd.actualDriver?.entity_id ||
-      hd.driver?.entity_id;
+      hd.driver?.entity_id ||
+      hd.actualDriver?.name ||
+      hd.driver?.name ||
+      hd.participant?.team?.entity_id ||
+      hd.participant?.team?.name ||
+      hd.participant?.objectId ||
+      hd.objectId;
     if (!entityId) return "";
 
     let dataUrl = this.driverViewQrCodeCache.get(entityId);
     if (!dataUrl) {
       this.driverViewQrCodeCache.set(entityId, "generating");
-      QRCode.toDataURL(`${this.serverUrlBase}/driver-view/${entityId}`, {
-        margin: 1,
-      })
+      QRCode.toDataURL(
+        `${this.serverUrlBase}/driver-view/${encodeURIComponent(entityId)}`,
+        {
+          margin: 1,
+        },
+      )
         .then((url) => {
           this.driverViewQrCodeCache.set(entityId, url);
           if (!this.isDestroyed) {

@@ -4897,6 +4897,38 @@ describe("DefaultRacedayComponent", () => {
       const firstQrCode = (component as any).laneQrCodeCache.get(0);
       expect(firstQrCode).toContain("data:image/svg+xml");
     });
+
+    it("should generate driver view QR code using specific driver entity_id over team entity_id", () => {
+      const mockDriver = { entity_id: "driver-123", name: "Driver 1" } as any;
+      const mockTeam = { entity_id: "team-456", name: "Team A" } as any;
+      const mockParticipant = { driver: mockDriver, team: mockTeam } as any;
+      const mockHd = {
+        participant: mockParticipant,
+        driver: mockDriver,
+      } as any;
+
+      component["serverUrlBase"] = "http://localhost:8080";
+      component.getDriverViewQrCodeUrl(mockHd);
+
+      expect(
+        (component as any).driverViewQrCodeCache.has("driver-123"),
+      ).toBeTrue();
+      expect(
+        (component as any).driverViewQrCodeCache.has("team-456"),
+      ).toBeFalse();
+    });
+
+    it("should fall back to driver name and encode URL when driver entity_id is empty", () => {
+      const mockDriver = { entity_id: "", name: "Sports mode" } as any;
+      const mockHd = { driver: mockDriver } as any;
+
+      component["serverUrlBase"] = "http://localhost:8080";
+      component.getDriverViewQrCodeUrl(mockHd);
+
+      expect(
+        (component as any).driverViewQrCodeCache.has("Sports mode"),
+      ).toBeTrue();
+    });
   });
 
   describe("Layout Source of Truth", () => {

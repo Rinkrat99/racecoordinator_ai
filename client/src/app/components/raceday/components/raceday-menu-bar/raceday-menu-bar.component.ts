@@ -66,48 +66,44 @@ export class RacedayMenuBarComponent implements OnInit, OnDestroy {
   get driverViewMenuOptions(): { id: string; value: string; label: string }[] {
     const options: { id: string; value: string; label: string }[] = [];
     for (const p of this.participants()) {
-      if (
-        p.team &&
-        p.team.name &&
-        !options.find((o) => o.value === p.team!.entity_id)
-      ) {
-        options.push({
-          id: p.team.entity_id,
-          value: p.team.entity_id,
-          label: p.team.name,
-        });
+      if (p.team && p.team.name) {
+        const teamId = p.team.entity_id || p.team.name;
+        if (teamId && !options.find((o) => o.value === teamId)) {
+          options.push({
+            id: teamId,
+            value: teamId,
+            label: p.team.name,
+          });
 
-        // Add all team members if we have their names loaded
-        if (p.team.driverIds && p.team.driverIds.length > 0) {
-          for (const driverId of p.team.driverIds) {
-            const d = this.allDrivers.find(
-              (d) => d.objectId === driverId || d.entity_id === driverId,
-            );
-            if (
-              d &&
-              !options.find((o) => o.id === `${p.team!.entity_id}_${driverId}`)
-            ) {
-              const name = d.nickname || d.name;
-              options.push({
-                id: `${p.team.entity_id}_${driverId}`,
-                value: driverId,
-                label: ` - ${name}`,
-              });
+          // Add all team members if we have their names loaded
+          if (p.team.driverIds && p.team.driverIds.length > 0) {
+            for (const driverId of p.team.driverIds) {
+              const d = this.allDrivers.find(
+                (d) => d.objectId === driverId || d.entity_id === driverId,
+              );
+              if (d && !options.find((o) => o.id === `${teamId}_${driverId}`)) {
+                const name = d.nickname || d.name;
+                options.push({
+                  id: `${teamId}_${driverId}`,
+                  value: d.entity_id || d.name || driverId,
+                  label: ` - ${name}`,
+                });
+              }
             }
           }
         }
       } else if (!p.team && p.driver && !p.driver.isEmpty()) {
         const name = p.driver.nickname || p.driver.name;
-        if (!options.find((o) => o.value === p.driver.entity_id)) {
+        const driverId = p.driver.entity_id || p.driver.name || p.objectId;
+        if (driverId && !options.find((o) => o.value === driverId)) {
           options.push({
-            id: p.driver.entity_id,
-            value: p.driver.entity_id,
+            id: driverId,
+            value: driverId,
             label: name,
           });
         }
       }
     }
-    console.log("OPTIONS:", options);
     return options;
   }
 
