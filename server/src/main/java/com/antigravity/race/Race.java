@@ -1026,6 +1026,10 @@ public class Race implements ProtocolListener {
                 .setStatus(
                     InterfaceStatusEvent.newBuilder().setStatus(s).setInterfaceIndex(idx).build())
                 .build());
+
+    if (s == InterfaceStatus.DISCONNECTED) {
+      stopRaceOperationsOnHardwareDisconnect();
+    }
   }
 
   @Override
@@ -1036,6 +1040,27 @@ public class Race implements ProtocolListener {
   @Override
   public void onInterfaceEvent(InterfaceEvent e) {
     ClientSubscriptionManager.getInstance().broadcastInterfaceEvent(e);
+    if (e.hasStatus() && e.getStatus().getStatus() == InterfaceStatus.DISCONNECTED) {
+      stopRaceOperationsOnHardwareDisconnect();
+    }
+  }
+
+  public synchronized void stopRaceOperationsOnHardwareDisconnect() {
+    logger.warn("Track interface disconnected. Stopping all race operations until manual action.");
+
+    EventExecutionManager.getInstance().cancelAutoAdvanceTimer();
+
+    if (state instanceof Racing || state instanceof Starting) {
+      pauseRace();
+    } else if (state instanceof NotStarted) {
+      state.pause(this);
+    } else if (state instanceof HeatOver) {
+      state.pause(this);
+    } else if (state instanceof Paused) {
+      clearAutoTimers();
+    } else if (state instanceof RaceOver) {
+      clearAutoTimers();
+    }
   }
 
   public boolean isLastHeat() {
