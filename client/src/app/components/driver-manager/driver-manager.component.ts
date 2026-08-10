@@ -173,27 +173,31 @@ export class DriverManagerComponent implements OnInit, OnDestroy {
           (a: any) => a.type === "sound",
         );
 
-        this.drivers = (result.drivers || []).map(
-          (d: any) =>
-            new Driver(
-              d.entity_id,
-              d.name,
-              d.nickname || "",
-              d.avatarUrl,
-              {
-                type: this.mapSoundType(d.lapAudio?.type || d.lapSoundType),
-                url: d.lapAudio?.url || d.lapSoundUrl,
-                text: d.lapAudio?.text || d.lapSoundText,
-              },
-              {
-                type: this.mapSoundType(
-                  d.bestLapAudio?.type || d.bestLapSoundType,
-                ),
-                url: d.bestLapAudio?.url || d.bestLapSoundUrl,
-                text: d.bestLapAudio?.text || d.bestLapSoundText,
-              },
-            ),
-        );
+        this.drivers = ((result.drivers || []) as any[])
+          .map(
+            (d: any) =>
+              new Driver(
+                d.entity_id,
+                d.name,
+                d.nickname || "",
+                d.avatarUrl,
+                {
+                  type: this.mapSoundType(d.lapAudio?.type || d.lapSoundType),
+                  url: d.lapAudio?.url || d.lapSoundUrl,
+                  text: d.lapAudio?.text || d.lapSoundText,
+                },
+                {
+                  type: this.mapSoundType(
+                    d.bestLapAudio?.type || d.bestLapSoundType,
+                  ),
+                  url: d.bestLapAudio?.url || d.bestLapSoundUrl,
+                  text: d.bestLapAudio?.text || d.bestLapSoundText,
+                },
+              ),
+          )
+          .sort((a: Driver, b: Driver) =>
+            naturalSortCompare(a.name || "", b.name || ""),
+          );
 
         const lastEdited = this.navigationService.getLastEditedId("driver");
         let selectedId = this.route.snapshot.queryParamMap.get("id");
@@ -213,10 +217,10 @@ export class DriverManagerComponent implements OnInit, OnDestroy {
           if (found) {
             this.selectDriver(found);
           } else if (this.drivers.length > 0 && !this.selectedDriver) {
-            this.selectDriver(this.drivers[0]);
+            this.selectDriver(this.filteredDrivers[0] || this.drivers[0]);
           }
         } else if (this.drivers.length > 0 && !this.selectedDriver) {
-          this.selectDriver(this.drivers[0]);
+          this.selectDriver(this.filteredDrivers[0] || this.drivers[0]);
         }
 
         if (this.selectedDriver) {
