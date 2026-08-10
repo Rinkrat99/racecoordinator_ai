@@ -4386,6 +4386,20 @@ describe("DefaultRacedayComponent", () => {
       expect(component.showExitConfirmation).toBeTrue();
       expect(component.exitModalTitle).toBe("RD_CONFIRM_EXIT_TITLE");
     });
+
+    it("should show ACK_MODAL_TITLE_CONNECTED alert even if showAckModal was false", () => {
+      fixture.detectChanges();
+      component.showAckModal = false;
+
+      interfaceAlertSubject.next({
+        titleKey: "ACK_MODAL_TITLE_CONNECTED",
+        messageKey: "ACK_MODAL_MSG_CONNECTED",
+      });
+
+      expect(component.showAckModal).toBeTrue();
+      expect(component.ackModalTitle).toBe("ACK_MODAL_TITLE_CONNECTED");
+      expect(component.ackModalMessage).toBe("ACK_MODAL_MSG_CONNECTED");
+    });
   });
   describe("Z-Order Widget Reordering", () => {
     beforeEach(() => {

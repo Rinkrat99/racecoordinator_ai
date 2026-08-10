@@ -1370,18 +1370,13 @@ export class DefaultRacedayComponent
         this.isInterfaceConnected =
           this.raceConnectionService.isInterfaceConnected;
         this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }),
     );
 
     this.subscriptions.push(
       this.raceConnectionService.interfaceAlert$.subscribe((alert) => {
-        if (alert.titleKey === "ACK_MODAL_TITLE_CONNECTED") {
-          if (this.showAckModal) {
-            this.showInterfaceError(alert.titleKey, alert.messageKey);
-          }
-        } else {
-          this.showInterfaceError(alert.titleKey, alert.messageKey);
-        }
+        this.showInterfaceError(alert.titleKey, alert.messageKey);
       }),
     );
 
@@ -1550,10 +1545,13 @@ export class DefaultRacedayComponent
     this.ackModalMessage = messageKey;
     this.showAckModal = true;
     this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   onAcknowledgeModal() {
     this.showAckModal = false;
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
     if (this.raceHasEnded) {
       this.forceExit = true;
       this.router.navigate(["/raceday-setup"]);

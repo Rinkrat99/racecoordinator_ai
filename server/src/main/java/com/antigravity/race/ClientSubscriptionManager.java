@@ -8,6 +8,7 @@ import com.antigravity.proto.InterfaceStatusEvent;
 import com.antigravity.proto.RaceData;
 import com.antigravity.proto.RaceSubscriptionRequest;
 import com.antigravity.proto.SystemState;
+import com.antigravity.protocols.DefaultProtocol;
 import com.antigravity.protocols.IProtocol;
 import com.antigravity.protocols.ProtocolDelegate;
 import com.antigravity.service.DatabaseService;
@@ -241,8 +242,15 @@ public class ClientSubscriptionManager {
       ProtocolDelegate delegate = currentRace.getHardwareManager().getProtocols();
       if (delegate != null && delegate.getProtocols() != null) {
         for (IProtocol p : delegate.getProtocols()) {
-          InterfaceStatus status =
-              p.isHealthy() ? InterfaceStatus.CONNECTED : InterfaceStatus.DISCONNECTED;
+          InterfaceStatus status;
+          if (p.isHealthy()) {
+            status = InterfaceStatus.CONNECTED;
+          } else if (p instanceof DefaultProtocol
+              && ((DefaultProtocol) p).getLastHeartbeatTimeMs() == 0) {
+            status = InterfaceStatus.NO_DATA;
+          } else {
+            status = InterfaceStatus.DISCONNECTED;
+          }
           InterfaceEvent event =
               InterfaceEvent.newBuilder()
                   .setStatus(

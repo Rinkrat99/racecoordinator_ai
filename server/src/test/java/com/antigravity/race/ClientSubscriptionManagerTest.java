@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,7 +13,7 @@ import com.antigravity.context.DatabaseContext;
 import com.antigravity.models.Track;
 import com.antigravity.proto.RaceData;
 import com.antigravity.proto.RaceSubscriptionRequest;
-import com.antigravity.protocols.IProtocol;
+import com.antigravity.protocols.DefaultProtocol;
 import com.antigravity.protocols.ProtocolDelegate;
 import com.antigravity.race.states.IRaceState;
 import io.javalin.websocket.WsContext;
@@ -25,6 +24,7 @@ import java.util.Collections;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 public class ClientSubscriptionManagerTest {
 
@@ -556,17 +556,18 @@ public class ClientSubscriptionManagerTest {
   }
 
   @Test
-  public void testAddInterfaceSessionSendsInitialInterfaceStatus() throws Exception {
+  public void testAddInterfaceSessionSendsNoDataStatusWhenBooting() throws Exception {
     Race mockRace = mock(Race.class);
     RaceHardwareManager mockHwManager = mock(RaceHardwareManager.class);
     ProtocolDelegate mockDelegate = mock(ProtocolDelegate.class);
-    IProtocol mockIProtocol = mock(IProtocol.class);
+    DefaultProtocol mockProtocol = mock(DefaultProtocol.class);
 
     when(mockRace.getHardwareManager()).thenReturn(mockHwManager);
     when(mockHwManager.getProtocols()).thenReturn(mockDelegate);
-    when(mockDelegate.getProtocols()).thenReturn(Collections.singletonList(mockIProtocol));
-    when(mockIProtocol.isHealthy()).thenReturn(false);
-    when(mockIProtocol.getInterfaceIndex()).thenReturn(0);
+    when(mockDelegate.getProtocols()).thenReturn(Collections.singletonList(mockProtocol));
+    when(mockProtocol.isHealthy()).thenReturn(false);
+    when(mockProtocol.getLastHeartbeatTimeMs()).thenReturn(0L);
+    when(mockProtocol.getInterfaceIndex()).thenReturn(0);
 
     manager.setRace(mockRace);
 
@@ -577,8 +578,47 @@ public class ClientSubscriptionManagerTest {
     sessionField.setAccessible(true);
     sessionField.set(mockContext, mockSession);
 
+    ArgumentCaptor<ByteBuffer> captor = ArgumentCaptor.forClass(ByteBuffer.class);
     manager.addInterfaceSession(mockContext);
 
-    verify(mockContext).send(any(ByteBuffer.class));
+    verify(mockContext).send(captor.capture());
+    byte[] bytes = new byte[captor.getValue().remaining()];
+    captor.getValue().get(bytes);
+    com.antigravity.proto.InterfaceEvent event =
+        com.antigravity.proto.InterfaceEvent.parseFrom(bytes);
+    assertEquals(com.antigravity.proto.InterfaceStatus.NO_DATA, event.getStatus().getStatus());
+  }
+
+  @Test
+  public void testAddInterfaceSessionSendsConnectedStatusWhenHealthy() throws Exception {
+    Race mockRace = mock(Race.class);
+    RaceHardwareManager mockHwManager = mock(RaceHardwareManager.class);
+    ProtocolDelegate mockDelegate = mock(ProtocolDelegate.class);
+    DefaultProtocol mockProtocol = mock(DefaultProtocol.class);
+
+    when(mockRace.getHardwareManager()).thenReturn(mockHwManager);
+    when(mockHwManager.getProtocols()).thenReturn(mockDelegate);
+    when(mockDelegate.getProtocols()).thenReturn(Collections.singletonList(mockProtocol));
+    when(mockProtocol.isHealthy()).thenReturn(true);
+    when(mockProtocol.getInterfaceIndex()).thenReturn(0);
+
+    manager.setRace(mockRace);
+
+    WsContext mockContext = mock(WsContext.class);
+    org.eclipse.jetty.websocket.api.Session mockSession =
+        mock(org.eclipse.jetty.websocket.api.Session.class);
+    Field sessionField = WsContext.class.getDeclaredField("session");
+    sessionField.setAccessible(true);
+    sessionField.set(mockContext, mockSession);
+
+    ArgumentCaptor<ByteBuffer> captor = ArgumentCaptor.forClass(ByteBuffer.class);
+    manager.addInterfaceSession(mockContext);
+
+    verify(mockContext).send(captor.capture());
+    byte[] bytes = new byte[captor.getValue().remaining()];
+    captor.getValue().get(bytes);
+    com.antigravity.proto.InterfaceEvent event =
+        com.antigravity.proto.InterfaceEvent.parseFrom(bytes);
+    assertEquals(com.antigravity.proto.InterfaceStatus.CONNECTED, event.getStatus().getStatus());
   }
 }
