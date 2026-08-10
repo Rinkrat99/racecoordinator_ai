@@ -1632,14 +1632,14 @@ public class DatabaseTaskHandler {
         return true;
       }
       if (dp.getTotalSimulations() <= 0) {
-        logger.debug(
+        logger.trace(
             "PREDICTION: Stale because DriverProjection is missing diagnostic metadata for driver: {}",
             dp.getDriverId());
         return true;
       }
       if ("EMPTY_LANE".equalsIgnoreCase(dp.getDriverId())
           || "Empty Lane".equalsIgnoreCase(dp.getDriverName())) {
-        logger.debug("PREDICTION: Stale because empty lane driver found");
+        logger.trace("PREDICTION: Stale because empty lane driver found");
         return true;
       }
       if (dp.getProjectedRank() != -1) {
@@ -1712,7 +1712,8 @@ public class DatabaseTaskHandler {
       com.antigravity.race.Race activeRace = // fqn-collision
           ClientSubscriptionManager.getInstance().getRace();
 
-      // Auto-detect demo mode from the active running race if not explicitly in DEMO scope
+      // Auto-detect demo mode from the active running race if not explicitly in DEMO
+      // scope
       if (activeRace != null && activeRace.getRaceModel() != null) {
         String activeId = activeRace.getRaceModel().getEntityId();
         if ("current".equals(raceId) || (activeId != null && activeId.equals(raceId))) {

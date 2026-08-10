@@ -68,6 +68,8 @@ public abstract class DefaultProtocol implements IProtocol {
   protected ScheduledFuture<?> statusFuture;
   protected ScheduledFuture<?> refuelFuture;
   protected volatile long lastHeartbeatTimeMs = 0;
+  protected volatile long lastReconnectAttemptTimeMs = 0;
+  private static final long RECONNECT_INTERVAL_MS = 5000;
 
   public DefaultProtocol(int numLanes) {
     this.numLanes = numLanes;
@@ -202,12 +204,13 @@ public abstract class DefaultProtocol implements IProtocol {
     }
   }
 
-  private void checkAndPublishStatus() {
+  protected void checkAndPublishStatus() {
     try {
       if (listener != null) {
         InterfaceStatus status;
         if (!isConnected()) {
           status = InterfaceStatus.DISCONNECTED;
+          tryAutoReconnect();
         } else if (!requiresHeartbeat()) {
           status = InterfaceStatus.CONNECTED;
         } else if (lastHeartbeatTimeMs == 0) {
@@ -234,6 +237,29 @@ public abstract class DefaultProtocol implements IProtocol {
       }
     } catch (Exception e) {
       logger.error("Error in status scheduler", e);
+    }
+  }
+
+  protected void tryAutoReconnect() {
+    long currentTime = now();
+    if (currentTime - lastReconnectAttemptTimeMs >= RECONNECT_INTERVAL_MS) {
+      lastReconnectAttemptTimeMs = currentTime;
+      try {
+        logger.info(
+            "Attempting automatic reconnection for interface index {}...", getInterfaceIndex());
+        if (isConnected() && requiresHeartbeat() && (currentTime - lastHeartbeatTimeMs > 2000)) {
+          logger.warn(
+              "Interface index {} heartbeat stale (>2000ms). Closing stale connection before reconnect.",
+              getInterfaceIndex());
+          close();
+        }
+        open();
+      } catch (Exception e) {
+        logger.debug(
+            "Auto-reconnect attempt failed for interface index {}: {}",
+            getInterfaceIndex(),
+            e.getMessage());
+      }
     }
   }
 
