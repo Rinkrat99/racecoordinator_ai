@@ -24,7 +24,6 @@ import com.antigravity.race.states.Starting;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.bson.types.ObjectId;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -48,7 +47,7 @@ public class RaceHardwareDisconnectTest {
             .lanes(lanes)
             .arduinoConfigs(configs)
             .entityId("track1")
-            .id(new ObjectId())
+            .id("track1_id")
             .build();
 
     HeatScoring mockHeatScoring = mock(HeatScoring.class);
@@ -73,13 +72,13 @@ public class RaceHardwareDisconnectTest {
             .withAutoStartTime(10.0)
             .withAutoAdvanceTime(10.0)
             .withEntityId("race1")
-            .withId(new ObjectId())
+            .withId("race1_id")
             .build();
 
     List<RaceParticipant> drivers = new ArrayList<>();
     drivers.add(
         new RaceParticipant(
-            new Driver("Test Driver", "D1", "driver1", new ObjectId()), "participant1"));
+            new Driver("Test Driver", "D1", "driver1", "driver1_id"), "participant1"));
 
     race =
         new com.antigravity.race.Race.Builder()

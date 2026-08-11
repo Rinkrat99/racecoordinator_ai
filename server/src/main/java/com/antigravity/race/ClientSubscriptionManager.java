@@ -449,7 +449,7 @@ public class ClientSubscriptionManager {
       saveData.setSaveName(filename);
 
       DatabaseService dbService = DatabaseService.getInstance();
-      dbService.upsertAutoSave(databaseContext.getDatabase(), saveData);
+      dbService.upsertAutoSave(databaseContext, saveData);
       logger.info("Auto-saved race to database: {}", filename);
     } catch (Exception e) {
       if (!isShuttingDown) {
@@ -465,7 +465,7 @@ public class ClientSubscriptionManager {
     try {
       String filename = "autosave_" + raceId + ".json";
       DatabaseService dbService = DatabaseService.getInstance();
-      boolean deleted = dbService.deleteSavedRace(databaseContext.getDatabase(), filename, isDemo);
+      boolean deleted = dbService.deleteSavedRace(databaseContext, filename, isDemo);
       if (deleted) {
         logger.info("Deleted auto-save from db (demo={}): {}", isDemo, filename);
       }

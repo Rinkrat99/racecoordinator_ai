@@ -170,7 +170,7 @@ export class DriverManagerComponent implements OnInit, OnDestroy {
     }).subscribe({
       next: (result: any) => {
         this.soundAssets = (result.assets || []).filter(
-          (a: any) => a.type === "sound",
+          (a: any) => a.type === "sound" || a.type === "audio",
         );
 
         this.drivers = ((result.drivers || []) as any[])
