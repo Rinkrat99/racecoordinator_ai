@@ -5314,4 +5314,33 @@ describe("DefaultRacedayComponent", () => {
       expect((component as any).predictionResultsWindow).toBeNull();
     });
   });
+
+  describe("seasonResultsWindow management", () => {
+    let mockChildWindow: any;
+
+    beforeEach(() => {
+      mockChildWindow = { close: jasmine.createSpy("close"), closed: false };
+      spyOn(window, "open").and.returnValue(mockChildWindow);
+    });
+
+    it("should open seasonResultsWindow when SEASON_RESULTS action is called", () => {
+      (component as any).onWindowsMenuSelect("SEASON_RESULTS");
+      expect(window.open).toHaveBeenCalledWith("mock-url", "_blank");
+      expect((component as any).seasonResultsWindow).toBe(mockChildWindow);
+    });
+
+    it("should close seasonResultsWindow on onPageHide", () => {
+      (component as any).onWindowsMenuSelect("SEASON_RESULTS");
+      component.onPageHide({});
+      expect(mockChildWindow.close).toHaveBeenCalled();
+      expect((component as any).seasonResultsWindow).toBeNull();
+    });
+
+    it("should close seasonResultsWindow on ngOnDestroy", () => {
+      (component as any).onWindowsMenuSelect("SEASON_RESULTS");
+      component.ngOnDestroy();
+      expect(mockChildWindow.close).toHaveBeenCalled();
+      expect((component as any).seasonResultsWindow).toBeNull();
+    });
+  });
 });

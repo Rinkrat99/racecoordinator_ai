@@ -1461,6 +1461,7 @@ export class DefaultRacedayComponent
   private leaderBoardWindow: Window | null = null;
   private heatResultsWindow: Window | null = null;
   private raceResultsWindow: Window | null = null;
+  private seasonResultsWindow: Window | null = null;
   private predictionResultsWindow: Window | null = null;
   private driverStationTabs: Window[] = [];
 
@@ -1527,6 +1528,10 @@ export class DefaultRacedayComponent
     if (this.raceResultsWindow) {
       this.raceResultsWindow.close();
       this.raceResultsWindow = null;
+    }
+    if (this.seasonResultsWindow) {
+      this.seasonResultsWindow.close();
+      this.seasonResultsWindow = null;
     }
     if (this.predictionResultsWindow) {
       this.predictionResultsWindow.close();
@@ -2699,6 +2704,14 @@ export class DefaultRacedayComponent
         this.router.createUrlTree(["/race-results"]),
       );
       this.raceResultsWindow = window.open(url, "_blank");
+    } else if (action === "SEASON_RESULTS") {
+      const seasonId =
+        (this.race as any)?.season_id || (this.race as any)?.seasonId || "";
+      const queryParams = seasonId ? { id: seasonId } : {};
+      const url = this.router.serializeUrl(
+        this.router.createUrlTree(["/season-results"], { queryParams }),
+      );
+      this.seasonResultsWindow = window.open(url, "_blank");
     } else if (action === "PREDICTION_RESULTS") {
       const url = this.router.serializeUrl(
         this.router.createUrlTree(["/prediction-results"]),
@@ -2729,6 +2742,10 @@ export class DefaultRacedayComponent
     if (this.raceResultsWindow) {
       this.raceResultsWindow.close();
       this.raceResultsWindow = null;
+    }
+    if (this.seasonResultsWindow) {
+      this.seasonResultsWindow.close();
+      this.seasonResultsWindow = null;
     }
     if (this.predictionResultsWindow) {
       this.predictionResultsWindow.close();

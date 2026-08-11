@@ -1,6 +1,7 @@
 import { CommonModule } from "@angular/common";
 import {
   Component,
+  computed,
   HostListener,
   input,
   OnDestroy,
@@ -25,6 +26,11 @@ import { AuthService } from "@app/services/auth.service";
 })
 export class RacedayMenuBarComponent implements OnInit, OnDestroy {
   track = input<Track | undefined>(undefined);
+  race = input<any | undefined>(undefined);
+  isSeasonRace = computed(() => {
+    const r = this.race();
+    return Boolean(r?.season_id || r?.seasonId || r?.is_season || r?.isSeason);
+  });
   participants = input<any[]>([]);
   isSaveDisabled = input<boolean>(false);
   isStartResumeDisabled = input<boolean>(false);
