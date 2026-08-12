@@ -11,6 +11,8 @@ import com.antigravity.models.AnalyticsToggleRequest;
 import com.antigravity.models.Driver;
 import com.antigravity.models.Race;
 import com.antigravity.models.ReplayCommandDump;
+import com.antigravity.models.Season;
+import com.antigravity.models.SeasonStandingItem;
 import com.antigravity.models.Team;
 import com.antigravity.models.TeamOptions;
 import com.antigravity.models.Track;
@@ -62,9 +64,11 @@ import com.antigravity.race.OverallStandings;
 import com.antigravity.race.RaceParticipant;
 import com.antigravity.race.RaceSaveData;
 import com.antigravity.race.RaceStatisticsUtils;
+import com.antigravity.race.SeasonStandingsCalculator;
 import com.antigravity.race.states.NotStarted;
 import com.antigravity.race.states.RaceOver;
 import com.antigravity.race.states.Racing;
+import com.antigravity.repository.SqliteRepository;
 import com.antigravity.service.AnalyticsService;
 import com.antigravity.service.DatabaseService;
 import com.antigravity.util.CsvExporter;
@@ -84,6 +88,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -462,7 +467,7 @@ public class ClientCommandTaskHandler {
     logger.info("ClientCommand received: start-race");
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -497,7 +502,7 @@ public class ClientCommandTaskHandler {
     logger.info("ClientCommand received: pause-race");
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -548,7 +553,7 @@ public class ClientCommandTaskHandler {
     logger.info("ClientCommand received: abort-timers");
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -581,7 +586,7 @@ public class ClientCommandTaskHandler {
     logger.info("ClientCommand received: next-heat");
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -614,7 +619,7 @@ public class ClientCommandTaskHandler {
     logger.info("ClientCommand received: restart-heat");
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -646,7 +651,7 @@ public class ClientCommandTaskHandler {
     logger.info("ClientCommand received: skip-heat");
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -678,7 +683,7 @@ public class ClientCommandTaskHandler {
     logger.info("ClientCommand received: skip-race");
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -721,7 +726,7 @@ public class ClientCommandTaskHandler {
     logReplayCommand("deferHeat", null);
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -911,7 +916,7 @@ public class ClientCommandTaskHandler {
       logReplayCommand("changeLane", mapOf("fromLane", fromLane, "toLane", toLane));
 
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -931,7 +936,7 @@ public class ClientCommandTaskHandler {
       logger.info("ClientCommand received: set-main-power {}", on);
       logReplayCommand("setMainPower", mapOf("on", on));
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race != null) {
         race.setMainPower(on);
         ctx.status(200).result("Main power set to " + on);
@@ -962,7 +967,7 @@ public class ClientCommandTaskHandler {
           on);
       logReplayCommand("setLanePower", mapOf("lane", lane, "on", on));
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race != null) {
         race.setLanePower(on, laneIndex);
         ctx.status(200).result("Lane " + lane + " power set to " + on);
@@ -1198,7 +1203,7 @@ public class ClientCommandTaskHandler {
       logger.info("ClientCommand received: reset-lane-heat-data lane {}", lane);
       logReplayCommand("resetLaneHeatData", mapOf("lane", lane));
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -1246,7 +1251,7 @@ public class ClientCommandTaskHandler {
       logReplayCommand("changeActualDriver", mapOf("lane", lane, "driverId", driverId));
 
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -1339,7 +1344,7 @@ public class ClientCommandTaskHandler {
           mapOf("heatNumber", heatNumber, "lane", lane, "driverId", driverId));
 
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -1434,7 +1439,7 @@ public class ClientCommandTaskHandler {
       int lane = Integer.parseInt(pathParams.get("lane"));
       logReplayCommand("updateUserLaps", mapOf("lane", lane, "body", body));
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -1490,7 +1495,7 @@ public class ClientCommandTaskHandler {
           "updateHeatUserLaps", mapOf("heatNumber", heatNumber, "lane", lane, "body", body));
 
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -1548,7 +1553,7 @@ public class ClientCommandTaskHandler {
       List<Map<String, Object>> updates = ctx.bodyAsClass(List.class);
       logReplayCommand("updateBatchUserLaps", mapOf("updates", updates));
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -1609,7 +1614,7 @@ public class ClientCommandTaskHandler {
   private void exportRaceCsv(Context ctx) {
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -1636,10 +1641,88 @@ public class ClientCommandTaskHandler {
     }
   }
 
+  private Season getSeason(com.antigravity.race.Race race) { // fqn-collision
+    if (race == null || race.getSeasonEntityId() == null || race.getSeasonEntityId().isEmpty()) {
+      return null;
+    }
+    SqliteRepository<Season> seasonRepo =
+        new SqliteRepository<>(databaseContext, "seasons", Season.class);
+    return seasonRepo.findByEntityId(race.getSeasonEntityId());
+  }
+
+  private byte[] postProcessExportWorkbook(
+      byte[] rawBytes, com.antigravity.race.Race race) { // fqn-collision
+    try (org.apache.poi.xssf.usermodel.XSSFWorkbook outputWb =
+        new org.apache.poi.xssf.usermodel.XSSFWorkbook(new ByteArrayInputStream(rawBytes))) {
+      RaceStatisticsUtils.applyPostJxlsLaneColors(outputWb, race);
+      RaceStatisticsUtils.removeAllCommentsAndVmlDrawings(outputWb);
+
+      int lapDataIdx = outputWb.getSheetIndex("Lap Data");
+      if (lapDataIdx != -1) {
+        outputWb.setSheetOrder("Lap Data", outputWb.getNumberOfSheets() - 1);
+      }
+
+      ByteArrayOutputStream cleanOs = new ByteArrayOutputStream();
+      outputWb.write(cleanOs);
+      return cleanOs.toByteArray();
+    } catch (Exception e) {
+      logger.warn("Failed to clean up workbook comments/vml drawings; returning raw bytes", e);
+      return rawBytes;
+    }
+  }
+
+  private List<ExportLapData> buildExportLapData(List<Heat> runHeats) {
+    Map<String, Double> driverAbsoluteTimes = new HashMap<>();
+    List<ExportLapData> allLaps = new ArrayList<>();
+
+    for (Heat h : runHeats) {
+      int heatNum = h.getHeatNumber();
+      for (int lane = 0; lane < h.getDrivers().size(); lane++) {
+        DriverHeatData dhd = h.getDrivers().get(lane);
+        if (dhd == null || dhd.isEmptyParticipant()) {
+          continue;
+        }
+        String driverId = dhd.getDriver().getStableId();
+        String driverName =
+            (dhd.getDriver().isTeamParticipant() && dhd.getDriver().getTeam() != null
+                ? dhd.getDriver().getTeam().getName()
+                : (dhd.getDriver().getDriver() != null
+                    ? dhd.getDriver().getDriver().getName()
+                    : ""));
+        String actualDriverName =
+            dhd.getActualDriver() != null ? dhd.getActualDriver().getName() : "";
+
+        double currentAbsoluteLapTime = driverAbsoluteTimes.getOrDefault(driverId, 0.0);
+        double absoluteHeatLapTime = 0.0;
+
+        for (DriverHeatData.LapData lap : dhd.getLaps()) {
+          absoluteHeatLapTime += lap.getLapTime();
+          currentAbsoluteLapTime += lap.getLapTime();
+
+          allLaps.add(
+              new ExportLapData(
+                  driverName,
+                  actualDriverName,
+                  heatNum,
+                  lane + 1,
+                  absoluteHeatLapTime,
+                  currentAbsoluteLapTime,
+                  lap.getLapTime(),
+                  lap.getSegments()));
+        }
+
+        driverAbsoluteTimes.put(driverId, currentAbsoluteLapTime);
+      }
+    }
+
+    allLaps.sort(Comparator.comparingDouble(ExportLapData::getAbsoluteLapTime));
+    return allLaps;
+  }
+
   void exportRaceXls(Context ctx) {
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -1653,7 +1736,12 @@ public class ClientCommandTaskHandler {
       ByteArrayOutputStream os = new ByteArrayOutputStream();
 
       synchronized (race) {
-        List<RaceParticipant> driversCopy = new ArrayList<>(race.getDrivers());
+        List<RaceParticipant> driversCopy = new ArrayList<>();
+        for (RaceParticipant rp : race.getDrivers()) {
+          if (!rp.isEmptyParticipant()) {
+            driversCopy.add(rp);
+          }
+        }
         OverallStandings standings =
             new OverallStandings(
                 race.getRaceModel().getHeatScoring(),
@@ -1699,22 +1787,25 @@ public class ClientCommandTaskHandler {
         jxlsContext.putVar("driverSummaries", driverSummaries);
         jxlsContext.putVar("driverSheetNames", driverSheetNames);
 
-        int numLanes = RaceStatisticsUtils.determineTrackLanes(race, runHeats);
-        InputStream sanitizedIs = RaceStatisticsUtils.sanitizeWorkbookTemplate(is, numLanes, race);
+        Season season = getSeason(race);
+        List<SeasonStandingItem> seasonStandings =
+            season != null
+                ? SeasonStandingsCalculator.calculateStandings(season)
+                : new ArrayList<>();
+        jxlsContext.putVar("hasSeason", season != null);
+        jxlsContext.putVar("season", season);
+        jxlsContext.putVar("seasonName", season != null ? season.getName() : "");
+        jxlsContext.putVar("seasonStandings", seasonStandings);
+        jxlsContext.putVar("laps", buildExportLapData(runHeats));
+
+        List<Integer> activeLanes = RaceStatisticsUtils.determineActiveLanes(race, runHeats);
+        InputStream sanitizedIs =
+            RaceStatisticsUtils.sanitizeWorkbookTemplate(is, activeLanes, race);
         org.jxls.util.JxlsHelper.getInstance().processTemplate(sanitizedIs, os, jxlsContext);
       }
 
       byte[] rawBytes = os.toByteArray();
-      byte[] resultBytes = rawBytes;
-      try (org.apache.poi.xssf.usermodel.XSSFWorkbook outputWb =
-          new org.apache.poi.xssf.usermodel.XSSFWorkbook(new ByteArrayInputStream(rawBytes))) {
-        RaceStatisticsUtils.removeAllCommentsAndVmlDrawings(outputWb);
-        ByteArrayOutputStream cleanOs = new ByteArrayOutputStream();
-        outputWb.write(cleanOs);
-        resultBytes = cleanOs.toByteArray();
-      } catch (Exception e) {
-        logger.warn("Failed to clean up workbook comments/vml drawings; returning raw bytes", e);
-      }
+      byte[] resultBytes = postProcessExportWorkbook(rawBytes, race);
 
       if (resultBytes.length == 0) {
         logger.error("Generated Excel workbook output is 0 bytes");
@@ -1775,7 +1866,7 @@ public class ClientCommandTaskHandler {
   void saveRace(Context ctx) {
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -2014,7 +2105,7 @@ public class ClientCommandTaskHandler {
     try {
       ModifyHeatsRequest request = ModifyHeatsRequest.parseFrom(ctx.bodyAsBytes());
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -2037,7 +2128,7 @@ public class ClientCommandTaskHandler {
     try {
       RegenerateHeatsRequest request = RegenerateHeatsRequest.parseFrom(ctx.bodyAsBytes());
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -2059,7 +2150,7 @@ public class ClientCommandTaskHandler {
   private void finalizeModifyHeats(Context ctx) {
     try {
       com.antigravity.race.Race race = // fqn-collision
-          ClientSubscriptionManager.getInstance().getRace();
+          ClientSubscriptionManager.getInstance().getRace(); // fqn-collision
       if (race == null) {
         ctx.status(404).result("No active race found");
         return;
@@ -2096,6 +2187,68 @@ public class ClientCommandTaskHandler {
     } catch (Exception e) {
       logger.error("Error finalizing modify heats", e);
       ctx.status(500).result("Internal Server Error: " + e.getMessage());
+    }
+  }
+
+  public static class ExportLapData {
+    private final String driverName;
+    private final String actualDriverName;
+    private final int heatNumber;
+    private final int laneNumber;
+    private final double absoluteHeatLapTime;
+    private final double absoluteLapTime;
+    private final double lapTime;
+    private final List<Double> segments;
+
+    public ExportLapData(
+        String driverName,
+        String actualDriverName,
+        int heatNumber,
+        int laneNumber,
+        double absoluteHeatLapTime,
+        double absoluteLapTime,
+        double lapTime,
+        List<Double> segments) {
+      this.driverName = driverName;
+      this.actualDriverName = actualDriverName;
+      this.heatNumber = heatNumber;
+      this.laneNumber = laneNumber;
+      this.absoluteHeatLapTime = absoluteHeatLapTime;
+      this.absoluteLapTime = absoluteLapTime;
+      this.lapTime = lapTime;
+      this.segments = segments != null ? segments : new ArrayList<>();
+    }
+
+    public String getDriverName() {
+      return driverName;
+    }
+
+    public String getActualDriverName() {
+      return actualDriverName;
+    }
+
+    public int getHeatNumber() {
+      return heatNumber;
+    }
+
+    public int getLaneNumber() {
+      return laneNumber;
+    }
+
+    public double getAbsoluteHeatLapTime() {
+      return absoluteHeatLapTime;
+    }
+
+    public double getAbsoluteLapTime() {
+      return absoluteLapTime;
+    }
+
+    public double getLapTime() {
+      return lapTime;
+    }
+
+    public List<Double> getSegments() {
+      return segments;
     }
   }
 }
