@@ -308,7 +308,9 @@ export class CreditsScrollDirective implements AfterViewInit, OnDestroy {
 
                   <div class="credit-section">
                     <div class="credit-role">CREATOR & LEAD DEVELOPER</div>
-                    <div class="credit-name highlight">Dave Aufderheide</div>
+                    <div class="credit-name highlight">
+                      Dave 'Bad Cheese' Aufderheide
+                    </div>
                   </div>
 
                   <div class="credit-section">
