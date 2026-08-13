@@ -231,6 +231,20 @@ public class ClientSubscriptionManagerTest {
   }
 
   @Test
+  public void testSetRaceClearsProtocol() {
+    Race mockRace = mock(Race.class);
+    ProtocolDelegate mockProtocol = mock(ProtocolDelegate.class);
+    manager.setProtocol(mockProtocol);
+
+    manager.setRace(mockRace);
+
+    assertNull(
+        "Protocol should be closed and cleared when a new race is set", manager.getProtocol());
+    assertEquals(mockRace, manager.getRace());
+    verify(mockProtocol).close();
+  }
+
+  @Test
   public void testFastCleanupWhenNoSessions() throws Exception {
     Race mockRace = mock(Race.class);
     com.antigravity.models.Race realModel =

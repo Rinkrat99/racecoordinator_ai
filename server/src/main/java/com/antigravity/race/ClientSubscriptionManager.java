@@ -117,7 +117,9 @@ public class ClientSubscriptionManager {
     cancelPendingCleanup();
     this.lastDirectorExplicitlyUnsubscribed = false;
     if (race != null && this.currentProtocol != null) {
-      throw new IllegalStateException("Cannot set race while protocol is active");
+      logger.info(
+          "New race being set while standalone protocol is active. Closing standalone protocol.");
+      setProtocol(null);
     }
     if (this.currentRace != null) {
       if (race == null) {
