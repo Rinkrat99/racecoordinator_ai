@@ -172,7 +172,7 @@ jobs:
           path: release/RaceCoordinator_Mac.dmg
 
   build-linux:
-    needs: [check-changes, run-tests]
+    needs: [check-changes, build-artifacts]
     if: ${{ needs.check-changes.outputs.should_run == 'true' }}
     runs-on: ubuntu-latest
     steps:
