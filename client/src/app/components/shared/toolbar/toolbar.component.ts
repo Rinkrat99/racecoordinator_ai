@@ -58,7 +58,7 @@ export class ToolbarComponent implements OnInit {
   showExport = input(false);
   importTitleKey = input("DBM_BTN_IMPORT");
   importRc1TitleKey = input("AM_BTN_IMPORT_RC1_ROTATION");
-  importRc1Icon = input("upload_file");
+  importRc1Icon = input("file_download");
   exportTitleKey = input("DBM_BTN_EXPORT");
   showReset = input(false);
   disabledImport = input(false);
