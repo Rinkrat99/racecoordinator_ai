@@ -1,6 +1,7 @@
 package com.antigravity.race;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import com.antigravity.models.Driver;
 import com.antigravity.models.HeatRotationType;
@@ -10,10 +11,12 @@ import com.antigravity.models.OverallScoring;
 import com.antigravity.models.Race;
 import com.antigravity.models.Track;
 import com.antigravity.proto.RecordData;
+import com.antigravity.protocols.ProtocolDelegate;
 import com.antigravity.race.states.RaceOver;
 import com.antigravity.race.states.Racing;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -73,6 +76,21 @@ public class RaceRecordTimeBasedTest {
             .track(track)
             .isDemoMode(true)
             .build();
+
+    // Inject mock ProtocolDelegate to prevent Demo background thread flakiness
+    ProtocolDelegate mockProtocols = mock(ProtocolDelegate.class);
+    race.injectProtocols(mockProtocols);
+  }
+
+  @After
+  public void tearDown() {
+    if (race != null && race.getState() != null) {
+      try {
+        race.getState().exit(race);
+      } catch (Exception ignored) {
+      }
+    }
+    ClientSubscriptionManager.setInstance(null);
   }
 
   @Test
@@ -136,14 +154,9 @@ public class RaceRecordTimeBasedTest {
             .drivers(drivers)
             .track(track)
             .isDemoMode(true)
-            .demoConfig(
-                com.antigravity.proto.DemoConfig.newBuilder()
-                    .setMinReactionTimeMs(9999999)
-                    .setMaxReactionTimeMs(9999999)
-                    .setMinLapTimeMs(9999999)
-                    .setMaxLapTimeMs(9999999)
-                    .build())
             .build();
+
+    race.injectProtocols(mock(ProtocolDelegate.class));
 
     race.changeState(new Racing());
 

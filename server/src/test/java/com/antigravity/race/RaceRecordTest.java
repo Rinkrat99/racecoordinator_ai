@@ -342,6 +342,7 @@ public class RaceRecordTest {
             .track(track)
             .isDemoMode(true)
             .build();
+    minLapRace.injectProtocols(mock(ProtocolDelegate.class));
     minLapRace.changeState(new Racing());
 
     // 1. Reaction hit
