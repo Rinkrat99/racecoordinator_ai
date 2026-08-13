@@ -165,6 +165,11 @@ public class UpdateServiceTest {
             + "        \"name\": \"RaceCoordinator_Mac_v1.0.0-alpha.123.dmg\",\n"
             + "        \"size\": 25000000,\n"
             + "        \"browser_download_url\": \"https://github.com/mac-setup.dmg\"\n"
+            + "      },\n"
+            + "      {\n"
+            + "        \"name\": \"RaceCoordinatorAI_Linux_v1.0.0-alpha.123.tar.gz\",\n"
+            + "        \"size\": 30000000,\n"
+            + "        \"browser_download_url\": \"https://github.com/linux-setup.tar.gz\"\n"
             + "      }\n"
             + "    ]\n"
             + "  }\n"
@@ -180,8 +185,8 @@ public class UpdateServiceTest {
       assertEquals("https://github.com/win-setup.exe", result.downloadUrl);
       assertEquals(50000000L, result.downloadSize);
     } else if (result.isLinux) {
-      // If run on Linux
-      assertTrue(result.downloadUrl != null);
+      assertEquals("https://github.com/linux-setup.tar.gz", result.downloadUrl);
+      assertEquals(30000000L, result.downloadSize);
     } else {
       assertEquals("https://github.com/mac-setup.dmg", result.downloadUrl);
       assertEquals(25000000L, result.downloadSize);
