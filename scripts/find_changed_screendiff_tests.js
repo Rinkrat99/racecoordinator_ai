@@ -58,6 +58,12 @@ function findAllScreendiffTests() {
 
 /**
  * Get list of changed file paths from git.
+ * Detects:
+ * 1. All changes on current branch compared to main/master (using merge-base `origin/main...`)
+ * 2. All unpushed commits compared to upstream (@{u})
+ * 3. All uncommitted working tree changes (staged + unstaged)
+ * 4. All untracked new files
+ * 5. Fallback to HEAD~1 if working tree and main are identical
  */
 function getChangedFiles(baseRef) {
     const changedFiles = new Set();
@@ -69,16 +75,26 @@ function getChangedFiles(baseRef) {
         return Array.from(changedFiles);
     }
 
-    // 1. Unstaged changes
+    // 1. Check all changes on current branch compared to origin/main or origin/master merge-base
+    let baseDiff = runGit('git diff --name-only origin/main...');
+    if (baseDiff.length === 0) {
+        baseDiff = runGit('git diff --name-only origin/master...');
+    }
+    if (baseDiff.length === 0) {
+        baseDiff = runGit('git diff --name-only @{u}');
+    }
+    baseDiff.forEach(f => changedFiles.add(f));
+
+    // 2. Unstaged changes in working tree
     runGit('git diff --name-only').forEach(f => changedFiles.add(f));
 
-    // 2. Staged changes
+    // 3. Staged changes in index
     runGit('git diff --cached --name-only').forEach(f => changedFiles.add(f));
 
-    // 3. Untracked files
+    // 4. Untracked new files
     runGit('git ls-files --others --exclude-standard').forEach(f => changedFiles.add(f));
 
-    // 4. If working tree is clean, fallback to last commit changes
+    // 5. If working tree is completely clean and already merged with main, fallback to last commit changes
     if (changedFiles.size === 0) {
         runGit('git diff --name-only HEAD~1').forEach(f => changedFiles.add(f));
     }
