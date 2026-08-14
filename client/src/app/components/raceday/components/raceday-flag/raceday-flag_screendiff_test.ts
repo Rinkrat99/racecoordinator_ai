@@ -27,7 +27,7 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.RACING);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.GREEN);
-    await page.waitForTimeout(300);
+    await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     const flagImg = flagPanel.locator(".flag-image");
     await expect(flagImg).toBeVisible();
@@ -49,7 +49,7 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.PAUSED);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.YELLOW);
-    await page.waitForTimeout(300);
+    await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     await expect(flagPanel).toHaveScreenshot("raceday-flag-yellow.png");
   });
@@ -68,7 +68,7 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.HEAT_OVER);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.RED);
-    await page.waitForTimeout(300);
+    await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     await expect(flagPanel).toHaveScreenshot("raceday-flag-red.png");
   });
@@ -87,7 +87,7 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.RACING);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.WHITE);
-    await page.waitForTimeout(300);
+    await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     await expect(flagPanel).toHaveScreenshot("raceday-flag-white.png");
   });
@@ -106,7 +106,7 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.RACE_OVER);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.CHECKERED);
-    await page.waitForTimeout(300);
+    await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     await expect(flagPanel).toHaveScreenshot("raceday-flag-checkered.png");
   });

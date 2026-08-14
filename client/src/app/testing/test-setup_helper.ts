@@ -1394,7 +1394,7 @@ export class TestSetupHelper {
     const generateFallbackSvg = (nameOrId: string) => {
       const lower = (nameOrId || "").toLowerCase();
       let fill = "#3f51b5";
-      let text = "IMG";
+      let text = "CUSTOM IMAGE";
       let textColor = "white";
 
       if (
