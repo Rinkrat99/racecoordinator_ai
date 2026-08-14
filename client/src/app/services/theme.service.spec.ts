@@ -26,7 +26,7 @@ describe("ThemeService", () => {
       entity_id: "theme-1",
       name: "Theme 1",
       is_default: false,
-      slots: { "flag.green": "asset-1" },
+      slots: { "flag.racing": "asset-1" },
       audio_slots: {},
     },
   ];
@@ -96,7 +96,7 @@ describe("ThemeService", () => {
   it("should resolve asset ID correctly", async () => {
     await service.initialize();
     service.setActiveTheme("theme-1");
-    expect(service.resolveAssetId("flag.green")).toBe("asset-1");
+    expect(service.resolveAssetId("flag.racing")).toBe("asset-1");
     expect(service.resolveAssetId("non-existent")).toBeNull();
   });
 

@@ -2289,6 +2289,7 @@ export class DefaultRacedayComponent
       getDriverGroupRanking: (hd) => this.getDriverGroupRanking(hd),
       getLaneQrCodeUrl: (laneIndex) => this.getLaneQrCodeUrl(laneIndex),
       getDriverViewQrCodeUrl: (hd) => this.getDriverViewQrCodeUrl(hd),
+      isDriverFinished: (hd, scoring) => this.isDriverFinished(hd, scoring),
     };
     return RacedayFormatUtils.formatColumnValue(
       heatDriver,
@@ -2323,6 +2324,7 @@ export class DefaultRacedayComponent
       laneViewWidgetSettings: laneViewWidget?.customSettings,
       getDriverOverallRanking: (hd) => this.getDriverOverallRanking(hd),
       getDriverGroupRanking: (hd) => this.getDriverGroupRanking(hd),
+      isDriverFinished: (hd, scoring) => this.isDriverFinished(hd, scoring),
     };
 
     const isInset = anchor ? anchor !== "center-center" : false;
@@ -4066,6 +4068,7 @@ export class DefaultRacedayComponent
       getDriverGroupRanking: (hd) => this.getDriverGroupRanking(hd),
       getLaneQrCodeUrl: (laneIndex) => this.getLaneQrCodeUrl(laneIndex),
       getDriverViewQrCodeUrl: (hd) => this.getDriverViewQrCodeUrl(hd),
+      isDriverFinished: (hd, scoring) => this.isDriverFinished(hd, scoring),
     };
     return RacedayFormatUtils.formatValue(
       propertyName,

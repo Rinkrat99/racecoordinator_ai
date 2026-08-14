@@ -2873,11 +2873,11 @@ describe("DefaultRacedayComponent", () => {
 
       // Setup default setttings for flag lookups
       const settings = (component as any).settingsService.getSettings();
-      settings.flagRed = "red.png";
-      settings.flagGreen = "green.png";
-      settings.flagYellow = "yellow.png";
-      settings.flagWhite = "white.png";
-      settings.flagCheckered = "checkered.png";
+      settings.flagHeatOver = "red.png";
+      settings.flagRacing = "green.png";
+      settings.flagHeatPaused = "yellow.png";
+      settings.flagOneLapToGo = "white.png";
+      settings.flagHeatFinishing = "checkered.png";
 
       // Mock assets for resolution
       (component as any).assets = [
@@ -3317,10 +3317,10 @@ describe("DefaultRacedayComponent", () => {
 
     it("should use theme for flag images", () => {
       mockThemeService.resolveAssetId.and.callFake((slot: string) => {
-        if (slot === "flag.green") return "theme-green-flag";
+        if (slot === "flag.racing") return "theme-green-flag";
         return null;
       });
-      mockRaceFlagService.getFlagType.and.returnValue("green");
+      mockRaceFlagService.getFlagType.and.returnValue("flag.racing");
       mockRaceFlagService.getFlagUrl.and.returnValue(
         "http://localhost/theme/green.png",
       );

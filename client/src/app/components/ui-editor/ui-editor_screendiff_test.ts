@@ -13,8 +13,6 @@ test.describe("UI Editor Visuals", () => {
     await TestSetupHelper.setupThemeMocks(page);
 
     await TestSetupHelper.setupSettings(page, {
-      flagGreen: "/api/assets/download?filename=img1.png",
-      flagRed: "/api/assets/download?filename=img1.png",
       uiEditorHelpShown: true,
     });
 
@@ -218,5 +216,71 @@ test.describe("UI Editor Visuals", () => {
       timeout: 15000,
       animations: "disabled",
     });
+  });
+
+  test("should display expanded custom theme with all 12 behavioral flags", async ({
+    page,
+  }) => {
+    await TestSetupHelper.waitForLocalization(
+      page,
+      "en",
+      page.goto("/ui-editor"),
+    );
+    await page.locator(".ue-container").waitFor({ state: "visible" });
+
+    // Expand Custom Theme (2nd theme sub-section)
+    const customThemeSection = page.locator(".theme-sub-section").nth(1);
+    await customThemeSection
+      .locator(".section-header")
+      .first()
+      .click({ force: true });
+
+    // Wait for the flag images grid to be rendered
+    const flagGrid = customThemeSection.locator(".flags-grid");
+    await flagGrid.waitFor({ state: "visible" });
+    await expect(flagGrid.locator("app-image-selector")).toHaveCount(12);
+
+    await expect(customThemeSection).toHaveScreenshot(
+      "ui-editor-theme-custom-expanded.png",
+      {
+        maxDiffPixelRatio: 0.05,
+        maxDiffPixels: 10000,
+        timeout: 15000,
+        animations: "disabled",
+      },
+    );
+  });
+
+  test("should display expanded default theme in read-only mode", async ({
+    page,
+  }) => {
+    await TestSetupHelper.waitForLocalization(
+      page,
+      "en",
+      page.goto("/ui-editor"),
+    );
+    await page.locator(".ue-container").waitFor({ state: "visible" });
+
+    // Expand Default Theme (1st theme sub-section)
+    const defaultThemeSection = page.locator(".theme-sub-section").first();
+    await defaultThemeSection
+      .locator(".section-header")
+      .first()
+      .click({ force: true });
+
+    // Wait for the flag images grid to be rendered
+    const flagGrid = defaultThemeSection.locator(".flags-grid");
+    await flagGrid.waitFor({ state: "visible" });
+    await expect(flagGrid.locator("app-image-selector")).toHaveCount(12);
+
+    await expect(defaultThemeSection).toHaveScreenshot(
+      "ui-editor-theme-default-expanded.png",
+      {
+        maxDiffPixelRatio: 0.05,
+        maxDiffPixels: 10000,
+        timeout: 15000,
+        animations: "disabled",
+      },
+    );
   });
 });

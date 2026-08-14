@@ -24,6 +24,7 @@ export interface FormatContext {
   getDriverGroupRanking?: (hd: DriverHeatData) => number | undefined;
   getLaneQrCodeUrl?: (laneIndex: number) => string;
   getDriverViewQrCodeUrl?: (hd: DriverHeatData) => string;
+  isDriverFinished?: (hd: DriverHeatData, scoring?: any) => boolean;
 }
 
 export class RacedayFormatUtils {
@@ -250,6 +251,24 @@ export class RacedayFormatUtils {
       if (RacedayFormatUtils.isEmptyDriver(hd)) return "--";
       return "--";
     } else if (baseKey === "flag") {
+      if (
+        hd &&
+        ((hd as any).remainingFalseStartTimePenalty > 0 ||
+          (hd.driver && (hd.driver as any).fuelLevel <= 0))
+      ) {
+        return ctx.getFlagUrl("flag.penalty");
+      }
+      if (value === RaceFlag.BLACK) {
+        return ctx.getFlagUrl("flag.penalty");
+      }
+      if (
+        value === RaceFlag.RED &&
+        hd &&
+        ctx.isDriverFinished &&
+        ctx.isDriverFinished(hd, ctx.getRace()?.heat_scoring)
+      ) {
+        return ctx.getFlagUrl("flag.driver_finished");
+      }
       const flag =
         value === RaceFlag.UNKNOWN_FLAG || value === 0
           ? ctx.getFlagType()
