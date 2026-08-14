@@ -822,12 +822,15 @@ export class TestSetupHelper {
 
       // Try multiple potential base paths
       const potentialPaths = [
+        path.resolve(process.cwd(), "client/src/assets/images/defaults"),
+        path.resolve(process.cwd(), "src/assets/images/defaults"),
+        path.resolve(process.cwd(), "assets/images/defaults"),
+        path.resolve(process.cwd(), "client/src/assets/images"),
         path.resolve(process.cwd(), "src/assets/images"),
         path.resolve(process.cwd(), "assets/images"),
-        path.resolve(process.cwd(), "client/src/assets/images"),
+        path.resolve(process.cwd(), "client/src/assets"),
         path.resolve(process.cwd(), "src/assets"),
         path.resolve(process.cwd(), "assets"),
-        path.resolve(process.cwd(), "client/src/assets"),
         path.resolve(process.cwd(), "server/src/main/resources/defaults"),
         path.resolve(process.cwd(), "../server/src/main/resources/defaults"),
         path.resolve(process.cwd(), "src/main/resources/defaults"),
@@ -1371,6 +1374,9 @@ export class TestSetupHelper {
 
       const baseName = path.basename(target);
       const potentialDirs = [
+        path.resolve(process.cwd(), "client/src/assets/images/defaults"),
+        path.resolve(process.cwd(), "src/assets/images/defaults"),
+        path.resolve(process.cwd(), "assets/images/defaults"),
         path.resolve(process.cwd(), "client/src/assets/images"),
         path.resolve(process.cwd(), "src/assets/images"),
         path.resolve(process.cwd(), "assets/images"),

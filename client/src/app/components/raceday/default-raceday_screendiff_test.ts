@@ -662,7 +662,7 @@ test.describe("Raceday Visuals for Fuel", () => {
     const select = page.locator(".scalable-content select").first();
 
     // Wait until options are rendered async to avoid timing flakes (check options of the first select specifically)
-    await expect(select.locator("option")).toHaveCount(2, { timeout: 5000 });
+    await select.locator("option").nth(1).waitFor({ state: "attached" });
 
     // To guarantee visibility in headless screenshots, extract options and render a floating debug overlay list
     await select.evaluate((node) => {

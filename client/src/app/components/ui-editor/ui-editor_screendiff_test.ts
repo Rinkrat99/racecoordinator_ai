@@ -260,7 +260,10 @@ test.describe("UI Editor Visuals", () => {
     // Wait for the flag images grid to be rendered
     const flagGrid = customThemeSection.locator(".flags-grid");
     await flagGrid.waitFor({ state: "visible" });
-    await expect(flagGrid.locator("app-image-selector")).toHaveCount(12);
+    await flagGrid
+      .locator("app-image-selector")
+      .nth(11)
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(customThemeSection);
     await customThemeSection.scrollIntoViewIfNeeded();
     await page.mouse.move(0, 0);
@@ -296,7 +299,10 @@ test.describe("UI Editor Visuals", () => {
     // Wait for the flag images grid to be rendered
     const flagGrid = defaultThemeSection.locator(".flags-grid");
     await flagGrid.waitFor({ state: "visible" });
-    await expect(flagGrid.locator("app-image-selector")).toHaveCount(12);
+    await flagGrid
+      .locator("app-image-selector")
+      .nth(11)
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(defaultThemeSection);
     await defaultThemeSection.scrollIntoViewIfNeeded();
     await page.mouse.move(0, 0);

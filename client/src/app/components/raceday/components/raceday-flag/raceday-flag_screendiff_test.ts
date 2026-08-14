@@ -27,6 +27,9 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.RACING);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.GREEN);
+    await flagPanel
+      .locator("img[src*='flag_green.png']")
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     const flagImg = flagPanel.locator(".flag-image");
@@ -49,6 +52,9 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.PAUSED);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.YELLOW);
+    await flagPanel
+      .locator("img[src*='flag_yellow.png']")
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     await expect(flagPanel).toHaveScreenshot("raceday-flag-yellow.png");
@@ -68,6 +74,9 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.HEAT_OVER);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.RED);
+    await flagPanel
+      .locator("img[src*='flag_red.png']")
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     await expect(flagPanel).toHaveScreenshot("raceday-flag-red.png");
@@ -87,6 +96,9 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.RACING);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.WHITE);
+    await flagPanel
+      .locator("img[src*='flag_white.png']")
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     await expect(flagPanel).toHaveScreenshot("raceday-flag-white.png");
@@ -106,6 +118,9 @@ test.describe("Raceday Flag Visuals", () => {
 
     await TestSetupHelper.sendRaceState(page, RaceState.RACE_OVER);
     await TestSetupHelper.sendRaceFlag(page, RaceFlag.CHECKERED);
+    await flagPanel
+      .locator("img[src*='flag_checkered.png']")
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(flagPanel);
 
     await expect(flagPanel).toHaveScreenshot("raceday-flag-checkered.png");

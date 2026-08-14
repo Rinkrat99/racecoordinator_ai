@@ -55,6 +55,10 @@ test.describe("Raceday Start Sequence Visuals", () => {
 
     const overlay = page.locator(".countdown-overlay");
     await overlay.waitFor({ state: "visible" });
+    await overlay
+      .locator("img.start-lamp")
+      .nth(4)
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(overlay);
 
     // All 5 lamps should be dim initially (time=5.0)
@@ -106,6 +110,10 @@ test.describe("Raceday Start Sequence Visuals", () => {
 
     const overlay = page.locator(".countdown-overlay");
     await overlay.waitFor({ state: "visible" });
+    await overlay
+      .locator("img.start-lamp.on")
+      .nth(2)
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(overlay);
     await expect(page).toHaveScreenshot("start-sequence-3-red.png");
   });
@@ -153,6 +161,10 @@ test.describe("Raceday Start Sequence Visuals", () => {
 
     const overlay = page.locator(".countdown-overlay");
     await overlay.waitFor({ state: "visible" });
+    await overlay
+      .locator("img.start-lamp.go")
+      .nth(4)
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(overlay);
     await expect(page).toHaveScreenshot("start-sequence-all-green.png");
   });
@@ -212,6 +224,10 @@ test.describe("Raceday Start Sequence Visuals", () => {
 
     const overlay = page.locator(".countdown-overlay");
     await overlay.waitFor({ state: "visible" });
+    await overlay
+      .locator("img.start-lamp.go")
+      .nth(4)
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(overlay);
     await expect(page).toHaveScreenshot(
       "start-sequence-stay-green-late-msg.png",
@@ -263,6 +279,10 @@ test.describe("Raceday Start Sequence Visuals", () => {
 
     const overlay = page.locator(".countdown-overlay");
     await overlay.waitFor({ state: "visible" });
+    await overlay
+      .locator("img.start-lamp")
+      .nth(2)
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(overlay);
 
     // Verify the visual state with exactly 3 lamps
@@ -321,6 +341,10 @@ test.describe("Raceday Start Sequence Visuals", () => {
 
     const overlay = page.locator(".countdown-overlay");
     await overlay.waitFor({ state: "visible" });
+    await overlay
+      .locator("img.start-lamp")
+      .nth(1)
+      .waitFor({ state: "attached" });
     await TestSetupHelper.waitForImagesLoaded(overlay);
 
     // Verify the visual state with exactly 2 lamps (restart_time = 2.0)
