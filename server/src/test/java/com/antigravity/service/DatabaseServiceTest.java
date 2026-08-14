@@ -351,4 +351,44 @@ public class DatabaseServiceTest {
     assertTrue(dbService.getRacePredictionRecord(context, raceId1, false) == null);
     assertTrue(dbService.getPredictionEvaluationRecord(context, raceId1, false) == null);
   }
+
+  @Test
+  public void testGetSavedRaces_IgnoresUnknownProperties() throws Exception {
+    databaseContext.ensureTable("saved_races");
+    String rawJsonWithUnknownProperty =
+        "{\"_id\":\"test-123\",\"saveName\":\"test_race.json\",\"unknownPropertyWhichShouldBeIgnored\":\"bloat\"}";
+    String sql = "INSERT INTO saved_races (entity_id, sequence_id, json_data) VALUES (?, ?, ?)";
+    try (java.sql.PreparedStatement pstmt = databaseContext.getConnection().prepareStatement(sql)) {
+      pstmt.setString(1, "test-123");
+      pstmt.setString(2, "test_race.json");
+      pstmt.setString(3, rawJsonWithUnknownProperty);
+      pstmt.executeUpdate();
+    }
+    List<com.antigravity.race.RaceSaveData> saves =
+        dbService.getSavedRaces(databaseContext, RaceScope.PRODUCTION);
+    assertNotNull(saves);
+    assertEquals(1, saves.size());
+    assertEquals("test_race.json", saves.get(0).getSaveName());
+    assertEquals("test-123", saves.get(0).getId());
+    assertFalse(saves.get(0).isCorrupt());
+  }
+
+  @Test
+  public void testGetSavedRaces_CorruptJson() throws Exception {
+    databaseContext.ensureTable("saved_races");
+    String rawJsonCorrupt = "{ \"malformed\": true, \"_id\": [ { "; // Invalid JSON
+    String sql = "INSERT INTO saved_races (entity_id, sequence_id, json_data) VALUES (?, ?, ?)";
+    try (java.sql.PreparedStatement pstmt = databaseContext.getConnection().prepareStatement(sql)) {
+      pstmt.setString(1, "test-corrupt-123");
+      pstmt.setString(2, "corrupted_race.json");
+      pstmt.setString(3, rawJsonCorrupt);
+      pstmt.executeUpdate();
+    }
+    List<com.antigravity.race.RaceSaveData> saves =
+        dbService.getSavedRaces(databaseContext, RaceScope.PRODUCTION);
+    assertNotNull(saves);
+    assertEquals(1, saves.size());
+    assertEquals("corrupted_race.json", saves.get(0).getSaveName());
+    assertTrue(saves.get(0).isCorrupt());
+  }
 }

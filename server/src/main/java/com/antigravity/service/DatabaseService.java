@@ -22,6 +22,7 @@ import com.antigravity.race.Heat;
 import com.antigravity.race.RaceSaveData;
 import com.antigravity.repository.SqliteRepository;
 import com.antigravity.util.SeasonPointsCalculator;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,7 +35,8 @@ import org.slf4j.LoggerFactory;
 
 public class DatabaseService {
   private static final Logger logger = LoggerFactory.getLogger(DatabaseService.class);
-  private static final ObjectMapper objectMapper = new ObjectMapper();
+  private static final ObjectMapper objectMapper =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private static DatabaseService instance = new DatabaseService();
   private boolean replayMode = false;
 
@@ -380,21 +382,30 @@ public class DatabaseService {
     String tableName = getCollectionName("saved_races", scope);
     context.ensureTable(tableName);
     List<RaceSaveData> saves = new ArrayList<>();
-    String sql = "SELECT json_data FROM " + tableName;
+    String sql = "SELECT sequence_id, json_data FROM " + tableName;
     try (PreparedStatement pstmt = context.getConnection().prepareStatement(sql);
         ResultSet rs = pstmt.executeQuery()) {
       while (rs.next()) {
+        String sequenceId = rs.getString("sequence_id");
         String json = rs.getString("json_data");
         if (json != null && !json.trim().isEmpty()) {
-          RaceSaveData race = objectMapper.readValue(json, RaceSaveData.class);
-          if (race != null) {
-            if (race.getHeats() != null && race.getModel() != null) {
-              for (Heat heat : race.getHeats()) {
-                heat.initializeStandings(
-                    race.getModel().getHeatScoring(), race.getModel().isPractice());
+          try {
+            RaceSaveData race = objectMapper.readValue(json, RaceSaveData.class);
+            if (race != null) {
+              if (race.getHeats() != null && race.getModel() != null) {
+                for (Heat heat : race.getHeats()) {
+                  heat.initializeStandings(
+                      race.getModel().getHeatScoring(), race.getModel().isPractice());
+                }
               }
+              saves.add(race);
             }
-            saves.add(race);
+          } catch (Exception e) {
+            logger.warn("Failed to parse a saved race record, marking it corrupt.", e);
+            RaceSaveData corruptRace = new RaceSaveData();
+            corruptRace.setSaveName(sequenceId);
+            corruptRace.setCorrupt(true);
+            saves.add(corruptRace);
           }
         }
       }
