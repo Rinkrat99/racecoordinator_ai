@@ -128,8 +128,10 @@ test.describe("UI Editor Visuals", () => {
       },
     );
 
-    // Try to navigate back
-    await page.evaluate(() => window.history.back());
+    // Try to navigate away to trigger pending changes guard
+    await page.evaluate(() => {
+      (window as any).angularRouter.navigateByUrl("/raceday-setup");
+    });
 
     // Wait for confirmation modal backdrop and content to be visible
     const modal = page.locator(
