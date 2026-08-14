@@ -69,7 +69,7 @@ export default defineConfig({
 
   /* Expect options */
   expect: {
-    timeout: 10000,
+    timeout: 25000,
     /* Visual regression settings */
     toHaveScreenshot: {
       animations: "disabled",

@@ -967,6 +967,23 @@ export class TestSetupHelper {
     await page.waitForTimeout(500);
   }
 
+  static async waitForImagesLoaded(target: Locator | Page) {
+    await target.evaluate((node: HTMLElement | Document) => {
+      const root = node instanceof Document ? node.body : node;
+      const images = Array.from(root.querySelectorAll("img"));
+      return Promise.all(
+        images.map((img) => {
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+            setTimeout(resolve, 1000);
+          });
+        }),
+      );
+    });
+  }
+
   static async setupTrackMocks(page: Page) {
     let currentTracks = [...MOCK_TRACKS];
 
