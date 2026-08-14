@@ -221,6 +221,7 @@ test.describe("UI Editor Visuals", () => {
         animations: "disabled",
       },
     );
+    await page.waitForTimeout(300);
     await resolutionSelect.evaluate((el: HTMLSelectElement) => {
       el.value = "1920x1080";
       el.dispatchEvent(new Event("change", { bubbles: true }));
