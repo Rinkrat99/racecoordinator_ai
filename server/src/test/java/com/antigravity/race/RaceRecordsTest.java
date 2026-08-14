@@ -115,5 +115,16 @@ public class RaceRecordsTest {
     assertEquals("BlueBlur", overall.getFastestLap().getHolderNickname());
     assertEquals("Sega", overall.getFastestLap().getHolderTeamName());
     assertEquals(123456789L, overall.getFastestLap().getDate());
+
+    // 4. Test resetAllRecords
+    records.resetAllRecords();
+    RecordData resetData = records.getRecordData();
+    assertNotNull(resetData);
+    assertEquals(0.0, resetData.getOverall().getFastestLap().getValue(), 0.001);
+    assertEquals("", resetData.getOverall().getFastestLap().getHolderName());
+    assertEquals(0.0, resetData.getOverall().getHighestScore().getValue(), 0.001);
+    assertEquals("", resetData.getOverall().getHighestScore().getHolderName());
+    assertEquals(0.0, resetData.getCurrent().getFastestLap().getValue(), 0.001);
+    assertEquals(0.0, resetData.getCurrent().getHighestScore().getValue(), 0.001);
   }
 }

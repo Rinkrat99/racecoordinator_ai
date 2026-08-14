@@ -952,6 +952,11 @@ public class Race implements ProtocolListener {
     recordsManager.updateScoreRecords();
   }
 
+  public void resetRecords() {
+    recordsManager.resetAllRecords();
+    recordsManager.broadcastRecords();
+  }
+
   @Override
   public void onLap(int lane, double lapTime, int interfaceId, int interfaceIndex) {
     if (state.onLap(lane, lapTime, interfaceId, false)) {

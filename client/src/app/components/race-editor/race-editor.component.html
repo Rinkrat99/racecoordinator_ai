@@ -5,6 +5,25 @@
   (acknowledge)="closeAckModal()"
 >
 </app-acknowledgement-modal>
+<app-confirmation-modal
+  [visible]="showResetConfirmation"
+  [title]="'RM_CONFIRM_RESET_RECORDS_TITLE' | translate"
+  [message]="
+    'RM_CONFIRM_RESET_RECORDS_MSG' | translate: { name: editingRace?.name }
+  "
+  (confirm)="onConfirmReset()"
+  (cancel)="onCancelReset()"
+>
+</app-confirmation-modal>
+<app-acknowledgement-modal
+  [visible]="showResetSuccess"
+  [title]="'RM_SUCCESS_RESET_RECORDS_TITLE' | translate"
+  [message]="
+    'RM_SUCCESS_RESET_RECORDS_MSG' | translate: { name: resetRaceName }
+  "
+  (acknowledge)="onCloseResetSuccess()"
+>
+</app-acknowledgement-modal>
 <div
   class="page-container"
   [style.transform]="'translate(-50%, -50%) scale(' + scale + ')'"
@@ -179,6 +198,16 @@
                 >▼</span
               >
               <h1>{{ "RE_GENERAL_HEADER" | translate }}</h1>
+              <button
+                id="reset-race-records-btn"
+                class="section-action-btn danger"
+                type="button"
+                (click)="onResetRecords($event)"
+                [disabled]="isSaving || !isAdmin() || !editingRace?.entity_id"
+                [title]="getResetTooltip()"
+              >
+                <span class="material-icons">restart_alt</span>
+              </button>
             </div>
             @if (sectionsExpanded.general) {
               <div class="section-content">

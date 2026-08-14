@@ -1887,4 +1887,11 @@ export class DataService {
     }
     return this.http.get<any>(url);
   }
+
+  resetRaceRecords(raceId: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.baseUrl}/api/races/${raceId}/reset-records`,
+      {},
+    );
+  }
 }

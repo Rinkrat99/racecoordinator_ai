@@ -248,4 +248,17 @@ describe("DataService", () => {
     expect(req.request.method).toBe("GET");
     req.flush(["BART_0001", "BART_0002"]);
   });
+
+  it("should call resetRaceRecords endpoint", (done) => {
+    service.resetRaceRecords("race_123").subscribe(() => {
+      done();
+    });
+
+    const req = httpMock.expectOne((request) =>
+      request.url.endsWith("/api/races/race_123/reset-records"),
+    );
+    expect(req.request.method).toBe("POST");
+    expect(req.request.body).toEqual({});
+    req.flush(null);
+  });
 });

@@ -138,7 +138,7 @@
       class="toolbar-btn danger"
       (click)="onReset()"
       [disabled]="isSaving() || disabledReset()"
-      [title]="'DBM_BTN_RESET' | translate"
+      [title]="getResetTooltip()"
     >
       <span class="material-icons">restart_alt</span>
     </button>

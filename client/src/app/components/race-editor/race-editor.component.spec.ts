@@ -10,13 +10,15 @@ import {
 } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
-import { of } from "rxjs";
+import { BehaviorSubject, of } from "rxjs";
 import { AnalyticsService } from "@app/analytics.service";
 import { DataService } from "@app/data.service";
 import { FuelUsageType } from "@app/models/fuel_options";
 import { Race } from "@app/models/race";
+import { Role } from "@app/models/role";
 import { Track } from "@app/models/track";
 import { TranslatePipe } from "@app/pipes/translate.pipe";
+import { AuthService } from "@app/services/auth.service";
 import { ConnectionMonitorService } from "@app/services/connection-monitor.service";
 import { HelpService } from "@app/services/help.service";
 import { RaceConnectionService } from "@app/services/race-connection.service";
@@ -49,8 +51,17 @@ describe("RaceEditorComponent", () => {
   let _router: any;
   let activatedRoute: any;
 
+  let roleSubject: BehaviorSubject<Role>;
+  let mockAuthService: any;
+
   beforeEach(() => {
     mockTranslationService.translate.and.callFake((key: string) => key);
+
+    roleSubject = new BehaviorSubject<Role>(Role.ADMIN);
+    mockAuthService = {
+      currentRole: Role.ADMIN,
+      currentRole$: roleSubject.asObservable(),
+    };
 
     const mockActivatedRoute = {
       snapshot: {
@@ -84,6 +95,7 @@ describe("RaceEditorComponent", () => {
         { provide: Router, useValue: mockRouter },
         { provide: ActivatedRoute, useValue: mockActivatedRoute },
         { provide: TranslationService, useValue: mockTranslationService },
+        { provide: AuthService, useValue: mockAuthService },
         {
           provide: HelpService,
           useValue: jasmine.createSpyObj("HelpService", ["startGuide"], {
@@ -1650,6 +1662,81 @@ describe("RaceEditorComponent", () => {
       expect(helpService.startGuide).toHaveBeenCalledWith(
         component.getHelpSteps(),
       );
+    });
+  });
+
+  describe("Reset Race Records", () => {
+    beforeEach(() => {
+      component.editingRace = {
+        name: "Grand Prix",
+        entity_id: "gp_1",
+      };
+      fixture.detectChanges();
+    });
+
+    it("should open confirmation modal when user is admin and reset is triggered", () => {
+      roleSubject.next(Role.ADMIN);
+      fixture.detectChanges();
+
+      component.onResetRecords();
+      expect(component.showResetConfirmation).toBeTrue();
+    });
+
+    it("should stop propagation if event passed to onResetRecords", () => {
+      const mockEvent = jasmine.createSpyObj("Event", ["stopPropagation"]);
+      component.onResetRecords(mockEvent);
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+    });
+
+    it("should NOT open confirmation modal when user is not admin", () => {
+      roleSubject.next(Role.VIEWER);
+      fixture.detectChanges();
+
+      component.onResetRecords();
+      expect(component.showResetConfirmation).toBeFalse();
+    });
+
+    it("should NOT open confirmation modal if editingRace has no entity_id", () => {
+      component.editingRace = { name: "New Race" };
+      component.onResetRecords();
+      expect(component.showResetConfirmation).toBeFalse();
+    });
+
+    it("should return correct tooltip based on admin status", () => {
+      roleSubject.next(Role.ADMIN);
+      fixture.detectChanges();
+      expect(component.getResetTooltip()).toBe("RM_BTN_RESET_RECORDS");
+
+      roleSubject.next(Role.VIEWER);
+      fixture.detectChanges();
+      expect(component.getResetTooltip()).toBe("RM_RESET_ADMIN_ONLY_TOOLTIP");
+    });
+
+    it("should call resetRaceRecords and show success modal on confirmation", fakeAsync(() => {
+      roleSubject.next(Role.ADMIN);
+      fixture.detectChanges();
+
+      component.onResetRecords();
+      expect(component.showResetConfirmation).toBeTrue();
+
+      component.onConfirmReset();
+      expect(component.showResetConfirmation).toBeFalse();
+      expect(component.showResetSuccess).toBeTrue();
+      expect(component.resetRaceName).toBe("Grand Prix");
+      expect(dataService.resetRaceRecords).toHaveBeenCalledWith("gp_1");
+    }));
+
+    it("should cancel reset when onCancelReset is called", () => {
+      component.showResetConfirmation = true;
+      component.onCancelReset();
+      expect(component.showResetConfirmation).toBeFalse();
+      expect(dataService.resetRaceRecords).not.toHaveBeenCalled();
+    });
+
+    it("should close success modal when onCloseResetSuccess is called", () => {
+      component.showResetSuccess = true;
+      component.onCloseResetSuccess();
+      expect(component.showResetSuccess).toBeFalse();
     });
   });
 });

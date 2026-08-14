@@ -484,6 +484,46 @@
   letter-spacing: 1px;
 }
 
+.section-action-btn {
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  margin-left: auto;
+}
+
+.section-action-btn .material-icons {
+  font-size: 1.3rem;
+}
+
+.section-action-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.section-action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.section-action-btn.danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.section-action-btn.danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.4);
+}
+
 .expander-icon {
   font-size: 0.8rem;
   color: #38bdf8;

@@ -61,6 +61,15 @@ export class ToolbarComponent implements OnInit {
   importRc1Icon = input("file_download");
   exportTitleKey = input("DBM_BTN_EXPORT");
   showReset = input(false);
+  resetTitleKey = input("DBM_BTN_RESET");
+  resetDisabledTooltipKey = input("");
+  getResetTooltip(): string {
+    const key =
+      this.disabledReset() && this.resetDisabledTooltipKey()
+        ? this.resetDisabledTooltipKey()
+        : this.resetTitleKey();
+    return this.translationService.translate(key);
+  }
   disabledImport = input(false);
   disabledImportRc1 = input(false);
   disabledExport = input(false);

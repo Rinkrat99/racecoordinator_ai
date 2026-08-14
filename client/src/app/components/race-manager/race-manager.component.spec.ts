@@ -3,12 +3,14 @@ import { fakeAsync, TestBed, tick } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
 import { Router } from "@angular/router";
-import { of } from "rxjs";
+import { BehaviorSubject, of } from "rxjs";
 import { AnalyticsService } from "@app/analytics.service";
 import { DataService } from "@app/data.service";
 import { Race } from "@app/models/race";
+import { Role } from "@app/models/role";
 import { Track } from "@app/models/track";
 import { TranslatePipe } from "@app/pipes/translate.pipe";
+import { AuthService } from "@app/services/auth.service";
 import { ConnectionMonitorService } from "@app/services/connection-monitor.service";
 import { HelpService } from "@app/services/help.service";
 import { RaceConnectionService } from "@app/services/race-connection.service";
@@ -41,9 +43,17 @@ describe("RaceManagerComponent", () => {
   let dataService: any;
   let _router: any;
   let _activatedRoute: any;
+  let roleSubject: BehaviorSubject<Role>;
+  let mockAuthService: any;
 
   beforeEach(() => {
     mockTranslationService.translate.and.callFake((key: string) => key);
+
+    roleSubject = new BehaviorSubject<Role>(Role.ADMIN);
+    mockAuthService = {
+      currentRole: Role.ADMIN,
+      currentRole$: roleSubject.asObservable(),
+    };
 
     const mockConnectionMonitor = jasmine.createSpyObj(
       "ConnectionMonitorService",
@@ -74,6 +84,7 @@ describe("RaceManagerComponent", () => {
         { provide: TranslationService, useValue: mockTranslationService },
         { provide: ConnectionMonitorService, useValue: mockConnectionMonitor },
         { provide: RaceConnectionService, useValue: mockRaceConnectionService },
+        { provide: AuthService, useValue: mockAuthService },
         {
           provide: HelpService,
           useValue: jasmine.createSpyObj("HelpService", ["startGuide"], {

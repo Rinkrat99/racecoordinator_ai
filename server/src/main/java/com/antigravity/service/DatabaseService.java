@@ -459,25 +459,47 @@ public class DatabaseService {
     return deleteSavedRace(context, saveName, RaceScope.fromBoolean(isDemo));
   }
 
+  public void resetRaceData(DatabaseContext context, String raceEntityId) {
+    deleteAllRaceData(context, raceEntityId);
+  }
+
   public void deleteAllRaceData(DatabaseContext context, String raceEntityId) {
     if (context == null || raceEntityId == null || raceEntityId.isEmpty()) return;
     try {
       deleteFromTableWhere(
           context,
           getCollectionName("race_history", false),
-          "json_data LIKE '%\"original_entity_id\":\"" + raceEntityId + "\"%'");
+          "json_data LIKE '%\"original_entity_id\":\""
+              + raceEntityId
+              + "\"%' OR json_data LIKE '%\"entity_id\":\""
+              + raceEntityId
+              + "\"%'");
       deleteFromTableWhere(
           context,
           getCollectionName("race_history", true),
-          "json_data LIKE '%\"original_entity_id\":\"" + raceEntityId + "\"%'");
+          "json_data LIKE '%\"original_entity_id\":\""
+              + raceEntityId
+              + "\"%' OR json_data LIKE '%\"entity_id\":\""
+              + raceEntityId
+              + "\"%'");
+      deleteFromRaceRecords(context, getCollectionName("race_records", false), raceEntityId);
+      deleteFromRaceRecords(context, getCollectionName("race_records", true), raceEntityId);
       deleteFromTableWhere(
           context,
           getCollectionName("global_statistics", false),
-          "entity_id = '" + raceEntityId + "'");
+          "entity_id = '"
+              + raceEntityId
+              + "' OR json_data LIKE '%\"race_entity_id\":\""
+              + raceEntityId
+              + "\"%'");
       deleteFromTableWhere(
           context,
           getCollectionName("global_statistics", true),
-          "entity_id = '" + raceEntityId + "'");
+          "entity_id = '"
+              + raceEntityId
+              + "' OR json_data LIKE '%\"race_entity_id\":\""
+              + raceEntityId
+              + "\"%'");
       deleteFromTableWhere(
           context,
           getCollectionName("saved_races", false),
@@ -494,8 +516,59 @@ public class DatabaseService {
           context,
           getCollectionName("driver_statistics", true),
           "json_data LIKE '%\"race_id\":\"" + raceEntityId + "\"%'");
+      deleteFromTableWhere(
+          context,
+          getCollectionName("race_predictions", false),
+          "entity_id = '"
+              + raceEntityId
+              + "' OR json_data LIKE '%\"raceId\":\""
+              + raceEntityId
+              + "\"%'");
+      deleteFromTableWhere(
+          context,
+          getCollectionName("race_predictions", true),
+          "entity_id = '"
+              + raceEntityId
+              + "' OR json_data LIKE '%\"raceId\":\""
+              + raceEntityId
+              + "\"%'");
+      deleteFromTableWhere(
+          context,
+          getCollectionName("prediction_evaluations", false),
+          "entity_id = '"
+              + raceEntityId
+              + "' OR json_data LIKE '%\"raceId\":\""
+              + raceEntityId
+              + "\"%'");
+      deleteFromTableWhere(
+          context,
+          getCollectionName("prediction_evaluations", true),
+          "entity_id = '"
+              + raceEntityId
+              + "' OR json_data LIKE '%\"raceId\":\""
+              + raceEntityId
+              + "\"%'");
     } catch (Exception e) {
       logger.error("Failed to perform cascading deletion for race {}", raceEntityId, e);
+    }
+  }
+
+  private void deleteFromRaceRecords(DatabaseContext context, String tableName, String raceId) {
+    try {
+      context
+          .getConnection()
+          .createStatement()
+          .execute(
+              "CREATE TABLE IF NOT EXISTS "
+                  + tableName
+                  + " (race_id TEXT PRIMARY KEY, records_blob BLOB)");
+      String sql = "DELETE FROM " + tableName + " WHERE race_id = ?";
+      try (PreparedStatement pstmt = context.getConnection().prepareStatement(sql)) {
+        pstmt.setString(1, raceId);
+        pstmt.executeUpdate();
+      }
+    } catch (Exception e) {
+      // Ignore
     }
   }
 
