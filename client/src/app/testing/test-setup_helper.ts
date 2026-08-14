@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { Locator, Page } from "@playwright/test";
 import {
   InitializeInterfaceResponse,
   IRaceTime,
@@ -968,8 +968,8 @@ export class TestSetupHelper {
   }
 
   static async waitForImagesLoaded(target: Locator | Page) {
-    await target.evaluate((node: HTMLElement | Document) => {
-      const root = node instanceof Document ? node.body : node;
+    await (target as any).evaluate((node: HTMLElement | Document) => {
+      const root = node instanceof Document ? node.body : (node as HTMLElement);
       const images = Array.from(root.querySelectorAll("img"));
       return Promise.all(
         images.map((img) => {
