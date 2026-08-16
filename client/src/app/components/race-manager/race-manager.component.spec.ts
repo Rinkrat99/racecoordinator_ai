@@ -393,4 +393,91 @@ describe("RaceManagerComponent", () => {
       ]);
     });
   });
+
+  describe("Race Creation, Deletion, Heats and Formatting", () => {
+    it("should create new race with unique name and navigate to editor", () => {
+      dataService.createRace.and.returnValue(
+        of({ entity_id: "new_r1", name: "RM_DEFAULT_RACE_NAME_1" }),
+      );
+      component.races = [
+        { name: "RM_DEFAULT_RACE_NAME", entity_id: "r1" } as any,
+      ];
+      component.tracks = [{ entity_id: "t1", name: "Main Track" } as any];
+
+      component.createNewRace();
+
+      expect(dataService.createRace).toHaveBeenCalledWith(
+        jasmine.objectContaining({
+          name: "RM_DEFAULT_RACE_NAME_1",
+          track_entity_id: "t1",
+        }),
+      );
+      expect(mockRouter.navigate).toHaveBeenCalledWith(
+        ["/race-editor"],
+        jasmine.objectContaining({
+          queryParams: jasmine.objectContaining({ id: "new_r1" }),
+        }),
+      );
+    });
+
+    it("should handle race deletion modal confirmation and cancellation", () => {
+      component.editingRace = { entity_id: "r1", name: "Race 1" } as any;
+
+      component.deleteRace();
+      expect(component.showDeleteConfirmation).toBeTrue();
+
+      component.onCancelDelete();
+      expect(component.showDeleteConfirmation).toBeFalse();
+
+      dataService.deleteRace.and.returnValue(of({ success: true }));
+      spyOn(component, "loadData");
+
+      component.onConfirmDelete();
+      expect(dataService.deleteRace).toHaveBeenCalledWith("r1");
+      expect(component.loadData).toHaveBeenCalled();
+    });
+
+    it("should load generated heats when loadHeats is called", () => {
+      component.driverCount = 4;
+      dataService.generateHeats.and.returnValue(
+        of({ heats: [{ heat_number: 1 }] }),
+      );
+
+      component.loadHeats("r1");
+      expect(dataService.generateHeats).toHaveBeenCalledWith("r1", 4);
+      expect(component.generatedHeats.length).toBe(1);
+    });
+
+    it("should format ranking displays for practice and standard races", () => {
+      const practiceRace = {
+        name: "Open Practice",
+        practice: true,
+        heat_rotation_type: "Practice",
+      };
+      expect(component.isPracticeRace(practiceRace)).toBeTrue();
+      expect(component.getHeatRankingDisplay(practiceRace)).toBe(
+        "GEN_UNRANKED",
+      );
+      expect(component.getOverallRankingDisplay(practiceRace)).toBe(
+        "GEN_UNRANKED",
+      );
+
+      const standardRace = {
+        name: "Standard GP",
+        heat_scoring: { heat_ranking: "LAP_COUNT", finish_value: 0 },
+        overall_scoring: { ranking_method: "POINTS" },
+      };
+      expect(component.isPracticeRace(standardRace)).toBeFalse();
+      expect(component.getHeatRankingDisplay(standardRace)).toBe("Lap Count");
+      expect(component.getOverallRankingDisplay(standardRace)).toBe("Points");
+      expect(component.getFinishValueDisplay(standardRace)).toBe(
+        "GEN_INFINITE",
+      );
+    });
+
+    it("should return guide steps for help service", () => {
+      const steps = component.getHelpSteps();
+      expect(steps.length).toBe(3);
+    });
+  });
 });

@@ -575,4 +575,47 @@ describe("DataService", () => {
     expect(req.request.body).toEqual({});
     req.flush(null);
   });
+
+  describe("Exports, History, and Demo Configs", () => {
+    it("should call exportRaceToCsv endpoint", (done) => {
+      service.exportRaceToCsv().subscribe((csv) => {
+        expect(csv).toBe("Lap,Driver,Time\n1,Speedy,5.2");
+        done();
+      });
+
+      const req = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/races/current/export-csv"),
+      );
+      expect(req.request.method).toBe("GET");
+      req.flush("Lap,Driver,Time\n1,Speedy,5.2");
+    });
+
+    it("should provide default demo config with expected timing ranges", () => {
+      const demoConfig = service.getDefaultDemoConfig();
+      expect(demoConfig.minLapTimeMs).toBe(3000);
+      expect(demoConfig.maxLapTimeMs).toBe(5000);
+      expect(demoConfig.numSegments).toBe(2);
+    });
+
+    it("should retrieve and merge finished race history", (done) => {
+      service.getAllFinishedRaceHistory().subscribe((history) => {
+        expect(history.length).toBe(2);
+        expect(history[0].is_demo).toBeFalse();
+        expect(history[1].is_demo).toBeTrue();
+        done();
+      });
+
+      const reqProd = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/history/races"),
+      );
+      expect(reqProd.request.method).toBe("GET");
+      reqProd.flush([{ name: "Championship" }]);
+
+      const reqDemo = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/history/races?demo=true"),
+      );
+      expect(reqDemo.request.method).toBe("GET");
+      reqDemo.flush([{ name: "Demo Race" }]);
+    });
+  });
 });
