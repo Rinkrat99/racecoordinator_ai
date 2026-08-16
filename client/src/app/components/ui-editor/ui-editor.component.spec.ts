@@ -633,6 +633,14 @@ describe("UIEditorComponent", () => {
     expect(lapsLed?.label).toBe("RD_COL_LAPS_LED");
   });
 
+  it("should include ghostPacing column in availableColumns", () => {
+    const ghostCol = component.availableColumns.find(
+      (c) => c.key === "ghostPacing",
+    );
+    expect(ghostCol).toBeTruthy();
+    expect(ghostCol?.label).toBe("RD_COL_GHOST_PACING");
+  });
+
   describe("expander behavior", () => {
     beforeEach(() => {
       localStorage.clear();

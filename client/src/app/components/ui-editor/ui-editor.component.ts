@@ -181,6 +181,7 @@ export class UIEditorComponent implements OnInit, OnDestroy, DirtyComponent {
     { key: "qrCode", label: "RD_COL_LANE_QR" },
     { key: "driverViewQrCode", label: "RD_COL_DRIVER_VIEW_QR" },
     { key: "laneNumber", label: "RD_COL_LANE" },
+    { key: "ghostPacing", label: "RD_COL_GHOST_PACING" },
   ];
   availableTransitions = [
     { key: "none", label: "UE_TRANSITION_NONE" },
@@ -864,6 +865,7 @@ export class UIEditorComponent implements OnInit, OnDestroy, DirtyComponent {
           { key: "qrCode", label: "RD_COL_LANE_QR" },
           { key: "driverViewQrCode", label: "RD_COL_DRIVER_VIEW_QR" },
           { key: "laneNumber", label: "RD_COL_LANE" },
+          { key: "ghostPacing", label: "RD_COL_GHOST_PACING" },
           ...imageSetColumns,
         ];
         this.sortAvailableColumns();

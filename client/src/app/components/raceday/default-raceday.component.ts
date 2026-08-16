@@ -528,6 +528,8 @@ export class DefaultRacedayComponent
   skipHeatConfirmText = "GEN_YES";
   skipHeatCancelText = "GEN_NO";
 
+  recordData: any = null;
+
   // Skip Race Confirmation Modal State
   showSkipRaceConfirmation = false;
   skipRaceModalTitle = "RD_CONFIRM_SKIP_RACE_TITLE";
@@ -1409,6 +1411,7 @@ export class DefaultRacedayComponent
   }
 
   private handleRecordDataUpdate(records: any) {
+    this.recordData = records;
     const overall = records.overall;
     const current = records.current;
 
@@ -1467,6 +1470,15 @@ export class DefaultRacedayComponent
     if (!this.isDestroyed) {
       this.cdr.markForCheck();
     }
+  }
+
+  getLaneRecord(hd?: DriverHeatData): number {
+    const laneIndex = hd?.laneIndex ?? 0;
+    const laneFastestLap = this.recordData?.overall?.laneFastestLap;
+    if (Array.isArray(laneFastestLap) && laneFastestLap[laneIndex]?.value > 0) {
+      return laneFastestLap[laneIndex].value;
+    }
+    return this.raceRecordLapTime || this.currentRaceBestTime || 0;
   }
 
   private leaderBoardWindow: Window | null = null;

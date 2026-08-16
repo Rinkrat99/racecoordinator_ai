@@ -281,4 +281,53 @@ describe("RacedayFormatUtils", () => {
       ).toBe("--");
     });
   });
+
+  describe("formatValue - Ghost Pacing", () => {
+    it("should format delta correctly when driver is faster than ghost", () => {
+      const mockHd = {
+        actualDriver: { name: "Driver A" },
+        ghostLapTime: 5.0,
+        lastLapTime: 4.8,
+      } as any;
+      const result = RacedayFormatUtils.formatValue(
+        "ghostPacing",
+        undefined,
+        mockHd,
+        undefined,
+        ctx,
+      );
+      expect(result).toBe("+0.200s");
+    });
+
+    it("should format delta correctly when driver is slower than ghost", () => {
+      const mockHd = {
+        actualDriver: { name: "Driver A" },
+        ghostLapTime: 5.0,
+        lastLapTime: 5.3,
+      } as any;
+      const result = RacedayFormatUtils.formatValue(
+        "ghostPacing",
+        undefined,
+        mockHd,
+        undefined,
+        ctx,
+      );
+      expect(result).toBe("-0.300s");
+    });
+
+    it("should return -- for empty driver or missing ghost lap", () => {
+      const mockHd = {
+        isEmpty: true,
+      } as any;
+      expect(
+        RacedayFormatUtils.formatValue(
+          "ghostPacing",
+          undefined,
+          mockHd,
+          undefined,
+          ctx,
+        ),
+      ).toBe("--");
+    });
+  });
 });

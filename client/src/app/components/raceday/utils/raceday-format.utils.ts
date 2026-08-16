@@ -181,6 +181,16 @@ export class RacedayFormatUtils {
       return String(led);
     } else if (baseKey === "laneNumber") {
       return String((hd?.laneIndex ?? 0) + 1);
+    } else if (baseKey === "ghostPacing") {
+      if (RacedayFormatUtils.isEmptyDriver(hd)) return "--";
+      const ghostLap = (hd as any).ghostLapTime ?? 0;
+      const currentLapTime = (hd as any).currentLapTime ?? hd.lastLapTime ?? 0;
+      if (ghostLap > 0 && currentLapTime > 0) {
+        const delta = ghostLap - currentLapTime;
+        const sign = delta > 0 ? "+" : "";
+        return sign + delta.toFixed(timeDecimals) + "s";
+      }
+      return "--";
     } else if (baseKey === "driver.name") {
       if (RacedayFormatUtils.isEmptyDriver(hd))
         return ctx.translate("RD_EMPTY_LANE");
