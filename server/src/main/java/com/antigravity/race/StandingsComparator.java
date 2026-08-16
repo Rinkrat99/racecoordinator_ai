@@ -60,8 +60,7 @@ public class StandingsComparator<T extends StandingsParticipant> implements Comp
     return 0;
   }
 
-  private static int comparePrimary(
-      StandingsParticipant a, StandingsParticipant b, RankingMethod method) {
+  static int comparePrimary(StandingsParticipant a, StandingsParticipant b, RankingMethod method) {
     switch (method) {
       case LAP_COUNT:
         return Double.compare(b.getAdjustedLapCount(), a.getAdjustedLapCount());
@@ -85,7 +84,7 @@ public class StandingsComparator<T extends StandingsParticipant> implements Comp
     }
   }
 
-  private static int compareTiebreaker(
+  static int compareTiebreaker(
       StandingsParticipant a, StandingsParticipant b, TiebreakerMethod tiebreaker) {
     switch (tiebreaker) {
       case FASTEST_LAP_TIME:
