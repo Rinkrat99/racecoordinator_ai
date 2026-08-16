@@ -299,6 +299,13 @@ function run() {
       failed = true;
     }
 
+    if (compWithHarness < 100) {
+      console.log(
+        `${colors.red}❌ Audit check failed: Client component test harness coverage regressed (${compWithHarness}/100 components with harnesses).${colors.reset}`
+      );
+      failed = true;
+    }
+
     if (servicesWithSpec < 22) {
       console.log(
         `${colors.red}❌ Audit check failed: Client service unit test coverage regressed (${servicesWithSpec}/22 services tested).${colors.reset}`
