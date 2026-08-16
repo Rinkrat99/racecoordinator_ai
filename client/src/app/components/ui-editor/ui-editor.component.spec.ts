@@ -2527,4 +2527,44 @@ describe("UIEditorComponent", () => {
       expect(component.sectionsExpanded["config"]).toBeTrue();
     });
   });
+
+  describe("Widget Selection and Practice Layout", () => {
+    it("should initialize default widget properties on selection", () => {
+      const widget = {
+        id: "w1",
+        widgetType: "flag",
+        scaleMode: "fill",
+      };
+      component.editingSettings.racedayLayout = {
+        widgets: [widget as any],
+      } as any;
+
+      component.onWidgetSelected("w1", false);
+      expect(component.selectedWidget).toEqual(
+        jasmine.objectContaining({ id: "w1" }),
+      );
+      expect(widget.scaleMode).toBe("auto");
+      expect((widget as any).fontFamily).toBe("");
+      expect((widget as any).textColor).toBe("");
+      expect((widget as any).backgroundColor).toBe("");
+      expect((widget as any).fontSize).toBe(24);
+      expect((widget as any).textScaleFactor).toBe(1.0);
+
+      // Deselect
+      component.onWidgetSelected(null, false);
+      expect(component.selectedWidget).toBeNull();
+
+      // Practice widget selection
+      const practiceWidget = { id: "pw1", widgetType: "branding" };
+      component.editingSettings.practiceRacedayLayout = {
+        widgets: [practiceWidget as any],
+      } as any;
+
+      component.onWidgetSelected("pw1", true);
+      expect(component.selectedPracticeWidget).toEqual(
+        jasmine.objectContaining({ id: "pw1" }),
+      );
+      expect((practiceWidget as any).scaleMode).toBe("auto");
+    });
+  });
 });

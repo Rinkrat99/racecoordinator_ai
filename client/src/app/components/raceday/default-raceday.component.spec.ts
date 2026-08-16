@@ -5492,5 +5492,135 @@ describe("DefaultRacedayComponent", () => {
         (component as any).getLeaderboardScoreFormat({ isTime: false }),
       ).toBe("1.2-2");
     });
+
+    it("should update and sort leaderboard entries accurately", () => {
+      const p1 = {
+        driver: { entity_id: "d1", name: "Alpha", nickname: "A1" },
+        rank: 1,
+        rankValue: 100,
+      } as any;
+      const p2 = {
+        driver: { entity_id: "d2", name: "Bravo", nickname: "B1" },
+        rank: 2,
+        rankValue: 90,
+      } as any;
+      const p3 = {
+        driver: { entity_id: "d3", name: "Charlie", nickname: "C1" },
+        rank: 0,
+        rankValue: 0,
+      } as any;
+
+      component.participants = [p1, p2, p3];
+      (component as any).updateLeaderboardEntries();
+      expect((component as any).leaderboardEntries.length).toBe(3);
+
+      expect(
+        (component as any).getLeaderboardPosition(
+          (component as any).leaderboardEntries[0],
+        ),
+      ).toBe(0);
+      expect(
+        (component as any).getLeaderboardPosition(
+          (component as any).leaderboardEntries[1],
+        ),
+      ).toBe(1);
+      expect(
+        (component as any).getLeaderboardPosition(
+          (component as any).leaderboardEntries[2],
+        ),
+      ).toBe(2);
+
+      // In-place update with removed entry
+      component.participants = [p2];
+      (component as any).updateLeaderboardEntries();
+      expect((component as any).leaderboardEntries.length).toBe(1);
+      expect((component as any).leaderboardEntries[0].entityId).toBe("d2");
+
+      // Group leaderboard entries
+      (component as any).groupParticipants = [p1];
+      (component as any).updateGroupLeaderboardEntries();
+      expect((component as any).groupLeaderboardEntries.length).toBe(1);
+    });
+
+    it("should compute gridTemplateColumns and gridTemplateRowsVertical", () => {
+      (component as any).columns = [];
+      expect((component as any).gridTemplateColumns).toBe("1fr");
+      expect((component as any).gridTemplateRowsVertical).toBe("1fr");
+
+      (component as any).columns = [
+        { name: "Pos", propertyName: "position", width: 50 },
+        { name: "Driver", propertyName: "driver.nickname", width: 200 },
+        { name: "Laps", propertyName: "lapCount", width: 80 },
+        { name: "Last Lap", propertyName: "lastLapTime", width: 120 },
+        { name: "History", propertyName: "lastLaps", width: 100 },
+      ] as any;
+
+      expect((component as any).gridTemplateColumns).toContain(
+        "minmax(0, 50fr)",
+      );
+      expect((component as any).gridTemplateRowsVertical).toContain(
+        "minmax(0,",
+      );
+    });
+
+    it("should evaluate isWarmup correctly across auto-start and auto-advance states", () => {
+      (component as any).race = {
+        auto_start_warmup_time: 5,
+        auto_start_time: 10,
+        auto_advance_warmup_time: 4,
+        auto_advance_time: 12,
+      };
+
+      (component as any).autoStartRemaining = 8;
+      expect((component as any).isWarmup).toBeTrue();
+
+      (component as any).autoStartRemaining = 2;
+      expect((component as any).isWarmup).toBeFalse();
+
+      (component as any).autoStartRemaining = 0;
+      (component as any).autoAdvanceRemaining = 3;
+      (component as any).raceState = RaceState.HEAT_OVER;
+      expect((component as any).isWarmup).toBeTrue();
+
+      (component as any).autoAdvanceRemaining = 8;
+      expect((component as any).isWarmup).toBeFalse();
+
+      (component as any).autoAdvanceRemaining = 0;
+      expect((component as any).isWarmup).toBeFalse();
+    });
+
+    it("should delegate layout queries and handle viewer race modal getters/setters", () => {
+      const col = { propertyName: "lastLapTime", width: 100 } as any;
+      expect(component.isLapTimeColumn(col)).toBeTrue();
+      expect((component as any).isImageProperty("driver.avatarUrl")).toBeTrue();
+      expect(
+        (component as any).isAvatarProperty("driver.avatarUrl"),
+      ).toBeTrue();
+      expect(component.shouldShowLaneColor(col)).toBeDefined();
+
+      (component as any).viewerRaceEndedHandler = {
+        showAckModal: false,
+        ackModalTitle: "",
+        ackModalMessage: "",
+        ackModalButtonText: "",
+        raceHasEnded: false,
+        stopListening: jasmine.createSpy("stopListening"),
+      };
+
+      component.showAckModal = true;
+      expect(component.showAckModal).toBeTrue();
+
+      component.ackModalTitle = "Race Ended";
+      expect(component.ackModalTitle).toBe("Race Ended");
+
+      component.ackModalMessage = "All heats finished";
+      expect(component.ackModalMessage).toBe("All heats finished");
+
+      component.ackModalButtonText = "Close";
+      expect(component.ackModalButtonText).toBe("Close");
+
+      component.raceHasEnded = true;
+      expect(component.raceHasEnded).toBeTrue();
+    });
   });
 });

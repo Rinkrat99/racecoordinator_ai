@@ -1389,5 +1389,44 @@ describe("DataService", () => {
       // Invalid base64
       createdSocket.onmessage({ data: "!!!not_base64!!!" });
     });
+
+    it("should provide observable streams for race events, telemetry, and system state", () => {
+      expect(service.getLaps()).toBeDefined();
+      expect(service.getStandingsUpdate()).toBeDefined();
+      expect(service.getOverallStandingsUpdate()).toBeDefined();
+      expect(service.getGroupStandingsUpdate()).toBeDefined();
+      expect(service.getRaceUpdate()).toBeDefined();
+      expect(service.getInterfaceEvents()).toBeDefined();
+      expect(service.getRaceState()).toBeDefined();
+      expect(service.getRaceFlag()).toBeDefined();
+      expect(service.getCarData()).toBeDefined();
+      expect(service.getSegments()).toBeDefined();
+      expect(service.getRecordData()).toBeDefined();
+      expect(service.getHeats()).toBeDefined();
+      expect(service.getSystemState()).toBeDefined();
+    });
+
+    it("should fetch track factory settings and serial/ble devices", () => {
+      service.getTrackFactorySettings().subscribe();
+      const req1 = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/tracks/factory-settings"),
+      );
+      expect(req1.request.method).toBe("GET");
+      req1.flush({});
+
+      service.getSerialPorts().subscribe();
+      const req2 = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/serial-ports"),
+      );
+      expect(req2.request.method).toBe("GET");
+      req2.flush(["COM1", "COM2"]);
+
+      service.getBleDevices().subscribe();
+      const req3 = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/ble-devices"),
+      );
+      expect(req3.request.method).toBe("GET");
+      req3.flush([]);
+    });
   });
 });

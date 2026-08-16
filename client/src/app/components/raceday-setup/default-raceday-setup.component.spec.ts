@@ -1519,5 +1519,97 @@ describe("DefaultRacedaySetupComponent", () => {
 
       expect(component.showErrorModal).toBeTrue();
     }));
+
+    it("should handle menu dropdown actions and navigation to managers", () => {
+      const mockEvent = {
+        stopPropagation: jasmine.createSpy("stopPropagation"),
+      } as any;
+
+      for (const item of component.menuItems) {
+        item.action(mockEvent);
+      }
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+
+      expect(component.isAnyMenuDropdownOpen()).toBeDefined();
+      component.onMenuItemHover("RDS_MENU_CONFIG");
+
+      component.openAssetManager();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(["/asset-manager"]);
+
+      component.openDriverManager();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(["/driver-manager"]);
+
+      component.openTeamManager();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(["/team-manager"]);
+
+      (component as any).isRaceRunning = false;
+      component.openTrackManager();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(["/track-manager"]);
+
+      (component as any).isRaceRunning = true;
+      component.openTrackManager();
+      expect(component.showTrackEditorPrompt).toBeTrue();
+
+      mockDataService.endRace = jasmine
+        .createSpy("endRace")
+        .and.returnValue(of(true));
+      component.onConfirmTrackEditor();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(["/track-manager"]);
+
+      component.onCancelTrackEditor();
+      expect(component.showTrackEditorPrompt).toBeFalse();
+
+      component.selectedRace = { entity_id: "r1" } as any;
+      component.selectedParticipants = [{} as any];
+      component.openRaceManager();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(
+        ["/race-manager"],
+        jasmine.any(Object),
+      );
+
+      component.selectedEvent = { entity_id: "e1" } as any;
+      component.openEventManager();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(
+        ["/event-manager"],
+        jasmine.any(Object),
+      );
+
+      const season = { entity_id: "s1", name: "Season 1" } as any;
+      component.selectSeason(season);
+      expect(component.selectedSeason).toBe(season);
+      expect(component.compareSeasons(season, season)).toBeTrue();
+      expect(
+        component.compareSeasons(season, { entity_id: "s2" } as any),
+      ).toBeFalse();
+
+      component.openSeasonManager();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(
+        ["/season-manager"],
+        jasmine.any(Object),
+      );
+    });
+
+    it("should handle event mode fallback and legacy unprefixed participant IDs", fakeAsync(() => {
+      mockDataService.getEvents.and.returnValue(
+        of([{ entity_id: "e1", name: "Event 1" }]),
+      );
+      mockDataService.getSeasons.and.returnValue(
+        of([{ entity_id: "s1", name: "Season 1" }]),
+      );
+
+      mockSettingsService.getSettings.and.returnValue({
+        selectedSeasonId: "s1",
+        selectedRaceId: "e1",
+        isEventMode: true,
+        selectedDriverIds: ["d1", "t1"],
+        recentRaceIds: ["e1"],
+      } as any);
+
+      component.ngOnInit();
+      tick();
+
+      expect(component.selectedEvent?.entity_id).toBe("e1");
+      expect(component.selectedRace).toBeUndefined();
+    }));
   });
 });

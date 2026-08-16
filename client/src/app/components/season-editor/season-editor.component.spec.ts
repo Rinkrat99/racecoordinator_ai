@@ -730,4 +730,59 @@ describe("SeasonEditorComponent", () => {
       component["calculateDriverHeatPointsMap"]([{ drivers: [] }], []).size,
     ).toBe(0);
   });
+
+  it("should handle race expansion, removal, and add race modal with history filtering", () => {
+    const dataService = TestBed.inject(DataService);
+    component.editingSeason = {
+      name: "Season A",
+      drops: 0,
+      races: [
+        {
+          race_id: "r1",
+          race_name: "Race 1",
+          timestamp: 1000,
+          driver_results: [],
+        },
+      ],
+    };
+
+    expect(component.isRaceExpanded("r1")).toBeFalse();
+    component.toggleRaceExpanded("r1");
+    expect(component.isRaceExpanded("r1")).toBeTrue();
+    component.toggleRaceExpanded("r1");
+    expect(component.isRaceExpanded("r1")).toBeFalse();
+
+    const mockEvent = {
+      stopPropagation: jasmine.createSpy("stopPropagation"),
+    } as any;
+    component.removeRaceFromSeason(0, mockEvent);
+    expect(mockEvent.stopPropagation).toHaveBeenCalled();
+    expect(component.editingSeason.races?.length).toBe(0);
+
+    const historyItems = [
+      {
+        original_entity_id: "event_sum_1",
+        is_event_summary: true,
+        event_name: "Event Summary",
+        driver_results: [],
+      },
+      {
+        original_entity_id: "event_sub_1",
+        is_event_race: true,
+        event_id: "e1",
+        model: { name: "Sub Race" },
+      },
+      {
+        original_entity_id: "race_reg_1",
+        model: { name: "Regular Race" },
+        driver_results: [],
+      },
+    ];
+    spyOn(dataService, "getAllFinishedRaceHistory").and.returnValue(
+      of(historyItems),
+    );
+
+    component.openAddRaceModal();
+    expect(component.availableFinishedRaces.length).toBeGreaterThan(0);
+  });
 });

@@ -947,5 +947,36 @@ describe("TrackEditorComponent", () => {
       component.toggleSection("lanes");
       expect(component.sectionsExpanded["lanes"]).toBeFalse();
     });
+
+    it("should add and remove hardware configurations and lanes", () => {
+      component.lanes = [];
+      component.arduinoConfigs = [];
+      component.trackmateConfigs = [];
+      component.bartConfigs = [];
+      component.phidgetConfigs = [];
+
+      component.addLane();
+      expect(component.lanes.length).toBe(1);
+
+      component.addArduinoConfig();
+      expect(component.arduinoConfigs.length).toBe(1);
+      component.removeArduinoConfig(0);
+      expect(component.arduinoConfigs.length).toBe(0);
+
+      component.addTrackmateConfig();
+      expect(component.trackmateConfigs.length).toBe(1);
+      component.removeTrackmateConfig(0);
+      expect(component.trackmateConfigs.length).toBe(0);
+
+      component.addBartConfig();
+      expect(component.bartConfigs.length).toBe(1);
+      component.removeBartConfig(0);
+      expect(component.bartConfigs.length).toBe(0);
+
+      component.addPhidgetConfig();
+      expect(component.phidgetConfigs.length).toBe(1);
+      component.removePhidgetConfig(0);
+      expect(component.phidgetConfigs.length).toBe(0);
+    });
   });
 });

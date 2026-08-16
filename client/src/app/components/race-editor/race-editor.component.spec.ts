@@ -1960,5 +1960,39 @@ describe("RaceEditorComponent", () => {
         FuelUsageType.CUBIC;
       expect(component.getDigitalUsagePath()).toContain("M ");
     });
+
+    it("should validate CustomRoundRobin and Custom rotation configs", () => {
+      component.tracks = [
+        {
+          entity_id: "trk1",
+          lanes: [{}, {}, {}, {}],
+          has_per_lane_relays: true,
+        } as any,
+      ];
+      component.editingRace.track_entity_id = "trk1";
+
+      expect(component.currentTrackHasPerLaneRelays).toBeTrue();
+
+      component.editingRace.heat_rotation_type = "CustomRoundRobin";
+      component.editingRace.custom_rotation_sequence = [];
+      expect(component.isRotationInvalid).toBeTrue();
+
+      component.editingRace.custom_rotation_sequence = [1, 2, 5]; // lane 5 > 4 lanes
+      expect(component.isRotationInvalid).toBeTrue();
+
+      component.editingRace.custom_rotation_sequence = [1, 2, 2]; // duplicate lane
+      expect(component.isRotationInvalid).toBeTrue();
+
+      component.editingRace.custom_rotation_sequence = [1, 2, 3, 4];
+      expect(component.isRotationInvalid).toBeFalse();
+
+      component.editingRace.heat_rotation_type = "Custom";
+      component.editingRace.custom_rotations = [];
+      component.editingRace.custom_rotation_asset_id = undefined;
+      expect(component.isRotationInvalid).toBeTrue();
+
+      component.editingRace.custom_rotation_asset_id = "asset-rot-1";
+      expect(component.isRotationInvalid).toBeFalse();
+    });
   });
 });

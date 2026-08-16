@@ -93,9 +93,9 @@ module.exports = function (config) {
       check: {
         global: {
           statements: 80,
-          lines: 81,
-          functions: 78,
-          branches: 66,
+          lines: 82,
+          functions: 80,
+          branches: 67,
         },
       },
     },
