@@ -178,16 +178,17 @@ public class Race implements ProtocolListener {
       return;
     }
     if (this.databaseContext != null && this.model != null && this.model.getEntityId() != null) {
-      RecordData existingRecords =
-          DatabaseService.getInstance()
-              .getRaceRecords( // fqn-collision
-                  this.databaseContext, this.model.getEntityId(), isDemoMode);
-      if (existingRecords != null) {
-        // Only load Overall records — Current session always starts fresh.
-        // Loading stale current records from a previous session causes the UI to show
-        // old per-session records before any laps have been run.
-        if (existingRecords.hasOverall()) {
-          this.recordsManager.loadOverallRaceRecords(existingRecords.getOverall());
+      DatabaseService dbService = DatabaseService.getInstance();
+      if (dbService != null) {
+        RecordData existingRecords =
+            dbService.getRaceRecords(this.databaseContext, this.model.getEntityId(), isDemoMode);
+        if (existingRecords != null) {
+          // Only load Overall records — Current session always starts fresh.
+          // Loading stale current records from a previous session causes the UI to show
+          // old per-session records before any laps have been run.
+          if (existingRecords.hasOverall()) {
+            this.recordsManager.loadOverallRaceRecords(existingRecords.getOverall());
+          }
         }
       }
     }
@@ -1190,12 +1191,15 @@ public class Race implements ProtocolListener {
         dump.setDrivers(drivers);
         dump.setCustomRotations(customRotations);
         if (databaseContext != null && model != null && model.getEntityId() != null) {
-          RecordData existingRecords =
-              DatabaseService.getInstance()
-                  .getRaceRecords(this.databaseContext, this.model.getEntityId(), isDemoMode);
-          if (existingRecords != null) {
-            dump.setRecordDataBase64(
-                java.util.Base64.getEncoder().encodeToString(existingRecords.toByteArray()));
+          DatabaseService dbService = DatabaseService.getInstance();
+          if (dbService != null) {
+            RecordData existingRecords =
+                dbService.getRaceRecords(
+                    this.databaseContext, this.model.getEntityId(), isDemoMode);
+            if (existingRecords != null) {
+              dump.setRecordDataBase64(
+                  java.util.Base64.getEncoder().encodeToString(existingRecords.toByteArray()));
+            }
           }
         }
         com.fasterxml.jackson.databind.ObjectMapper mapper =

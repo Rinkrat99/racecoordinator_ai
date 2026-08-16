@@ -53,6 +53,9 @@ public class DatabaseService {
   }
 
   public static DatabaseService getInstance() {
+    if (instance == null) {
+      instance = new DatabaseService();
+    }
     return instance;
   }
 

@@ -30,6 +30,16 @@ export interface FormatContext {
 export class RacedayFormatUtils {
   static isEmptyDriver(hd: DriverHeatData | any): boolean {
     if (!hd) return true;
+    if (
+      hd.isEmpty === true ||
+      (typeof hd.isEmpty === "function" && hd.isEmpty())
+    )
+      return true;
+    if (
+      hd.isEmptyLane === true ||
+      (typeof hd.isEmptyLane === "function" && hd.isEmptyLane())
+    )
+      return true;
     if (hd.actualDriver && !Driver.isEmpty(hd.actualDriver)) return false;
     if (hd.actualDriver && Driver.isEmpty(hd.actualDriver)) return true;
 
@@ -95,7 +105,8 @@ export class RacedayFormatUtils {
       if (
         baseKey === "rankHeat" ||
         baseKey === "rankOverall" ||
-        baseKey === "rankGroup"
+        baseKey === "rankGroup" ||
+        baseKey === "lapsLed"
       ) {
         return "--";
       }
@@ -161,6 +172,13 @@ export class RacedayFormatUtils {
         return lapPlaceholder;
       }
       return value.toFixed(lapDecimals);
+    } else if (baseKey === "lapsLed") {
+      if (RacedayFormatUtils.isEmptyDriver(hd)) return "--";
+      const led =
+        value !== undefined && value !== null
+          ? value
+          : (hd?.lapsLed ?? (hd as any)?.laps_led ?? 0);
+      return String(led);
     } else if (baseKey === "laneNumber") {
       return String((hd?.laneIndex ?? 0) + 1);
     } else if (baseKey === "driver.name") {

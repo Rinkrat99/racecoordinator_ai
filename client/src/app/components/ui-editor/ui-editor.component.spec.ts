@@ -627,6 +627,12 @@ describe("UIEditorComponent", () => {
     expect(totalTime?.label).toBe("RD_COL_TOTAL_TIME");
   });
 
+  it("should include lapsLed column in availableColumns", () => {
+    const lapsLed = component.availableColumns.find((c) => c.key === "lapsLed");
+    expect(lapsLed).toBeTruthy();
+    expect(lapsLed?.label).toBe("RD_COL_LAPS_LED");
+  });
+
   describe("expander behavior", () => {
     beforeEach(() => {
       localStorage.clear();

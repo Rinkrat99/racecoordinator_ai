@@ -617,14 +617,29 @@
   min-width: 0;
 }
 
+.scoring-column .editor-section {
+  margin-bottom: 12px;
+}
+
 .season-points-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
   max-height: 250px;
   overflow-y: auto;
+  overflow-x: hidden;
   margin-top: 4px;
   padding-right: 4px;
+}
+
+.season-points-list.two-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+.season-points-list.two-columns .btn-add-pos {
+  grid-column: 1 / -1;
 }
 
 .season-points-list::-webkit-scrollbar {
@@ -649,17 +664,20 @@
 .season-point-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .season-pos-label {
-  min-width: 60px;
-  font-size: 0.9rem;
+  min-width: 48px;
+  font-size: 0.85rem;
   color: #cbd5e1;
+  white-space: nowrap;
 }
 
 .season-point-input {
-  width: 70px !important;
+  width: 85px !important;
+  min-width: 0;
   padding: 4px 8px !important;
   font-size: 0.9rem !important;
 }
@@ -668,9 +686,10 @@
   background: transparent;
   border: none;
   color: #ef4444;
-  font-size: 1rem;
+  font-size: 0.9rem;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 2px 4px;
+  line-height: 1;
 }
 
 .btn-remove-pos:hover {

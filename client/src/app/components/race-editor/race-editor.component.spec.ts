@@ -1638,6 +1638,53 @@ describe("RaceEditorComponent", () => {
       ]);
       expect(component.captureState).toHaveBeenCalled();
     });
+
+    it("should allow editing heat position points and capture state", () => {
+      spyOn(component, "captureState");
+      component.editingRace.season_scoring = {
+        position_points: [10],
+        heat_position_points: [5, 3],
+      };
+      component.editingRace.season_scoring.heat_position_points[0] = 7;
+      component.captureState();
+      expect(component.editingRace.season_scoring.heat_position_points).toEqual(
+        [7, 3],
+      );
+      expect(component.captureState).toHaveBeenCalled();
+    });
+
+    it("should preserve all bonus fields in season_scoring when editing", () => {
+      component.editingRace.season_scoring = {
+        position_points: [25, 18],
+        heat_position_points: [3, 2],
+        heat_carry_over_pct: 50,
+        heat_bonus_fastest_lap: 5,
+        heat_bonus_led_lap: 2,
+        heat_bonus_most_laps_led: 4,
+        heat_one_bonus_per_driver: true,
+        overall_carry_over_pct: 25,
+        overall_bonus_fastest_lap: 10,
+        overall_bonus_fastest_lap_per_lane: 3,
+        overall_bonus_led_lap: 1,
+        overall_bonus_most_laps_led: 6,
+        overall_one_bonus_per_driver: true,
+      };
+
+      const payload = (component as any).buildRacePayload(
+        component.editingRace,
+      );
+      expect(payload.season_scoring.heat_carry_over_pct).toBe(50);
+      expect(payload.season_scoring.heat_bonus_fastest_lap).toBe(5);
+      expect(payload.season_scoring.heat_bonus_led_lap).toBe(2);
+      expect(payload.season_scoring.heat_bonus_most_laps_led).toBe(4);
+      expect(payload.season_scoring.heat_one_bonus_per_driver).toBe(true);
+      expect(payload.season_scoring.overall_carry_over_pct).toBe(25);
+      expect(payload.season_scoring.overall_bonus_fastest_lap).toBe(10);
+      expect(payload.season_scoring.overall_bonus_fastest_lap_per_lane).toBe(3);
+      expect(payload.season_scoring.overall_bonus_led_lap).toBe(1);
+      expect(payload.season_scoring.overall_bonus_most_laps_led).toBe(6);
+      expect(payload.season_scoring.overall_one_bonus_per_driver).toBe(true);
+    });
   });
 
   describe("Guided Help", () => {

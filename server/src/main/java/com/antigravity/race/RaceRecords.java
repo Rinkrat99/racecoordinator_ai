@@ -690,6 +690,7 @@ public class RaceRecords {
     if (race.getDatabaseContext() == null) return;
     try {
       DatabaseService dbService = DatabaseService.getInstance();
+      if (dbService == null) return;
       GlobalStatistics stats = new GlobalStatistics();
       stats.setFastestLapTime(overallFastestLap);
       stats.setFastestLapDriverName(overallFastestLapHolder);

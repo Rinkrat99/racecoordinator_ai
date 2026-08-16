@@ -3837,6 +3837,7 @@ export class DefaultRacedayComponent
     const nameKeys = ["driver.name", "driver.nickname"];
     const fixedWidths: { [key: string]: number } = {
       lapCount: 216,
+      lapsLed: 216,
       reactionTime: 330,
       lastLapTime: 330,
       lastLaps: 1650,

@@ -274,6 +274,100 @@ public class RaceConverterTest {
     assertEquals("Test Race", proto.getRace().getName());
   }
 
+  @Test
+  public void testToProto_SeasonStandingBreakdownFields() {
+    com.antigravity.models.SeasonScoring scoring =
+        new com.antigravity.models.SeasonScoring(
+            java.util.Arrays.asList(25.0),
+            java.util.Arrays.asList(5.0),
+            0.0,
+            2.0, // heat fastest lap
+            0.0,
+            0.0,
+            false,
+            0.0,
+            10.0, // overall fastest lap
+            0.0,
+            0.0,
+            0.0,
+            false);
+
+    com.antigravity.models.Race raceModel =
+        new com.antigravity.models.Race.Builder()
+            .withName("Season Race")
+            .withSeasonScoring(scoring)
+            .build();
+
+    com.antigravity.models.Driver d1 = new com.antigravity.models.Driver("D1", "D1", "d1", null);
+    com.antigravity.race.RaceParticipant rp1 = new com.antigravity.race.RaceParticipant(d1);
+    rp1.setRank(1);
+
+    com.antigravity.models.Track trackModel =
+        new com.antigravity.models.Track.Builder()
+            .name("Track")
+            .lanes(new ArrayList<>())
+            .entityId("t1")
+            .build();
+
+    com.antigravity.race.DriverHeatData dhd1 = new com.antigravity.race.DriverHeatData(rp1);
+    dhd1.addLap(4.5, false, true);
+    com.antigravity.race.Heat heat1 =
+        new com.antigravity.race.Heat(1, java.util.Arrays.asList(dhd1), false);
+
+    // Create db context with Season
+    com.antigravity.context.DatabaseContext dbCtx =
+        org.mockito.Mockito.mock(com.antigravity.context.DatabaseContext.class);
+    com.antigravity.models.Season season =
+        new com.antigravity.models.Season("2026 Season", 0, new ArrayList<>(), "s1", null);
+
+    com.antigravity.race.Race race =
+        new com.antigravity.race.Race.Builder()
+            .model(raceModel)
+            .track(trackModel)
+            .drivers(java.util.Arrays.asList(rp1))
+            .heats(java.util.Arrays.asList(heat1))
+            .seasonEntityId("s1")
+            .databaseContext(dbCtx)
+            .isDemoMode(true)
+            .stateClassName("com.antigravity.race.states.RaceOver")
+            .build();
+
+    com.antigravity.service.DatabaseService dbService =
+        org.mockito.Mockito.mock(com.antigravity.service.DatabaseService.class);
+    org.mockito.Mockito.when(dbService.getSeason(dbCtx, "s1")).thenReturn(season);
+
+    com.antigravity.service.DatabaseService origService =
+        com.antigravity.service.DatabaseService.getInstance();
+    // Swap DatabaseService instance temporarily or test toProto
+    com.antigravity.service.DatabaseService.setInstance(dbService);
+    try {
+      com.antigravity.proto.Race proto = RaceConverter.toProto(race);
+      assertNotNull(proto);
+      assertEquals(1, proto.getSeasonStandingsCount());
+      com.antigravity.proto.SeasonStanding standingProto = proto.getSeasonStandings(0);
+      assertEquals("d1", standingProto.getDriverId());
+      assertEquals(25.0, standingProto.getCurrentRaceOverallPoints(), 0.001);
+      assertEquals(10.0, standingProto.getCurrentRaceOverallBonusPoints(), 0.001);
+      assertEquals(5.0, standingProto.getCurrentRaceHeatPoints(), 0.001);
+      assertEquals(2.0, standingProto.getCurrentRaceHeatBonusPoints(), 0.001);
+      assertEquals(1, standingProto.getCurrentRaceOverallRank());
+      assertEquals(42.0, standingProto.getCurrentRacePoints(), 0.001);
+      assertEquals(
+          10.0,
+          standingProto.getCurrentRaceOverallBonusBreakdownMap().getOrDefault("fastest_lap", 0.0),
+          0.001);
+      assertEquals(
+          2.0,
+          standingProto
+              .getCurrentRaceHeatBonusBreakdownMap()
+              .getOrDefault("fastest_lap_heat_1", 0.0),
+          0.001);
+    } finally {
+      com.antigravity.service.DatabaseService.setInstance(
+          origService != null ? origService : new com.antigravity.service.DatabaseService());
+    }
+  }
+
   private void assertNotNull(Object obj) {
     org.junit.Assert.assertNotNull(obj);
   }

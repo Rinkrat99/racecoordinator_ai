@@ -165,7 +165,7 @@ public class DatabaseServiceTest {
 
     long expectedStartTime = 1700000000000L;
     List<SeasonDriverResult> results = new ArrayList<>();
-    results.add(new SeasonDriverResult("d1", "Driver 1", 1, 10, 0, 10));
+    results.add(new SeasonDriverResult("d1", "Driver 1", 1, 10.0, 0.0, 10.0));
 
     dbService.commitRaceToSeason(
         databaseContext, "S1", "GP Race 1", expectedStartTime, false, results);
