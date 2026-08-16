@@ -1,6 +1,7 @@
 package com.antigravity.handlers;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.javalin.http.Context;
 import java.util.Collections;
@@ -30,5 +31,85 @@ public class InterfaceHardwareHandlerTest {
   @Test
   public void testGetSerialPorts_ShouldNotCrash() {
     handler.getSerialPorts(ctx);
+  }
+
+  @Test
+  public void testCloseInterface() {
+    io.javalin.http.Context mockCtx = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx.status(org.mockito.ArgumentMatchers.anyInt())).thenReturn(mockCtx);
+
+    handler.closeInterface(mockCtx);
+    org.mockito.Mockito.verify(mockCtx).status(200);
+    org.mockito.Mockito.verify(mockCtx).result("OK");
+  }
+
+  @Test
+  public void testPowerCommands_WithoutActiveProtocol_Returns404() {
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setRace(null);
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setProtocol(null);
+
+    io.javalin.http.Context mockCtx = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx.queryParam("on")).thenReturn("true");
+    when(mockCtx.pathParam("lane")).thenReturn("1");
+    when(mockCtx.status(org.mockito.ArgumentMatchers.anyInt())).thenReturn(mockCtx);
+
+    handler.setMainPower(mockCtx);
+    org.mockito.Mockito.verify(mockCtx).status(404);
+
+    handler.setLanePower(mockCtx);
+    org.mockito.Mockito.verify(mockCtx, org.mockito.Mockito.times(2)).status(404);
+  }
+
+  @Test
+  public void testUpdateInterfaceConfig_InvalidProtocolIndex() {
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setProtocol(null);
+
+    com.antigravity.proto.UpdateInterfaceConfigRequest req =
+        com.antigravity.proto.UpdateInterfaceConfigRequest.newBuilder()
+            .setInterfaceIndex(0)
+            .setConfig(com.antigravity.proto.ArduinoConfig.newBuilder().setName("Arduino1").build())
+            .build();
+
+    io.javalin.http.Context mockCtx = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx.bodyAsBytes()).thenReturn(req.toByteArray());
+    when(mockCtx.contentType(org.mockito.ArgumentMatchers.anyString())).thenReturn(mockCtx);
+
+    handler.updateInterfaceConfig(mockCtx);
+    org.mockito.Mockito.verify(mockCtx).result(org.mockito.ArgumentMatchers.any(byte[].class));
+  }
+
+  @Test
+  public void testSetInterfacePinAndLedState_InvalidProtocolIndex() {
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setProtocol(null);
+
+    com.antigravity.proto.SetInterfacePinStateRequest pinReq =
+        com.antigravity.proto.SetInterfacePinStateRequest.newBuilder()
+            .setInterfaceIndex(0)
+            .setPin(5)
+            .setIsDigital(true)
+            .setIsHigh(true)
+            .build();
+
+    io.javalin.http.Context mockCtx1 = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx1.bodyAsBytes()).thenReturn(pinReq.toByteArray());
+    when(mockCtx1.contentType(org.mockito.ArgumentMatchers.anyString())).thenReturn(mockCtx1);
+
+    handler.setInterfacePinState(mockCtx1);
+    org.mockito.Mockito.verify(mockCtx1).result(org.mockito.ArgumentMatchers.any(byte[].class));
+
+    com.antigravity.proto.SetInterfaceRgbLedStateRequest ledReq =
+        com.antigravity.proto.SetInterfaceRgbLedStateRequest.newBuilder()
+            .setInterfaceIndex(0)
+            .setPin(6)
+            .addLeds(
+                com.antigravity.proto.RgbLedState.newBuilder().setR(255).setG(0).setB(0).build())
+            .build();
+
+    io.javalin.http.Context mockCtx2 = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx2.bodyAsBytes()).thenReturn(ledReq.toByteArray());
+    when(mockCtx2.contentType(org.mockito.ArgumentMatchers.anyString())).thenReturn(mockCtx2);
+
+    handler.setInterfaceRgbLedState(mockCtx2);
+    org.mockito.Mockito.verify(mockCtx2).result(org.mockito.ArgumentMatchers.any(byte[].class));
   }
 }

@@ -227,5 +227,46 @@ describe("AudioSetEditorComponent", () => {
       component.onCancel();
       expect(component.close.emit).toHaveBeenCalled();
     });
+
+    it("should handle onSave validation and successful save", () => {
+      spyOn(window, "alert");
+      spyOn(component.saved, "emit");
+      spyOn(component.close, "emit");
+
+      // Validation failure when name is empty
+      component.name = "";
+      component.entries = [];
+      component.onSave();
+      expect(window.alert).toHaveBeenCalled();
+
+      // Successful save
+      component.name = "My Audio Set";
+      component.entries = [
+        {
+          name: "sound.wav",
+          timeSeconds: 5,
+          url: "blob:http://localhost/test",
+          data: new Uint8Array([1, 2, 3]),
+          type: "preset",
+        },
+      ];
+      mockDataService.saveAudioSet.and.returnValue(
+        of({ id: "set1", name: "My Audio Set" }),
+      );
+
+      component.onSave();
+      expect(mockDataService.saveAudioSet).toHaveBeenCalledWith(
+        "My Audio Set",
+        jasmine.any(Array),
+        undefined,
+      );
+      expect(component.saved.emit).toHaveBeenCalled();
+      expect(component.close.emit).toHaveBeenCalled();
+    });
+
+    it("should correctly determine entry type", () => {
+      expect(component.getEntryType({ type: "tts" } as any)).toBe("tts");
+      expect(component.getEntryType({} as any)).toBe("preset");
+    });
   });
 });

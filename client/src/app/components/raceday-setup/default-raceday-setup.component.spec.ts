@@ -1381,4 +1381,92 @@ describe("DefaultRacedaySetupComponent", () => {
       expect(component.getRaceFinishValue("invalid")).toBe("");
     });
   });
+
+  describe("Participant Drag-and-Drop and Management Operations", () => {
+    it("should handle addAllParticipants, removeAllParticipants, and randomizeParticipants", fakeAsync(() => {
+      component.allDrivers = [
+        { entity_id: "d1", name: "Driver 1", nickname: "D1" } as any,
+        { entity_id: "d2", name: "Driver 2", nickname: "D2" } as any,
+      ];
+      component.unselectedParticipants = [...component.allDrivers];
+      component.selectedParticipants = [];
+
+      component.addAllParticipants();
+      tick(50);
+      expect(component.selectedParticipants.length).toBe(2);
+
+      component.randomizeParticipants();
+      tick(50);
+      expect(component.selectedParticipants.length).toBe(2);
+
+      component.removeAllParticipants();
+      tick(50);
+      expect(component.selectedParticipants.length).toBe(0);
+    }));
+
+    it("should correctly identify driver vs team and unique IDs", () => {
+      const driver = { entity_id: "d10", name: "Driver 10", nickname: "D10" };
+      const team = { entity_id: "t10", name: "Team 10", driverIds: ["d10"] };
+
+      expect(component.isDriver(driver as any)).toBeTrue();
+      expect(component.isTeam(driver as any)).toBeFalse();
+      expect(component.isDriver(team as any)).toBeFalse();
+      expect(component.isTeam(team as any)).toBeTrue();
+
+      expect(component.getParticipantUniqueId(driver as any)).toBe("d_d10");
+      expect(component.getParticipantUniqueId(team as any)).toBe("t_t10");
+      expect(component.trackByParticipant(0, driver as any)).toBe("d_d10");
+    });
+
+    it("should handle drag and drop within selected list and across lists", fakeAsync(() => {
+      const d1 = { entity_id: "d1", name: "Driver 1", nickname: "D1" } as any;
+      const d2 = { entity_id: "d2", name: "Driver 2", nickname: "D2" } as any;
+
+      component.selectedParticipants = [d1, d2];
+      component.unselectedParticipants = [];
+
+      // Reorder within selected list
+      const selectedContainer = { id: "selected-list" };
+      const reorderEvent: any = {
+        previousIndex: 0,
+        currentIndex: 1,
+        container: selectedContainer,
+        previousContainer: selectedContainer,
+        isPointerOverContainer: true,
+      };
+      component.drop(reorderEvent);
+      expect(component.selectedParticipants[0].entity_id).toBe("d2");
+
+      // Drag from selected to available
+      const removeEvent: any = {
+        previousIndex: 0,
+        currentIndex: 0,
+        container: { id: "available-list" },
+        previousContainer: { id: "selected-list" },
+      };
+      component.drop(removeEvent);
+      tick(50);
+      expect(component.selectedParticipants.length).toBe(1);
+
+      // Drag from available to selected
+      component.unselectedParticipants = [d2];
+      const addEvent: any = {
+        previousIndex: 0,
+        currentIndex: 0,
+        container: { id: "selected-list" },
+        previousContainer: { id: "available-list" },
+      };
+      component.drop(addEvent);
+      tick(50);
+      expect(component.selectedParticipants.length).toBe(2);
+    }));
+
+    it("should toggle available drivers collapsed state", () => {
+      component.isAvailableDriversCollapsed = false;
+      component.toggleAvailableDrivers();
+      expect(component.isAvailableDriversCollapsed).toBeTrue();
+      component.toggleAvailableDrivers();
+      expect(component.isAvailableDriversCollapsed).toBeFalse();
+    });
+  });
 });

@@ -401,5 +401,46 @@ describe("ImageSetEditorComponent", () => {
       expect(component.entries[1].percentage).toBe(50);
       expect(component.entries[2].percentage).toBe(100);
     });
+
+    it("should handle onSave validation and success emission", () => {
+      spyOn(window, "alert");
+      spyOn(component.saved, "emit");
+      spyOn(component.close, "emit");
+
+      // Empty validation
+      component.name = "";
+      component.entries = [];
+      component.onSave();
+      expect(window.alert).toHaveBeenCalled();
+
+      // Successful save
+      component.name = "Fuel Gauge Set";
+      component.entries = [
+        {
+          name: "0.png",
+          percentage: 0,
+          url: "/assets/0.png",
+          data: new Uint8Array(),
+        },
+        {
+          name: "100.png",
+          percentage: 100,
+          url: "/assets/100.png",
+          data: new Uint8Array(),
+        },
+      ];
+      mockDataService.saveImageSet.and.returnValue(
+        of({ id: "img_set_1", name: "Fuel Gauge Set" }),
+      );
+
+      component.onSave();
+      expect(mockDataService.saveImageSet).toHaveBeenCalledWith(
+        "Fuel Gauge Set",
+        component.entries,
+        undefined,
+      );
+      expect(component.saved.emit).toHaveBeenCalled();
+      expect(component.close.emit).toHaveBeenCalled();
+    });
   });
 });

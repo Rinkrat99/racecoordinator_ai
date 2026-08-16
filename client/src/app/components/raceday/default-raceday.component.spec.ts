@@ -5390,4 +5390,56 @@ describe("DefaultRacedayComponent", () => {
       expect(component.showPdfExportDialog).toBeFalse();
     });
   });
+
+  describe("Layout Editor and Column Visibility/Layout Management", () => {
+    it("should toggle layout editor minimize and save settings", () => {
+      const event = new MouseEvent("click");
+      spyOn(event, "stopPropagation");
+      component.isLayoutEditorMinimized = false;
+
+      component.toggleLayoutEditorMinimize(event);
+      expect(event.stopPropagation).toHaveBeenCalled();
+      expect(component.isLayoutEditorMinimized).toBeTrue();
+
+      component.toggleLayoutEditorMinimize(event);
+      expect(component.isLayoutEditorMinimized).toBeFalse();
+    });
+
+    it("should handle layout editor drag end and persist position", () => {
+      const mockDragEvent = {
+        source: {
+          getFreeDragPosition: () => ({ x: 120, y: 240 }),
+        },
+      };
+
+      component.onLayoutEditorDragEnded(mockDragEvent);
+      expect(component.layoutEditorPosition).toEqual({ x: 120, y: 240 });
+    });
+
+    it("should get and set column visibility for practice and standard layouts", () => {
+      fixture.componentRef.setInput("isPracticeLayoutEditor", false);
+      component.currentColumnVisibility = { col1: ColumnVisibility.Always };
+      expect(component.currentColumnVisibility["col1"]).toBe(
+        ColumnVisibility.Always,
+      );
+
+      fixture.componentRef.setInput("isPracticeLayoutEditor", true);
+      component.currentColumnVisibility = {
+        col2: ColumnVisibility.FuelRaceOnly,
+      };
+      expect(component.currentColumnVisibility["col2"]).toBe(
+        ColumnVisibility.FuelRaceOnly,
+      );
+    });
+
+    it("should get and set column layouts for practice and standard layouts", () => {
+      fixture.componentRef.setInput("isPracticeLayoutEditor", false);
+      component.currentColumnLayouts = { colA: { "top-left": "0" } };
+      expect(component.currentColumnLayouts["colA"]).toBeDefined();
+
+      fixture.componentRef.setInput("isPracticeLayoutEditor", true);
+      component.currentColumnLayouts = { colB: { "top-right": "1" } };
+      expect(component.currentColumnLayouts["colB"]).toBeDefined();
+    });
+  });
 });

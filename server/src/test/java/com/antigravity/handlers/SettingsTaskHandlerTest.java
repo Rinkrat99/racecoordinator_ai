@@ -87,4 +87,49 @@ public class SettingsTaskHandlerTest {
     verify(handler).setStatus(ctx, 200);
     verify(handler).setResult(ctx, "Server log level updated to error");
   }
+
+  @Test
+  public void testSetDirectorPassword_Success() throws Exception {
+    Method setDirectorPasswordMethod =
+        SettingsTaskHandler.class.getDeclaredMethod("setDirectorPassword", Context.class);
+    setDirectorPasswordMethod.setAccessible(true);
+
+    org.mockito.Mockito.doReturn(
+            new Object() {
+              public String password = "new_secret_pwd";
+            })
+        .when(ctx)
+        .bodyAsClass(any());
+
+    // Call using reflection with simulated body
+    SettingsTaskHandler.class.getDeclaredClasses(); // Load inner class PasswordRequest
+    Class<?> pwReqClass = null;
+    for (Class<?> c : SettingsTaskHandler.class.getDeclaredClasses()) {
+      if (c.getSimpleName().equals("PasswordRequest")) {
+        pwReqClass = c;
+        break;
+      }
+    }
+    java.lang.reflect.Constructor<?> ctor = pwReqClass.getDeclaredConstructor();
+    ctor.setAccessible(true);
+    Object reqInst = ctor.newInstance();
+    pwReqClass.getField("password").set(reqInst, "new_secret_pwd");
+    org.mockito.Mockito.doReturn(reqInst).when(ctx).bodyAsClass(any());
+
+    setDirectorPasswordMethod.invoke(handler, ctx);
+    verify(configService).setDirectorPassword("new_secret_pwd");
+    verify(handler).setStatus(ctx, 200);
+    verify(handler).setResult(ctx, "Director password updated");
+  }
+
+  @Test
+  public void testGetAuthSettings_Success() throws Exception {
+    Method getAuthSettingsMethod =
+        SettingsTaskHandler.class.getDeclaredMethod("getAuthSettings", Context.class);
+    getAuthSettingsMethod.setAccessible(true);
+
+    org.mockito.Mockito.when(configService.getDirectorPassword()).thenReturn("pass123");
+    getAuthSettingsMethod.invoke(handler, ctx);
+    verify(ctx).json(any());
+  }
 }

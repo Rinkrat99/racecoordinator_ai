@@ -384,4 +384,59 @@ describe("TrackManagerComponent", () => {
     expect(component.tracks[0].bart_configs.length).toBe(1);
     expect(component.tracks[0].bart_configs[0].deviceName).toBe("BART_9999");
   });
+
+  it("should toggle lane summary visibility", () => {
+    component.isLaneSummaryExpanded = true;
+    component.toggleLaneSummary();
+    expect(component.isLaneSummaryExpanded).toBeFalse();
+    component.toggleLaneSummary();
+    expect(component.isLaneSummaryExpanded).toBeTrue();
+  });
+
+  it("should handle deleteTrack modal flows", () => {
+    component.selectedTrack = component.tracks[0];
+    component.deleteTrack();
+    expect(component.showDeleteConfirm).toBeTrue();
+
+    component.onCancelDelete();
+    expect(component.showDeleteConfirm).toBeFalse();
+
+    component.deleteTrack();
+    dataService.deleteTrack.and.returnValue(of(true));
+    component.onConfirmDelete();
+    expect(component.showDeleteConfirm).toBeFalse();
+    expect(dataService.deleteTrack).toHaveBeenCalled();
+  });
+
+  it("should handle race running confirmation prompt on edit and create track", () => {
+    component.isRaceRunning = true;
+    component.selectedTrack = component.tracks[0];
+
+    component.editTrack();
+    expect(component.showTrackEditorPrompt).toBeTrue();
+    expect(component.pendingTrackAction).toBe("edit");
+
+    component.onCancelTrackEditor();
+    expect(component.showTrackEditorPrompt).toBeFalse();
+    expect(component.pendingTrackAction).toBeNull();
+
+    // Confirm edit ending race
+    component.isRaceRunning = true;
+    component.editTrack();
+    dataService.endRace.and.returnValue(of(true));
+    component.onConfirmTrackEditor();
+    expect(dataService.endRace).toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(
+      ["/track-editor"],
+      jasmine.any(Object),
+    );
+  });
+
+  it("should return help steps and handle onResize", () => {
+    const steps = component.getHelpSteps();
+    expect(steps.length).toBe(3);
+
+    component.onResize();
+    expect(component.scale).toBeGreaterThan(0);
+  });
 });

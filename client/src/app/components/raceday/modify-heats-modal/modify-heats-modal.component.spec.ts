@@ -1428,11 +1428,79 @@ describe("ModifyHeatsModalComponent", () => {
       const heat2 = new Heat("h2", 2, [], [], false); // not started
       component["localHeats"] = [heat1, heat2];
 
-      fixture.detectChanges();
-
       fixture.destroy();
 
       expect(mockDataService.finalizeModifyHeats).toHaveBeenCalled();
+    });
+
+    it("should correctly calculate teammate data, styles, and stats", () => {
+      const driver1 = new Driver("d1", "Driver 1", "D1");
+      const driver2 = new Driver("d2", "Driver 2", "D2");
+      const team = new Team("t1", "Team 1", undefined, ["d1", "d2"]);
+      const rp = new RaceParticipant(
+        "rp1",
+        driver1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        100,
+        0,
+        0,
+        team,
+      );
+      const dhd = new DriverHeatData("dhd1", rp, 0, driver1);
+
+      component["allDrivers"] = [driver1, driver2];
+      expect(component["isTeamLane"](dhd)).toBeTrue();
+      expect(component["getTeammates"](dhd).length).toBe(2);
+
+      const style = component["getDropdownArrowBg"]("#ff0000");
+      expect(style).toBeDefined();
+
+      const meta = component["getHeatDriverMeta"](dhd);
+      expect(meta).toBe("D1");
+
+      const stats = component["getDriverStats"](dhd, "d1");
+      expect(stats).toContain("0");
+    });
+
+    it("should handle onTeammateChange", () => {
+      const driver1 = new Driver("d1", "Driver 1", "D1");
+      const driver2 = new Driver("d2", "Driver 2", "D2");
+      const team = new Team("t1", "Team 1", undefined, ["d1", "d2"]);
+      const rp = new RaceParticipant(
+        "rp1",
+        driver1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        100,
+        0,
+        0,
+        team,
+      );
+      const dhd = new DriverHeatData("dhd1", rp, 0, driver1);
+      const heat = new Heat("h1", 1, [dhd], [], false);
+
+      component["allDrivers"] = [driver1, driver2];
+      component["localHeats"] = [heat];
+
+      const mockEvent: any = { target: { value: "d2" } };
+      component["onTeammateChange"](0, dhd, mockEvent);
+
+      expect(
+        component["localHeats"][0].heatDrivers[0].actualDriver?.entity_id,
+      ).toBe("d2");
     });
   });
 });

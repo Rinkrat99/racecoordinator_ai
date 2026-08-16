@@ -158,4 +158,81 @@ public class LogReplayServiceTest {
     org.junit.Assert.assertEquals("Should have processed 3 lines", 3, status.getLinesProcessed());
     assertTrue("Pre-race idle time (60s total) should finish in < 2000ms", elapsed < 2000);
   }
+
+  @Test
+  public void testProcessLogMessage_RaceConfigDumpAndCommands() throws Exception {
+    LogReplayService.reset();
+
+    java.lang.reflect.Constructor<LogReplayService> constructor =
+        LogReplayService.class.getDeclaredConstructor(String.class);
+    constructor.setAccessible(true);
+    replayService = constructor.newInstance(tempLogFile.getAbsolutePath());
+
+    java.lang.reflect.Method processMethod =
+        LogReplayService.class.getDeclaredMethod("processLogMessage", String.class);
+    processMethod.setAccessible(true);
+
+    // 1. RaceConfigDump
+    com.antigravity.models.HeatScoring heatScoring =
+        new com.antigravity.models.HeatScoring(
+            com.antigravity.models.HeatScoring.FinishMethod.Timed,
+            120,
+            com.antigravity.models.HeatScoring.HeatRanking.LAP_COUNT,
+            com.antigravity.models.HeatScoring.HeatRankingTiebreaker.FASTEST_LAP_TIME);
+    com.antigravity.models.Race race =
+        new com.antigravity.models.Race.Builder()
+            .withName("Replay Race")
+            .withTrackEntityId("t_rep")
+            .withHeatRotationType(com.antigravity.models.HeatRotationType.RoundRobin)
+            .withHeatScoring(heatScoring)
+            .withOverallScoring(new com.antigravity.models.OverallScoring())
+            .withEntityId("r_rep")
+            .build();
+    com.antigravity.models.Track track =
+        new com.antigravity.models.Track.Builder()
+            .name("Replay Track")
+            .lanes(java.util.Arrays.asList(new com.antigravity.models.Lane("red", "black", 50)))
+            .entityId("t_rep")
+            .build();
+    com.antigravity.models.Driver driver =
+        new com.antigravity.models.Driver("Driver 1", "D1", "d1", null);
+    com.antigravity.race.RaceParticipant participant =
+        new com.antigravity.race.RaceParticipant(driver);
+
+    com.antigravity.race.Race activeRace =
+        new com.antigravity.race.Race.Builder()
+            .model(race)
+            .track(track)
+            .drivers(java.util.Arrays.asList(participant))
+            .isDemoMode(true)
+            .build();
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setRace(activeRace);
+    org.junit.Assert.assertNotNull(
+        com.antigravity.race.ClientSubscriptionManager.getInstance().getRace());
+
+    // 2. ReplayCommandDump - startRace
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"startRace\"}");
+
+    // 3. ReplayCommandDump - pauseRace
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"pauseRace\"}");
+
+    // 4. ReplayCommandDump - setMainPower
+    processMethod.invoke(
+        replayService,
+        "ReplayCommandDump: {\"command\":\"setMainPower\",\"parameters\":{\"on\":true}}");
+
+    // 5. ReplayCommandDump - setLanePower
+    processMethod.invoke(
+        replayService,
+        "ReplayCommandDump: {\"command\":\"setLanePower\",\"parameters\":{\"lane\":1,\"on\":true}}");
+
+    // 6. ReplayCommandDump - endRace
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"endRace\"}");
+
+    // 7. Register & unregister connection
+    com.antigravity.protocols.interfaces.LogReaderSerialConnection conn =
+        new com.antigravity.protocols.interfaces.LogReaderSerialConnection();
+    replayService.registerSerialConnection(conn);
+    replayService.unregisterSerialConnection(conn);
+  }
 }

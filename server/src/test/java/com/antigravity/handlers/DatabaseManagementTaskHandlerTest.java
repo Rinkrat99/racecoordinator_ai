@@ -103,4 +103,83 @@ public class DatabaseManagementTaskHandlerTest {
 
     verify(mockCtx).json(stats);
   }
+
+  @Test
+  public void testCreateDatabase_SuccessAndValidation() {
+    Context mockCtx = mock(Context.class);
+    Map<String, String> body = new HashMap<>();
+    body.put("name", "new_created_db");
+    when(mockCtx.bodyAsClass(Map.class)).thenReturn(body);
+    when(mockDbCtx.listDatabases()).thenReturn(Arrays.asList("existing_db"));
+    DatabaseContext.DatabaseStats stats = mock(DatabaseContext.DatabaseStats.class);
+    when(mockDbCtx.getDatabaseStats("new_created_db")).thenReturn(stats);
+
+    handler.createDatabase(mockCtx);
+    verify(mockDbCtx).createDatabase("new_created_db");
+    verify(mockDbCtx).switchDatabase("new_created_db");
+    verify(mockDbCtx).resetDatabaseToFactory("new_created_db");
+    verify(mockCtx).json(stats);
+
+    // Duplicate database returns 409
+    Context ctxDup = mock(Context.class);
+    Map<String, String> bodyDup = new HashMap<>();
+    bodyDup.put("name", "existing_db");
+    when(ctxDup.bodyAsClass(Map.class)).thenReturn(bodyDup);
+    when(ctxDup.status(409)).thenReturn(ctxDup);
+    handler.createDatabase(ctxDup);
+    verify(ctxDup).status(409);
+  }
+
+  @Test
+  public void testCopyDatabase_SuccessAndValidation() {
+    Context mockCtx = mock(Context.class);
+    Map<String, String> body = new HashMap<>();
+    body.put("name", "copied_db");
+    body.put("source", "source_db");
+    when(mockCtx.bodyAsClass(Map.class)).thenReturn(body);
+    when(mockDbCtx.listDatabases()).thenReturn(Arrays.asList("source_db"));
+    DatabaseContext.DatabaseStats stats = mock(DatabaseContext.DatabaseStats.class);
+    when(mockDbCtx.getDatabaseStats("copied_db")).thenReturn(stats);
+
+    handler.copyDatabase(mockCtx);
+    verify(mockDbCtx).copyDatabase("source_db", "copied_db");
+    verify(mockCtx).json(stats);
+
+    // Missing source returns 404
+    Context ctx404 = mock(Context.class);
+    Map<String, String> body404 = new HashMap<>();
+    body404.put("name", "copied_db2");
+    body404.put("source", "nonexistent_source");
+    when(ctx404.bodyAsClass(Map.class)).thenReturn(body404);
+    when(ctx404.status(404)).thenReturn(ctx404);
+    handler.copyDatabase(ctx404);
+    verify(ctx404).status(404);
+  }
+
+  @Test
+  public void testResetDatabase_Success() {
+    Context mockCtx = mock(Context.class);
+    Map<String, String> body = new HashMap<>();
+    body.put("name", "db_to_reset");
+    when(mockCtx.bodyAsClass(Map.class)).thenReturn(body);
+    DatabaseContext.DatabaseStats stats = mock(DatabaseContext.DatabaseStats.class);
+    when(mockDbCtx.getDatabaseStats("db_to_reset")).thenReturn(stats);
+
+    handler.resetDatabase(mockCtx);
+    verify(mockDbCtx).resetDatabaseToFactory("db_to_reset");
+    verify(mockCtx).json(stats);
+  }
+
+  @Test
+  public void testDeleteDatabase_Success() {
+    Context mockCtx = mock(Context.class);
+    Map<String, String> body = new HashMap<>();
+    body.put("name", "db_to_delete");
+    when(mockCtx.bodyAsClass(Map.class)).thenReturn(body);
+    when(mockDbCtx.getCurrentDatabaseName()).thenReturn("other_active_db");
+
+    handler.deleteDatabase(mockCtx);
+    verify(mockDbCtx).deleteDatabase("db_to_delete");
+    verify(mockCtx).status(204);
+  }
 }

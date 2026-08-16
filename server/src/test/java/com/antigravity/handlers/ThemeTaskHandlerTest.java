@@ -113,4 +113,95 @@ public class ThemeTaskHandlerTest {
     verify(handler).setStatus(any(), eq(201));
     verify(handler).setJson(any(), any());
   }
+
+  @Test
+  public void testGetTheme_FoundAndNotFound() {
+    handler.ensureDefaultTheme();
+    org.mockito.Mockito.doReturn(Theme.DEFAULT_THEME_ID)
+        .when(handler)
+        .getPathParam(any(), eq("id"));
+
+    handler.getTheme(ctx);
+    verify(handler, org.mockito.Mockito.atLeastOnce()).setJson(any(), any());
+
+    // Not found
+    org.mockito.Mockito.doReturn("nonexistent_id").when(handler).getPathParam(any(), eq("id"));
+    handler.getTheme(ctx);
+    verify(handler).setStatus(any(), eq(404));
+  }
+
+  @Test
+  public void testUpdateTheme_SuccessAndForbiddenDefault() {
+    handler.ensureDefaultTheme();
+
+    // Updating default theme -> 403
+    Theme themeUpdate =
+        new Theme(
+            "Updated Default",
+            true,
+            new HashMap<>(),
+            new HashMap<>(),
+            Theme.DEFAULT_THEME_ID,
+            null);
+    org.mockito.Mockito.doReturn(Theme.DEFAULT_THEME_ID)
+        .when(handler)
+        .getPathParam(any(), eq("id"));
+    org.mockito.Mockito.doReturn(themeUpdate).when(handler).getBody(any(), eq(Theme.class));
+
+    handler.updateTheme(ctx);
+    verify(handler).setStatus(any(), eq(403));
+
+    // Create custom theme and update it
+    Theme custom =
+        new Theme("Custom Theme", false, new HashMap<>(), new HashMap<>(), "custom_1", null);
+    new com.antigravity.repository.SqliteRepository<>(databaseContext, "themes", Theme.class)
+        .save(custom);
+
+    Theme updatedCustom =
+        new Theme(
+            "Custom Theme Renamed", false, new HashMap<>(), new HashMap<>(), "custom_1", null);
+    org.mockito.Mockito.doReturn("custom_1").when(handler).getPathParam(any(), eq("id"));
+    org.mockito.Mockito.doReturn(updatedCustom).when(handler).getBody(any(), eq(Theme.class));
+
+    handler.updateTheme(ctx);
+    verify(handler, org.mockito.Mockito.atLeastOnce()).setJson(any(), any());
+  }
+
+  @Test
+  public void testDeleteTheme_DefaultForbiddenAndCustomDeleted() {
+    handler.ensureDefaultTheme();
+
+    // Delete default -> 400
+    org.mockito.Mockito.doReturn(Theme.DEFAULT_THEME_ID)
+        .when(handler)
+        .getPathParam(any(), eq("id"));
+    handler.deleteTheme(ctx);
+    verify(handler).setStatus(any(), eq(400));
+
+    // Delete custom -> 204
+    Theme custom =
+        new Theme("To Delete", false, new HashMap<>(), new HashMap<>(), "delete_1", null);
+    new com.antigravity.repository.SqliteRepository<>(databaseContext, "themes", Theme.class)
+        .save(custom);
+
+    org.mockito.Mockito.doReturn("delete_1").when(handler).getPathParam(any(), eq("id"));
+    handler.deleteTheme(ctx);
+    verify(handler).setStatus(any(), eq(204));
+  }
+
+  @Test
+  public void testDuplicateTheme_SuccessAndNotFound() {
+    handler.ensureDefaultTheme();
+
+    org.mockito.Mockito.doReturn(Theme.DEFAULT_THEME_ID)
+        .when(handler)
+        .getPathParam(any(), eq("id"));
+    handler.duplicateTheme(ctx);
+    verify(handler).setStatus(any(), eq(201));
+
+    // Not found
+    org.mockito.Mockito.doReturn("nonexistent_id").when(handler).getPathParam(any(), eq("id"));
+    handler.duplicateTheme(ctx);
+    verify(handler, org.mockito.Mockito.atLeastOnce()).setStatus(any(), eq(404));
+  }
 }
