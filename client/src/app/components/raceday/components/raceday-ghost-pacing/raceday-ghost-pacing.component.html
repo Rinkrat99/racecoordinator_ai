@@ -10,7 +10,6 @@
   } @else if (targetGhostLapTime() > 0) {
     <div class="pacing-header">
       <span class="benchmark-tag">
-        <span class="ghost-icon">👻</span>
         <span class="benchmark-name"
           >{{ benchmarkLabelKey() | translate }} ({{
             targetGhostLapTime().toFixed(2)
@@ -53,7 +52,6 @@
     </div>
   } @else {
     <div class="pacing-empty">
-      <span class="ghost-icon-dim">👻</span>
       <span class="no-benchmark-text">{{
         "RD_GHOST_NO_BENCHMARK" | translate
       }}</span>
