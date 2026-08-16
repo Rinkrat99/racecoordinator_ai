@@ -284,9 +284,9 @@ function run() {
       failed = true;
     }
 
-    if (server.missingConcreteClasses.length > 1) {
+    if (server.missingConcreteClasses.length > 0) {
       console.log(
-        `${colors.red}❌ Audit check failed: Server concrete class test coverage regressed (${server.missingConcreteClasses.length} untested concrete classes, baseline max allowed: 1).${colors.reset}`
+        `${colors.red}❌ Audit check failed: Server concrete class test coverage regressed (${server.missingConcreteClasses.length} untested concrete classes, baseline max allowed: 0).${colors.reset}`
       );
       server.missingConcreteClasses.forEach(s => console.log(`   - ${s.relPath}`));
       failed = true;
