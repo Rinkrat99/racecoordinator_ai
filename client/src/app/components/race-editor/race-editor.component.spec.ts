@@ -1830,4 +1830,113 @@ describe("RaceEditorComponent", () => {
       expect(resolvedValue).toBeFalse();
     }));
   });
+
+  describe("Fuel Usage Graphs, Pit Graphs, and Interactive Hover Tooltips", () => {
+    beforeEach(() => {
+      component.editingRace = {
+        name: "Graph Test Race",
+        fuel_options: {
+          enabled: true,
+          usage_type: FuelUsageType.LINEAR,
+          usage_rate: 5,
+          reference_time: 6,
+          capacity: 100,
+        },
+        digital_fuel_options: {
+          enabled: true,
+          usage_type: 1 as any,
+          usage_rate: 10,
+          capacity: 100,
+        },
+      } as any;
+    });
+
+    it("should compute and cache analog fuel usage and pit graph paths", () => {
+      const usagePath = component.getFuelUsagePath();
+      expect(usagePath).toContain("M ");
+      expect(usagePath).toContain(" L ");
+
+      const yLabels = component.getFuelUsageYLabels();
+      expect(yLabels.length).toBe(5);
+
+      const pitPath = component.getPitGraphPath();
+      expect(pitPath).toContain("M ");
+
+      const xLabels = component.getPitGraphXLabels();
+      expect(xLabels.length).toBe(5);
+    });
+
+    it("should compute and cache digital fuel usage and pit graph paths", () => {
+      const dUsagePath = component.getDigitalUsagePath();
+      expect(dUsagePath).toContain("M ");
+
+      const dYLabels = component.getDigitalUsageYLabels();
+      expect(dYLabels.length).toBe(5);
+
+      const dPitPath = component.getDigitalPitPath();
+      expect(dPitPath).toContain("M ");
+
+      const dXLabels = component.getDigitalPitXLabels();
+      expect(dXLabels.length).toBe(5);
+    });
+
+    it("should handle mouse move and leave events for analog graphs", () => {
+      const mockSvg = {
+        getBoundingClientRect: () => ({
+          left: 10,
+          top: 20,
+          width: 400,
+          height: 150,
+        }),
+      };
+      const mockEvent = {
+        currentTarget: mockSvg,
+        clientX: 210,
+        clientY: 95,
+      } as any;
+
+      component.onGraphMouseMove(mockEvent, "usage");
+      expect(component.hoveredPoint).toBeTruthy();
+      expect(component.hoveredPoint?.type).toBe("usage");
+      expect(component.hoveredPoint?.xLabel).toBe("RE_HOVER_LAP_TIME");
+
+      component.onGraphMouseMove(mockEvent, "pit");
+      expect(component.hoveredPoint).toBeTruthy();
+      expect(component.hoveredPoint?.type).toBe("pit");
+      expect(component.hoveredPoint?.xLabel).toBe("RE_HOVER_TIME_TO_PIT");
+
+      component.onGraphMouseLeave();
+      expect(component.hoveredPoint).toBeNull();
+    });
+
+    it("should handle mouse move events for digital graphs", () => {
+      const mockSvg = {
+        getBoundingClientRect: () => ({
+          left: 10,
+          top: 20,
+          width: 400,
+          height: 150,
+        }),
+      };
+      const mockEvent = {
+        currentTarget: mockSvg,
+        clientX: 210,
+        clientY: 95,
+      } as any;
+
+      component.onDigitalGraphMouseMove(mockEvent, "usage");
+      expect(component.hoveredPoint).toBeTruthy();
+      expect(component.hoveredPoint?.type).toBe("digital_usage");
+
+      component.onDigitalGraphMouseMove(mockEvent, "pit");
+      expect(component.hoveredPoint).toBeTruthy();
+      expect(component.hoveredPoint?.type).toBe("digital_pit");
+    });
+
+    it("should return interactive guide steps for help walkthrough", () => {
+      const steps = component.getHelpSteps();
+      expect(steps.length).toBeGreaterThan(5);
+      expect(steps[0].title).toBe("RE_HELP_WELCOME_TITLE");
+    });
+  });
 });

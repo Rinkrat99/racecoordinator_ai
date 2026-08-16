@@ -269,4 +269,99 @@ public class EventExecutionManagerTest {
     assertEquals("evt_final", manager.getActiveEvent().getEntityId());
     manager.cancelEvent();
   }
+
+  @org.junit.Rule
+  public org.junit.rules.TemporaryFolder tempFolder = new org.junit.rules.TemporaryFolder();
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testStartEvent_EmptyRaces_ThrowsException() throws Exception {
+    Event emptyEvent =
+        new Event("Empty Event", "No races", 0.0, new ArrayList<>(), "e_empty", null);
+    EventExecutionManager.getInstance()
+        .startEvent(emptyEvent, Arrays.asList("d_1"), true, null, null);
+  }
+
+  @Test
+  public void testStartEventAndAdvance_WithRealDatabase() throws Exception {
+    String rootDir = tempFolder.newFolder("db_root_eem").getAbsolutePath() + java.io.File.separator;
+    com.antigravity.context.DatabaseContext dbCtx =
+        new com.antigravity.context.DatabaseContext("test_db", null, rootDir);
+
+    try {
+      // Seed Track
+      com.antigravity.repository.SqliteRepository<Track> trackRepo =
+          new com.antigravity.repository.SqliteRepository<>(dbCtx, "tracks", Track.class);
+      Track track =
+          new Track.Builder()
+              .name("Main Track")
+              .entityId("t1")
+              .lanes(
+                  Arrays.asList(
+                      new com.antigravity.models.Lane("#FFFFFF", "#FF0000", 50),
+                      new com.antigravity.models.Lane("#FFFFFF", "#00FF00", 50)))
+              .build();
+      trackRepo.insert(track);
+
+      // Seed Drivers
+      com.antigravity.repository.SqliteRepository<Driver> driverRepo =
+          new com.antigravity.repository.SqliteRepository<>(dbCtx, "drivers", Driver.class);
+      Driver d1 = new Driver("Driver One", "D1", "d1", "d1_id");
+      Driver d2 = new Driver("Driver Two", "D2", "d2", "d2_id");
+      Driver d3 = new Driver("Driver Three", "D3", "d3", "d3_id");
+      driverRepo.insert(d1);
+      driverRepo.insert(d2);
+      driverRepo.insert(d3);
+
+      // Seed Races
+      com.antigravity.repository.SqliteRepository<com.antigravity.models.Race> raceRepo =
+          new com.antigravity.repository.SqliteRepository<>(
+              dbCtx, "races", com.antigravity.models.Race.class);
+      com.antigravity.models.Race race1 =
+          new com.antigravity.models.Race.Builder()
+              .withName("Heat 1")
+              .withEntityId("r1")
+              .withTrackEntityId("t1")
+              .withHeatRotationType(com.antigravity.models.HeatRotationType.RoundRobin)
+              .build();
+      com.antigravity.models.Race race2 =
+          new com.antigravity.models.Race.Builder()
+              .withName("Heat 2")
+              .withEntityId("r2")
+              .withTrackEntityId("t1")
+              .withHeatRotationType(com.antigravity.models.HeatRotationType.RoundRobin)
+              .build();
+      raceRepo.insert(race1);
+      raceRepo.insert(race2);
+
+      // Create Event with 2 races and maxDrivers=2 for race 1
+      List<EventRaceItem> raceItems = new ArrayList<>();
+      raceItems.add(new EventRaceItem("r1", 2));
+      raceItems.add(new EventRaceItem("r2", 0));
+      Event event = new Event("Grand Prix", "Championship Event", 0.0, raceItems, "e1", null);
+
+      EventExecutionManager manager = EventExecutionManager.getInstance();
+      manager.startEvent(event, Arrays.asList("d_d1", "d_d2", "d_d3"), true, null, dbCtx);
+
+      assertTrue(manager.isEventActive());
+      assertEquals(0, manager.getCurrentRaceIndex());
+      assertEquals(2, manager.getCurrentQualifiedParticipantIds().size());
+
+      // Advance to Race 2
+      boolean advanced = manager.advanceToNextRace();
+      assertTrue(advanced);
+      assertEquals(1, manager.getCurrentRaceIndex());
+
+      // Try advance past last race
+      boolean pastEnd = manager.advanceToNextRace();
+      assertFalse(pastEnd);
+
+      // Cancel
+      manager.cancelEvent();
+      assertFalse(manager.isEventActive());
+    } finally {
+      if (dbCtx.getConnection() != null) {
+        dbCtx.getConnection().close();
+      }
+    }
+  }
 }

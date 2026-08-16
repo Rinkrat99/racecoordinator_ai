@@ -5,19 +5,38 @@ import {
 import { TestBed } from "@angular/core/testing";
 import { Event } from "@app/models/event";
 import { Season } from "@app/models/season";
-import { ArduinoConfig, TrackmateConfig } from "@app/models/track";
 import {
+  ArduinoConfig,
+  PhidgetConfig,
+  TrackmateConfig,
+} from "@app/models/track";
+import {
+  DeferHeatResponse,
+  DeleteAssetResponse,
   EndRaceResponse,
+  GetPhidgetDevicesResponse,
   InitializeInterfaceResponse,
+  InterfaceEvent,
+  ListAssetsResponse,
+  ModifyHeatsResponse,
   NextHeatResponse,
   PauseRaceResponse,
+  RaceData,
+  RaceFlag,
+  RaceState,
+  RegenerateHeatsResponse,
+  RenameAssetResponse,
   RestartHeatResponse,
   SaveAudioSetResponse,
+  SaveCustomRotationResponse,
+  SaveImageSetResponse,
   SetInterfacePinStateResponse,
   SetInterfaceRgbLedStateResponse,
   SkipHeatResponse,
   SkipRaceResponse,
   StartRaceResponse,
+  UpdateInterfaceConfigResponse,
+  UploadAssetResponse,
 } from "@app/proto/antigravity";
 
 import { DataService } from "./data.service";
@@ -616,6 +635,665 @@ describe("DataService", () => {
       );
       expect(reqDemo.request.method).toBe("GET");
       reqDemo.flush([{ name: "Demo Race" }]);
+    });
+  });
+
+  describe("Teams and Themes API", () => {
+    it("should handle Team CRUD operations", (done) => {
+      const mockTeam = { name: "Ferrari", entity_id: "t1" };
+
+      service.getTeams().subscribe((teams) => {
+        expect(teams.length).toBe(1);
+        service.createTeam(mockTeam).subscribe((created) => {
+          expect(created.name).toBe("Ferrari");
+          service.updateTeam("t1", mockTeam).subscribe((updated) => {
+            expect(updated.name).toBe("Ferrari");
+            service.deleteTeam("t1").subscribe((del) => {
+              expect(del.success).toBeTrue();
+              done();
+            });
+          });
+        });
+      });
+
+      const reqGet = httpMock.expectOne((r) => r.url.endsWith("/api/teams"));
+      expect(reqGet.request.method).toBe("GET");
+      reqGet.flush([mockTeam]);
+
+      const reqPost = httpMock.expectOne((r) => r.url.endsWith("/api/teams"));
+      expect(reqPost.request.method).toBe("POST");
+      reqPost.flush(mockTeam);
+
+      const reqPut = httpMock.expectOne((r) => r.url.endsWith("/api/teams/t1"));
+      expect(reqPut.request.method).toBe("PUT");
+      reqPut.flush(mockTeam);
+
+      const reqDel = httpMock.expectOne((r) => r.url.endsWith("/api/teams/t1"));
+      expect(reqDel.request.method).toBe("DELETE");
+      reqDel.flush({ success: true });
+    });
+
+    it("should handle Theme operations including duplicate and default", (done) => {
+      const mockTheme = { name: "Dark Theme", entity_id: "th1" };
+
+      service.getThemes().subscribe((themes) => {
+        expect(themes.length).toBe(1);
+        service.getDefaultTheme().subscribe((def) => {
+          expect(def.name).toBe("Dark Theme");
+          service.getTheme("th1").subscribe((t) => {
+            expect(t.name).toBe("Dark Theme");
+            service.createTheme(mockTheme).subscribe((created) => {
+              expect(created.name).toBe("Dark Theme");
+              service.updateTheme("th1", mockTheme).subscribe((updated) => {
+                expect(updated.name).toBe("Dark Theme");
+                service.duplicateTheme("th1", "Dark Copy").subscribe((dup) => {
+                  expect(dup.name).toBe("Dark Copy");
+                  service.deleteTheme("th1").subscribe((del) => {
+                    expect(del.success).toBeTrue();
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+      const reqList = httpMock.expectOne((r) => r.url.endsWith("/api/themes"));
+      reqList.flush([mockTheme]);
+
+      const reqDef = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/themes/default"),
+      );
+      reqDef.flush(mockTheme);
+
+      const reqGet = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/themes/th1"),
+      );
+      reqGet.flush(mockTheme);
+
+      const reqCreate = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/themes"),
+      );
+      reqCreate.flush(mockTheme);
+
+      const reqUpdate = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/themes/th1"),
+      );
+      reqUpdate.flush(mockTheme);
+
+      const reqDup = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/themes/th1/duplicate"),
+      );
+      expect(reqDup.request.body).toEqual({ name: "Dark Copy" });
+      reqDup.flush({ name: "Dark Copy", entity_id: "th2" });
+
+      const reqDel = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/themes/th1"),
+      );
+      reqDel.flush({ success: true });
+    });
+  });
+
+  describe("Database Administration API", () => {
+    it("should handle database management endpoints", (done) => {
+      service.getDatabases().subscribe((dbs) => {
+        expect(dbs).toEqual(["default", "season2026"]);
+        service.getCurrentDatabase().subscribe((curr) => {
+          expect(curr.name).toBe("default");
+          service.createDatabase("new_db").subscribe((created) => {
+            expect(created.success).toBeTrue();
+            service.switchDatabase("new_db").subscribe((switched) => {
+              expect(switched.success).toBeTrue();
+              service.copyDatabase("copy_db", "default").subscribe((copied) => {
+                expect(copied.success).toBeTrue();
+                service.resetDatabase("copy_db").subscribe((reset) => {
+                  expect(reset.success).toBeTrue();
+                  service.deleteDatabase("copy_db").subscribe((del) => {
+                    expect(del.success).toBeTrue();
+                    done();
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+
+      const reqList = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/databases"),
+      );
+      reqList.flush(["default", "season2026"]);
+
+      const reqCurr = httpMock.expectOne((r) =>
+        r.url.includes("/api/databases/current"),
+      );
+      reqCurr.flush({ name: "default" });
+
+      const reqCreate = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/databases/create"),
+      );
+      expect(reqCreate.request.body).toEqual({ name: "new_db" });
+      reqCreate.flush({ success: true });
+
+      const reqSwitch = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/databases/switch"),
+      );
+      expect(reqSwitch.request.body).toEqual({ name: "new_db" });
+      reqSwitch.flush({ success: true });
+
+      const reqCopy = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/databases/copy"),
+      );
+      expect(reqCopy.request.body).toEqual({
+        name: "copy_db",
+        source: "default",
+      });
+      reqCopy.flush({ success: true });
+
+      const reqReset = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/databases/reset"),
+      );
+      expect(reqReset.request.body).toEqual({ name: "copy_db" });
+      reqReset.flush({ success: true });
+
+      const reqDel = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/databases/delete"),
+      );
+      expect(reqDel.request.body).toEqual({ name: "copy_db" });
+      reqDel.flush({ success: true });
+    });
+
+    it("should handle database file import", (done) => {
+      const mockFile = new File(["dummy db content"], "backup.db", {
+        type: "application/x-sqlite3",
+      });
+
+      service.importDatabase("imported_db", mockFile).subscribe((res) => {
+        expect(res.success).toBeTrue();
+        done();
+      });
+
+      const req = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/databases/import"),
+      );
+      expect(req.request.method).toBe("POST");
+      req.flush({ success: true });
+    });
+  });
+
+  describe("Asset Management API", () => {
+    it("should list assets and format asset URL", (done) => {
+      const mockProto = ListAssetsResponse.encode({
+        assets: [
+          {
+            model: { entityId: "asset1" },
+            name: "flag.png",
+            type: "image",
+            size: "1024",
+          },
+        ],
+      }).finish();
+
+      service.listAssets().subscribe((assets) => {
+        expect(assets.length).toBe(1);
+        expect(assets[0].name).toBe("flag.png");
+        expect(service.getAssetUrl("asset1")).toContain(
+          "/api/assets/download/asset1",
+        );
+        done();
+      });
+
+      const req = httpMock.expectOne((r) => r.url.endsWith("/api/assets/list"));
+      req.flush(mockProto.slice().buffer);
+    });
+
+    it("should handle asset upload, rename, and delete", (done) => {
+      const uploadProto = UploadAssetResponse.encode({
+        success: true,
+        asset: {
+          model: { entityId: "a2" },
+          name: "avatar.png",
+          type: "image",
+          size: "2048",
+        },
+      }).finish();
+
+      const renameProto = RenameAssetResponse.encode({
+        success: true,
+      }).finish();
+
+      const deleteProto = DeleteAssetResponse.encode({
+        success: true,
+      }).finish();
+
+      service
+        .uploadAsset("avatar.png", "image", new Uint8Array([1, 2, 3]))
+        .subscribe((upRes) => {
+          expect(upRes.name).toBe("avatar.png");
+          service.renameAsset("a2", "avatar_renamed.png").subscribe((rnRes) => {
+            expect(rnRes).toBeTrue();
+            service.deleteAsset("a2").subscribe((delRes) => {
+              expect(delRes).toBeTrue();
+              done();
+            });
+            const reqDel = httpMock.expectOne((r) =>
+              r.url.endsWith("/api/assets/delete"),
+            );
+            reqDel.flush(deleteProto.slice().buffer);
+          });
+          const reqRn = httpMock.expectOne((r) =>
+            r.url.endsWith("/api/assets/rename"),
+          );
+          reqRn.flush(renameProto.slice().buffer);
+        });
+
+      const reqUp = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/assets/upload"),
+      );
+      reqUp.flush(uploadProto.slice().buffer);
+    });
+
+    it("should handle saveImageSet and saveAudioSet", (done) => {
+      const imageSetProto = SaveImageSetResponse.encode({
+        success: true,
+        asset: {
+          model: { entityId: "set1" },
+          name: "Flag Set",
+          type: "image-set",
+        },
+      }).finish();
+
+      const audioSetProto = SaveAudioSetResponse.encode({
+        success: true,
+        asset: {
+          model: { entityId: "set2" },
+          name: "Beep Set",
+          type: "audio-set",
+        },
+      }).finish();
+
+      service
+        .saveImageSet("Flag Set", [{ name: "green.png", percentage: 100 }])
+        .subscribe((imgRes) => {
+          expect(imgRes.name).toBe("Flag Set");
+          service
+            .saveAudioSet("Beep Set", [{ name: "lap.wav", timeSeconds: 1.5 }])
+            .subscribe((audRes) => {
+              expect(audRes.name).toBe("Beep Set");
+              done();
+            });
+          const reqAud = httpMock.expectOne((r) =>
+            r.url.endsWith("/api/assets/save-audio-set"),
+          );
+          reqAud.flush(audioSetProto.slice().buffer);
+        });
+
+      const reqImg = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/assets/save-image-set"),
+      );
+      reqImg.flush(imageSetProto.slice().buffer);
+    });
+  });
+
+  describe("Heat Operations & In-Race Manipulation", () => {
+    it("should handle skipRace and deferHeat commands", (done) => {
+      const skipRaceProto = SkipRaceResponse.encode({ success: true }).finish();
+      const deferHeatProto = DeferHeatResponse.encode({
+        success: true,
+      }).finish();
+
+      service.skipRace().subscribe((sRace) => {
+        expect(sRace).toBeTrue();
+        service.deferHeat().subscribe((dHeat) => {
+          expect(dHeat).toBeTrue();
+          done();
+        });
+        const reqDefer = httpMock.expectOne((r) =>
+          r.url.endsWith("/api/defer-heat"),
+        );
+        reqDefer.flush(deferHeatProto.slice().buffer);
+      });
+
+      const reqSkip = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/skip-race"),
+      );
+      reqSkip.flush(skipRaceProto.slice().buffer);
+    });
+
+    it("should handle modifyHeats, regenerateHeats, and finalizeModifyHeats", (done) => {
+      const modProto = ModifyHeatsResponse.encode({ success: true }).finish();
+      const regenProto = RegenerateHeatsResponse.encode({
+        success: true,
+      }).finish();
+
+      service.modifyHeats([], []).subscribe((modRes) => {
+        expect(modRes.success).toBeTrue();
+        service.regenerateHeats([]).subscribe((regenRes) => {
+          expect(regenRes.success).toBeTrue();
+          service.finalizeModifyHeats().subscribe((fin) => {
+            expect(fin).toBe("OK");
+            done();
+          });
+          const reqFin = httpMock.expectOne((r) =>
+            r.url.endsWith("/api/finalize-modify-heats"),
+          );
+          reqFin.flush("OK");
+        });
+        const reqRegen = httpMock.expectOne((r) =>
+          r.url.endsWith("/api/regenerate-heats"),
+        );
+        reqRegen.flush(regenProto.slice().buffer);
+      });
+
+      const reqMod = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/modify-heats"),
+      );
+      reqMod.flush(modProto.slice().buffer);
+    });
+
+    it("should handle driver substitution and lap update commands", (done) => {
+      service.changeActualDriver(0, "d_new").subscribe((r1) => {
+        expect(r1).toBeTrue();
+        service.changeActualDriverForHeat(1, 0, "d_new").subscribe((r2) => {
+          expect(r2).toBeTrue();
+          service.resetLaneHeatData(0).subscribe((r3) => {
+            expect(r3).toBeTrue();
+            service.updateUserLaps(0, 5).subscribe((r4) => {
+              expect(r4.success).toBeTrue();
+              service
+                .updateBatchUserLaps([
+                  { heatNumber: 1, laneIndex: 0, userLaps: 6 },
+                ])
+                .subscribe((r5) => {
+                  expect(r5.success).toBeTrue();
+                  done();
+                });
+              const req5 = httpMock.expectOne((r) =>
+                r.url.endsWith("/api/races/heats/user-laps/batch"),
+              );
+              req5.flush({ success: true });
+            });
+            const req4 = httpMock.expectOne((r) =>
+              r.url.endsWith("/api/races/current-heat/drivers/0/user-laps"),
+            );
+            req4.flush({ success: true });
+          });
+          const req3 = httpMock.expectOne((r) =>
+            r.url.endsWith("/api/races/current-heat/drivers/0/reset"),
+          );
+          req3.flush({ success: true });
+        });
+        const req2 = httpMock.expectOne((r) =>
+          r.url.endsWith("/api/races/heats/1/drivers/0/actual-driver"),
+        );
+        req2.flush({ success: true });
+      });
+
+      const req1 = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/races/current-heat/drivers/0/actual-driver"),
+      );
+      req1.flush({ success: true });
+    });
+  });
+
+  describe("Hardware Configuration & Custom Rotations", () => {
+    it("should get Phidget devices and close interface", (done) => {
+      const phidgetProto = GetPhidgetDevicesResponse.encode({
+        devices: [
+          {
+            serialNumber: 12345,
+            name: "Phidget InterfaceKit",
+            digitalInputCount: 8,
+            digitalOutputCount: 8,
+          },
+        ],
+      }).finish();
+
+      service.getPhidgetDevices().subscribe((devices) => {
+        expect(devices.length).toBe(1);
+        expect(devices[0].serialNumber).toBe(12345);
+        service.closeInterface().subscribe((res) => {
+          expect(res.success).toBeTrue();
+          done();
+        });
+        const reqClose = httpMock.expectOne((r) =>
+          r.url.endsWith("/api/close-interface"),
+        );
+        reqClose.flush({ success: true });
+      });
+
+      const reqPhidget = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/phidgets"),
+      );
+      reqPhidget.flush(phidgetProto.slice().buffer);
+    });
+
+    it("should update interface configs for Phidget and Arduino", (done) => {
+      const updateProto = UpdateInterfaceConfigResponse.encode({
+        success: true,
+      }).finish();
+
+      const phidgetConfig: PhidgetConfig = {
+        name: "Phidget Hub",
+        serialNumber: 123456,
+        isHubPort: false,
+        hubPort: 0,
+        normallyClosedLaneSensors: false,
+        normallyClosedRelays: false,
+        useLapsForSegments: false,
+        lapPinPitBehavior: 0,
+        digitalInIds: [],
+        digitalOutIds: [],
+        analogIds: [],
+      };
+
+      service
+        .updateInterfaceConfig(null, 0, phidgetConfig)
+        .subscribe((res1) => {
+          expect(res1.success).toBeTrue();
+          done();
+        });
+
+      const req1 = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/update-interface-config"),
+      );
+      req1.flush(updateProto.slice().buffer);
+    });
+
+    it("should save custom rotation and generate heats", (done) => {
+      const customRotProto = SaveCustomRotationResponse.encode({
+        success: true,
+        asset: {
+          model: { entityId: "rot1" },
+          name: "Custom 4 Lane",
+          type: "rotation",
+        },
+      }).finish();
+
+      service
+        .saveCustomRotation("Custom 4 Lane", 4, [
+          {
+            numDrivers: 4,
+            heats: [{ driverIndices: [0, 1, 2, 3], group: 1 }],
+          },
+        ])
+        .subscribe((res) => {
+          expect(res.name).toBe("Custom 4 Lane");
+          service.generateHeats("race1", 4).subscribe((heatsRes) => {
+            expect(heatsRes.length).toBe(4);
+            done();
+          });
+          const reqGen = httpMock.expectOne((r) =>
+            r.url.endsWith("/api/races/race1/generate-heats"),
+          );
+          expect(reqGen.request.method).toBe("POST");
+          expect(reqGen.request.body).toEqual({ driverCount: 4 });
+          reqGen.flush([{}, {}, {}, {}]);
+        });
+
+      const reqRot = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/assets/save-custom-rotation"),
+      );
+      reqRot.flush(customRotProto.slice().buffer);
+    });
+  });
+
+  describe("Saved Race Operations and Analytics API", () => {
+    it("should handle saveRace, getSavedRaces, loadRace, and deleteSavedRace", (done) => {
+      service.saveRace().subscribe((sRes) => {
+        expect(sRes).toBe("saved_race.json");
+        service.getSavedRaces(false).subscribe((races) => {
+          expect(races.length).toBe(1);
+          expect(races[0].filename).toBe("saved_race.json");
+          service.loadRace("saved_race.json", false).subscribe((loadRes) => {
+            expect(loadRes).toBe("OK");
+            service
+              .deleteSavedRace("saved_race.json", false)
+              .subscribe((delRes) => {
+                expect(delRes).toBe("DELETED");
+                done();
+              });
+            const reqDel = httpMock.expectOne((r) =>
+              r.url.endsWith("/api/saved-races/saved_race.json"),
+            );
+            expect(reqDel.request.method).toBe("DELETE");
+            reqDel.flush("DELETED");
+          });
+          const reqLoad = httpMock.expectOne((r) =>
+            r.url.endsWith("/api/load-race"),
+          );
+          expect(reqLoad.request.body).toEqual({
+            filename: "saved_race.json",
+            isDemo: false,
+          });
+          reqLoad.flush("OK");
+        });
+        const reqList = httpMock.expectOne((r) =>
+          r.url.endsWith("/api/saved-races"),
+        );
+        reqList.flush([{ filename: "saved_race.json", corrupt: false }]);
+      });
+
+      const reqSave = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/save-race"),
+      );
+      reqSave.flush("saved_race.json");
+    });
+
+    it("should handle analytics toggling and querying driver & global statistics", (done) => {
+      service.toggleServerAnalytics(true).subscribe((tRes) => {
+        expect(tRes).toBe("ENABLED");
+        service.getServerAnalyticsConfig().subscribe((cfg) => {
+          expect(cfg.measurementId).toBe("G-12345");
+          service.getDriverStatistics("d1", "r1", false).subscribe((stats) => {
+            expect(stats.totalLaps).toBe(50);
+            service.getGlobalStatistics("r1", false).subscribe((gStats) => {
+              expect(gStats.totalRaces).toBe(10);
+              done();
+            });
+            const reqGlob = httpMock.expectOne((r) =>
+              r.url.includes("/api/history/stats?raceId=r1&isDemo=false"),
+            );
+            reqGlob.flush({ totalRaces: 10 });
+          });
+          const reqDriver = httpMock.expectOne((r) =>
+            r.url.includes(
+              "/api/history/drivers/d1/stats?raceId=r1&isDemo=false",
+            ),
+          );
+          reqDriver.flush({ totalLaps: 50 });
+        });
+        const reqCfg = httpMock.expectOne((r) =>
+          r.url.endsWith("/api/analytics/config"),
+        );
+        reqCfg.flush({ clientId: "c1", measurementId: "G-12345" });
+      });
+
+      const reqToggle = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/analytics/toggle"),
+      );
+      reqToggle.flush("ENABLED");
+    });
+
+    it("should handle changeLane endpoint", (done) => {
+      service.changeLane(0, 1).subscribe((res) => {
+        expect(res).toBeTrue();
+        done();
+      });
+
+      const req = httpMock.expectOne((r) =>
+        r.url.endsWith("/api/races/current-heat/drivers/0/change-lane/1"),
+      );
+      expect(req.request.method).toBe("POST");
+      req.flush("OK");
+    });
+  });
+
+  describe("WebSocket Telemetry Stream Handlers & Getters", () => {
+    it("should dispatch received race data message to all observable streams", (done) => {
+      const mockRaceData = RaceData.encode({
+        raceTime: { time: 123456 },
+        lap: { driverId: "d1", lapTime: 4.5 },
+        standingsUpdate: { updates: [] },
+        overallStandingsUpdate: { participants: [] },
+        groupStandingsUpdate: { group: 1 },
+        raceState: RaceState.RACING,
+        race: { state: RaceState.RACING, flag: RaceFlag.GREEN },
+        carData: { lane: 1, fuelLevel: 100 },
+        segment: { segmentNumber: 1, segmentTime: 2.1 },
+        flag: RaceFlag.GREEN,
+        recordData: { overall: { fastestLap: { value: 3.2 } } },
+        heat: { heatNumber: 1 },
+        systemState: { resourceLockState: "ACTIVE" },
+      }).finish();
+
+      service.getRaceTime().subscribe((t) => {
+        if (t.time === 123456) {
+          expect(t.time).toBe(123456);
+        }
+      });
+      service.getLaps().subscribe((l) => {
+        if (l.driverId === "d1") {
+          expect(l.driverId).toBe("d1");
+        }
+      });
+      service.getRaceState().subscribe((st) => {
+        if (st === RaceState.RACING) {
+          expect(st).toBe(RaceState.RACING);
+        }
+      });
+      service.getSystemState().subscribe((ss) => {
+        if (ss?.resourceLockState === "ACTIVE") {
+          expect(service.getSystemStateValue()?.resourceLockState).toBe(
+            "ACTIVE",
+          );
+          done();
+        }
+      });
+
+      // Invoke private handler with binary message
+      (service as any).handleRaceDataMessage({
+        data: mockRaceData.slice().buffer,
+      });
+    });
+
+    it("should expose interfaceEvents observable stream", (done) => {
+      const mockInterfaceEvent = InterfaceEvent.encode({
+        digitalPin: {
+          pin: 3,
+          state: 1,
+        },
+      }).finish();
+
+      service.getInterfaceEvents().subscribe((ev) => {
+        expect(ev.digitalPin?.pin).toBe(3);
+        done();
+      });
+
+      (service as any).interfaceEventSubject.next(
+        InterfaceEvent.decode(mockInterfaceEvent.slice()),
+      );
     });
   });
 });

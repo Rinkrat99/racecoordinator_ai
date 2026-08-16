@@ -788,4 +788,121 @@ describe("TrackEditorComponent", () => {
       expect((component as any).subscriptions.length).toBe(0);
     });
   });
+
+  describe("Undo/Redo, Lane Reordering, Config Equality, and Discard Flow", () => {
+    it("should undo and redo track state changes via undoManager", () => {
+      const track1 = new Track({
+        entity_id: "t1",
+        name: "Original Track",
+        lanes: [],
+      });
+      const track2 = new Track({
+        entity_id: "t1",
+        name: "Renamed Track",
+        lanes: [],
+      });
+      component.editingTrack = track1;
+      component.trackName = "Original Track";
+      component.undoManager.initialize(track1);
+
+      component.editingTrack = track2;
+      component.trackName = "Renamed Track";
+      (component.undoManager as any).commitChange();
+      expect(component.undoManager.canUndo()).toBeTrue();
+
+      component.undo();
+      expect(component.trackName).toBe("Original Track");
+      expect(component.undoManager.canRedo()).toBeTrue();
+
+      component.redo();
+      expect(component.trackName).toBe("Renamed Track");
+    });
+
+    it("should handle lane drop reordering and update Arduino pin configurations", () => {
+      component.lanes = [
+        new Lane("0", "#FF0000", "#FFFFFF", 50),
+        new Lane("1", "#00FF00", "#FFFFFF", 50),
+        new Lane("2", "#0000FF", "#FFFFFF", 50),
+      ];
+      component.arduinoConfigs = [
+        {
+          name: "Test Arduino",
+          commPort: "/dev/ttyUSB0",
+          baudRate: 115200,
+          debounceUs: 100,
+          hardwareType: 0,
+          normallyClosedLaneSensors: false,
+          normallyClosedRelays: false,
+          globalInvertLights: 0,
+          usePitsAsLaps: false,
+          useLapsForSegments: false,
+          lapPinPitBehavior: 0,
+          digitalIds: [1000, 1001, 1002], // lap pins for lanes 0, 1, 2
+          analogIds: [],
+          ledStrings: [],
+          voltageConfigs: { 0: 12, 1: 14, 2: 16 },
+        },
+      ];
+
+      const dropEvent = {
+        previousIndex: 0,
+        currentIndex: 2,
+      } as any;
+
+      component.onLaneDropped(dropEvent);
+      expect(component.lanes.length).toBe(3);
+      expect(component.arduinoConfigs[0].digitalIds[0]).toBe(1002);
+      expect(component.arduinoConfigs[0].voltageConfigs?.[2]).toBe(12);
+    });
+
+    it("should evaluate config equality for Arduino, Trackmate, and Phidget", () => {
+      const ac1 = { name: "A1", digitalIds: [1, 2] } as any;
+      const ac2 = { name: "A1", digitalIds: [1, 2] } as any;
+      const ac3 = { name: "A2", digitalIds: [1, 2] } as any;
+      expect(
+        (component as any).areArduinoConfigsEqual([ac1], [ac2]),
+      ).toBeTrue();
+      expect(
+        (component as any).areArduinoConfigsEqual([ac1], [ac3]),
+      ).toBeFalse();
+
+      const tc1 = { name: "T1", digitalIds: [1] } as any;
+      const tc2 = { name: "T1", digitalIds: [1] } as any;
+      expect(
+        (component as any).areTrackmateConfigsEqual([tc1], [tc2]),
+      ).toBeTrue();
+
+      const pc1 = { name: "P1", serialNumber: 123 } as any;
+      const pc2 = { name: "P1", serialNumber: 123 } as any;
+      expect(
+        (component as any).arePhidgetConfigsEqual([pc1], [pc2]),
+      ).toBeTrue();
+    });
+
+    it("should handle discard confirmation modal resolution", fakeAsync(() => {
+      let resolvedValue: boolean | undefined;
+      component.confirmDiscard().then((val) => (resolvedValue = val));
+      expect(component.showDiscardConfirm).toBeTrue();
+
+      component.onConfirmDiscard();
+      tick();
+      expect(component.showDiscardConfirm).toBeFalse();
+      expect(resolvedValue).toBeTrue();
+
+      component.confirmDiscard().then((val) => (resolvedValue = val));
+      component.onCancelDiscard();
+      tick();
+      expect(resolvedValue).toBeFalse();
+    }));
+
+    it("should generate help guide steps and expand required sections", () => {
+      component.sectionsExpanded.lanes = false;
+      component.sectionsExpanded.interfaces = false;
+      component.updateHelpSteps();
+      expect(component.helpSteps.length).toBeGreaterThan(5);
+
+      (component as any).ensureSectionsExpandedForHelp();
+      expect(component.sectionsExpanded.interfaces).toBeTrue();
+    });
+  });
 });

@@ -98,4 +98,93 @@ public class RaceHeatTaskHandlerTest {
     List<?> result = handler.parseCustomRotations(rawList);
     assertNotNull(result);
   }
+
+  @org.junit.Rule
+  public org.junit.rules.TemporaryFolder tempFolder = new org.junit.rules.TemporaryFolder();
+
+  @Test
+  public void testRaceCrudWithRealDatabase() throws Exception {
+    String rootDir =
+        tempFolder.newFolder("db_root_race").getAbsolutePath() + java.io.File.separator;
+    DatabaseContext dbCtx = new DatabaseContext("test_db", null, rootDir);
+    Javalin app = mock(Javalin.class);
+    RaceHeatTaskHandler realHandler = new RaceHeatTaskHandler(dbCtx, app);
+
+    try {
+      // 1. Create Track for Race
+      com.antigravity.repository.SqliteRepository<com.antigravity.models.Track> trackRepo =
+          new com.antigravity.repository.SqliteRepository<>(
+              dbCtx, "tracks", com.antigravity.models.Track.class);
+      com.antigravity.models.Track track =
+          new com.antigravity.models.Track.Builder()
+              .name("Main Track")
+              .entityId("t1")
+              .lanes(
+                  java.util.Arrays.asList(
+                      new com.antigravity.models.Lane("#FFFFFF", "#FF0000", 50),
+                      new com.antigravity.models.Lane("#FFFFFF", "#00FF00", 50)))
+              .build();
+      trackRepo.insert(track);
+
+      // 2. Create Race
+      Context ctxCreate = mock(Context.class);
+      when(ctxCreate.body())
+          .thenReturn(
+              "{\"name\":\"Formula 1\",\"track_entity_id\":\"t1\",\"heat_rotation_type\":\"RoundRobin\",\"entity_id\":\"new\"}");
+      when(ctxCreate.status(org.mockito.ArgumentMatchers.anyInt())).thenReturn(ctxCreate);
+      realHandler.handleCreateRace(ctxCreate);
+      verify(ctxCreate).status(201);
+
+      // 3. Get Races
+      Context ctxGet = mock(Context.class);
+      realHandler.getRaces(ctxGet);
+      verify(ctxGet).json(org.mockito.ArgumentMatchers.any());
+
+      // 4. Update Race
+      Context ctxUpdate = mock(Context.class);
+      when(ctxUpdate.pathParam("id")).thenReturn("1");
+      when(ctxUpdate.body())
+          .thenReturn(
+              "{\"name\":\"Formula 1 World Championship\",\"track_entity_id\":\"t1\",\"heat_rotation_type\":\"RoundRobin\",\"entity_id\":\"1\"}");
+      realHandler.handleUpdateRace(ctxUpdate);
+      verify(ctxUpdate).json(org.mockito.ArgumentMatchers.any());
+
+      // 5. Generate Heats
+      Context ctxGen = mock(Context.class);
+      when(ctxGen.pathParam("id")).thenReturn("1");
+      Map<String, Number> genBody = new HashMap<>();
+      genBody.put("driverCount", 4);
+      when(ctxGen.bodyAsClass(Map.class)).thenReturn(genBody);
+      realHandler.generateHeats(ctxGen);
+      verify(ctxGen).json(org.mockito.ArgumentMatchers.any());
+
+      // 6. Reset Race
+      Context ctxReset = mock(Context.class);
+      when(ctxReset.pathParam("id")).thenReturn("1");
+      when(ctxReset.status(org.mockito.ArgumentMatchers.anyInt())).thenReturn(ctxReset);
+      realHandler.handleResetRace(ctxReset);
+      verify(ctxReset).status(204);
+
+      // 7. Preview Heats
+      Context ctxPreview = mock(Context.class);
+      Map<String, Object> prevBody = new HashMap<>();
+      prevBody.put("driverCount", 4);
+      prevBody.put("trackId", "t1");
+      prevBody.put("rotationType", "RoundRobin");
+      when(ctxPreview.bodyAsClass(Map.class)).thenReturn(prevBody);
+      realHandler.previewHeats(ctxPreview);
+      verify(ctxPreview).json(org.mockito.ArgumentMatchers.any());
+
+      // 8. Delete Race
+      Context ctxDelete = mock(Context.class);
+      when(ctxDelete.pathParam("id")).thenReturn("1");
+      when(ctxDelete.status(org.mockito.ArgumentMatchers.anyInt())).thenReturn(ctxDelete);
+      realHandler.handleDeleteRace(ctxDelete);
+      verify(ctxDelete).status(204);
+    } finally {
+      if (dbCtx.getConnection() != null) {
+        dbCtx.getConnection().close();
+      }
+    }
+  }
 }

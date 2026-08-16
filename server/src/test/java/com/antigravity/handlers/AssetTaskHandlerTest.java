@@ -92,4 +92,114 @@ public class AssetTaskHandlerTest {
     handler.saveAudioSet(ctx);
     verify(handler).setResult(any(), any(byte[].class));
   }
+
+  private void invoke(AssetTaskHandler handler, String methodName, Context ctx) throws Exception {
+    java.lang.reflect.Method m =
+        AssetTaskHandler.class.getDeclaredMethod(methodName, Context.class);
+    m.setAccessible(true);
+    m.invoke(handler, ctx);
+  }
+
+  @Test
+  public void testListAssets() throws Exception {
+    AssetService assetService = handler.getAssetService();
+    when(assetService.getAllAssets()).thenReturn(java.util.Collections.emptyList());
+
+    invoke(handler, "listAssets", ctx);
+    verify(handler).setResult(eq(ctx), any(byte[].class));
+  }
+
+  @Test
+  public void testUploadAsset() throws Exception {
+    com.antigravity.proto.UploadAssetRequest req =
+        com.antigravity.proto.UploadAssetRequest.newBuilder()
+            .setName("sample.png")
+            .setType("image")
+            .setData(com.google.protobuf.ByteString.copyFromUtf8("fake_image_bytes"))
+            .build();
+    org.mockito.Mockito.doReturn(req.toByteArray()).when(handler).getBodyBytes(any());
+
+    AssetService assetService = handler.getAssetService();
+    when(assetService.saveAsset(anyString(), anyString(), any()))
+        .thenReturn(AssetMessage.newBuilder().setName("sample.png").build());
+
+    invoke(handler, "uploadAsset", ctx);
+    verify(handler).setResult(eq(ctx), any(byte[].class));
+  }
+
+  @Test
+  public void testDeleteAsset() throws Exception {
+    com.antigravity.proto.DeleteAssetRequest req =
+        com.antigravity.proto.DeleteAssetRequest.newBuilder().setId("asset_123").build();
+    org.mockito.Mockito.doReturn(req.toByteArray()).when(handler).getBodyBytes(any());
+
+    AssetService assetService = handler.getAssetService();
+    when(assetService.deleteAsset("asset_123")).thenReturn(true);
+
+    handler.deleteAsset(ctx);
+    verify(handler).setResult(eq(ctx), any(byte[].class));
+  }
+
+  @Test
+  public void testRenameAsset() throws Exception {
+    com.antigravity.proto.RenameAssetRequest req =
+        com.antigravity.proto.RenameAssetRequest.newBuilder()
+            .setId("asset_123")
+            .setNewName("renamed.png")
+            .build();
+    org.mockito.Mockito.doReturn(req.toByteArray()).when(handler).getBodyBytes(any());
+
+    AssetService assetService = handler.getAssetService();
+    when(assetService.renameAsset("asset_123", "renamed.png")).thenReturn(true);
+
+    invoke(handler, "renameAsset", ctx);
+    verify(handler).setResult(eq(ctx), any(byte[].class));
+  }
+
+  @Test
+  public void testSaveImageSet() throws Exception {
+    com.antigravity.proto.SaveImageSetRequest req =
+        com.antigravity.proto.SaveImageSetRequest.newBuilder().setName("Sample Set").build();
+    org.mockito.Mockito.doReturn(req.toByteArray()).when(handler).getBodyBytes(any());
+
+    AssetService assetService = handler.getAssetService();
+    when(assetService.saveImageSet(any(), anyString(), any()))
+        .thenReturn(AssetMessage.newBuilder().build());
+
+    invoke(handler, "saveImageSet", ctx);
+    verify(handler).setResult(eq(ctx), any(byte[].class));
+  }
+
+  @Test
+  public void testSaveCustomRotation() throws Exception {
+    com.antigravity.proto.SaveCustomRotationRequest req =
+        com.antigravity.proto.SaveCustomRotationRequest.newBuilder()
+            .setName("4-Lane Rotation")
+            .build();
+    org.mockito.Mockito.doReturn(req.toByteArray()).when(handler).getBodyBytes(any());
+
+    AssetService assetService = handler.getAssetService();
+    when(assetService.saveCustomRotation(
+            any(), anyString(), org.mockito.ArgumentMatchers.anyInt(), any()))
+        .thenReturn(AssetMessage.newBuilder().build());
+
+    invoke(handler, "saveCustomRotation", ctx);
+    verify(handler).setResult(eq(ctx), any(byte[].class));
+  }
+
+  @Test
+  public void testServeFile_DirectoryTraversalBlocked() throws Exception {
+    org.mockito.Mockito.doReturn("../secret.txt").when(handler).getPathParam(ctx, "filename");
+
+    invoke(handler, "serveAsset", ctx);
+    verify(handler).setStatus(eq(ctx), eq(403));
+  }
+
+  @Test
+  public void testServeFile_NotFound() throws Exception {
+    org.mockito.Mockito.doReturn("nonexistent.png").when(handler).getPathParam(ctx, "filename");
+
+    invoke(handler, "serveAsset", ctx);
+    verify(handler).setStatus(eq(ctx), eq(404));
+  }
 }
