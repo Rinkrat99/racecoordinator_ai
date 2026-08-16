@@ -190,4 +190,14 @@ public class HistoryPredictionTaskHandlerTest {
 
     assertTrue(handler.isStalePredictionRecord(mockDbCtx, record, null, false));
   }
+
+  @Test
+  public void testIsDriverTrackStatsUpdated_NullConditions() {
+    assertFalse(handler.isDriverTrackStatsUpdated(null, null, null, false));
+    assertFalse(handler.isDriverTrackStatsUpdated(mockDbCtx, null, null, false));
+
+    com.antigravity.race.Race mockActiveRace = mock(com.antigravity.race.Race.class);
+    when(mockActiveRace.getRaceModel()).thenReturn(null);
+    assertFalse(handler.isDriverTrackStatsUpdated(mockDbCtx, null, mockActiveRace, false));
+  }
 }

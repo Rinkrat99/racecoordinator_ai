@@ -124,4 +124,76 @@ public class RaceExportSaveHandlerTest {
     org.junit.Assert.assertNotNull(nullSegments.getSegments());
     org.junit.Assert.assertTrue(nullSegments.getSegments().isEmpty());
   }
+
+  @Test
+  public void testExportCsv_WithActiveRace() {
+    com.antigravity.models.Driver d1 =
+        new com.antigravity.models.Driver("Alice", "Ally", "d1", "1");
+    com.antigravity.race.RaceParticipant p1 = new com.antigravity.race.RaceParticipant(d1);
+
+    com.antigravity.models.Lane lane = new com.antigravity.models.Lane("red", "black", 100);
+    com.antigravity.models.Track track =
+        new com.antigravity.models.Track.Builder()
+            .name("Track 1")
+            .lanes(java.util.Collections.singletonList(lane))
+            .build();
+
+    com.antigravity.models.Race model =
+        new com.antigravity.models.Race.Builder()
+            .withName("Active Race")
+            .withEntityId("r1")
+            .build();
+
+    com.antigravity.race.Race activeRace =
+        new com.antigravity.race.Race.Builder()
+            .model(model)
+            .drivers(java.util.Collections.singletonList(p1))
+            .track(track)
+            .isDemoMode(true)
+            .build();
+
+    ClientSubscriptionManager.getInstance().setRace(activeRace);
+
+    handler.exportRaceCsv(ctx);
+    verify(ctx).contentType("text/csv");
+  }
+
+  @Test
+  public void testSaveAndLoadRace_RoundTrip() {
+    com.antigravity.models.Driver d1 =
+        new com.antigravity.models.Driver("Alice", "Ally", "d1", "1");
+    com.antigravity.race.RaceParticipant p1 = new com.antigravity.race.RaceParticipant(d1);
+
+    com.antigravity.models.Lane lane = new com.antigravity.models.Lane("red", "black", 100);
+    com.antigravity.models.Track track =
+        new com.antigravity.models.Track.Builder()
+            .name("Track 1")
+            .lanes(java.util.Collections.singletonList(lane))
+            .build();
+
+    com.antigravity.models.Race model =
+        new com.antigravity.models.Race.Builder()
+            .withName("Saved Race")
+            .withEntityId("r_saved")
+            .build();
+
+    com.antigravity.race.Race activeRace =
+        new com.antigravity.race.Race.Builder()
+            .model(model)
+            .drivers(java.util.Collections.singletonList(p1))
+            .track(track)
+            .isDemoMode(true)
+            .build();
+
+    ClientSubscriptionManager.getInstance().setRace(activeRace);
+
+    handler.saveRace(ctx);
+    verify(ctx).status(200);
+
+    // Now get saved races
+    io.javalin.http.Context getCtx = mock(io.javalin.http.Context.class);
+    when(getCtx.contentType(any(String.class))).thenReturn(getCtx);
+    handler.getSavedRaces(getCtx);
+    verify(getCtx).contentType("application/json");
+  }
 }

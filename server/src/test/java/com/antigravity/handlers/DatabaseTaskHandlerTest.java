@@ -364,6 +364,23 @@ public class DatabaseTaskHandlerTest {
       invoke(handler, "updateDriver", ctxUpdate);
       org.mockito.Mockito.verify(ctxUpdate).json(any());
 
+      // Create Driver 2
+      io.javalin.http.Context ctxD2 = mock(io.javalin.http.Context.class);
+      when(ctxD2.body())
+          .thenReturn("{\"name\":\"George Russell\",\"nickname\":\"GR63\",\"entity_id\":\"new\"}");
+      when(ctxD2.status(anyInt())).thenReturn(ctxD2);
+      invoke(handler, "createDriver", ctxD2);
+      org.mockito.Mockito.verify(ctxD2).status(201);
+
+      // Update Driver 1 with Driver 2's name -> should 409
+      io.javalin.http.Context ctxUpdateDup = mock(io.javalin.http.Context.class);
+      when(ctxUpdateDup.pathParam("id")).thenReturn("1");
+      when(ctxUpdateDup.body())
+          .thenReturn("{\"name\":\"George Russell\",\"nickname\":\"LH44\",\"entity_id\":\"1\"}");
+      when(ctxUpdateDup.status(anyInt())).thenReturn(ctxUpdateDup);
+      invoke(handler, "updateDriver", ctxUpdateDup);
+      org.mockito.Mockito.verify(ctxUpdateDup).status(409);
+
       // 4. Delete Driver
       io.javalin.http.Context ctxDelete = mock(io.javalin.http.Context.class);
       when(ctxDelete.pathParam("id")).thenReturn("1");

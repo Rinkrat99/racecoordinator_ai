@@ -280,4 +280,44 @@ public class RaceControlHandlerTest {
     handler.regenerateHeats(ctx);
     handler.finalizeModifyHeats(ctx);
   }
+
+  @Test
+  public void testModifyAndRegenerateHeats_WithActiveRace() throws Exception {
+    Driver d1 = new Driver("D1", "D1", "d1", null);
+    RaceParticipant rp1 = new RaceParticipant(d1);
+    Track track =
+        new Track.Builder()
+            .name("Track 1")
+            .lanes(java.util.Collections.singletonList(new Lane("red", "black", 100)))
+            .build();
+    Race model = new Race.Builder().withName("Active Race").withEntityId("r1").build();
+
+    com.antigravity.race.Race activeRace =
+        new com.antigravity.race.Race.Builder()
+            .model(model)
+            .drivers(java.util.Collections.singletonList(rp1))
+            .track(track)
+            .isDemoMode(true)
+            .build();
+
+    ClientSubscriptionManager.getInstance().setRace(activeRace);
+
+    // Modify heats
+    com.antigravity.proto.ModifyHeatsRequest modReq =
+        com.antigravity.proto.ModifyHeatsRequest.getDefaultInstance();
+    io.javalin.http.Context ctxMod = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(ctxMod.bodyAsBytes()).thenReturn(modReq.toByteArray());
+    when(ctxMod.contentType(org.mockito.ArgumentMatchers.anyString())).thenReturn(ctxMod);
+    handler.modifyHeats(ctxMod);
+    org.mockito.Mockito.verify(ctxMod).result(org.mockito.ArgumentMatchers.any(byte[].class));
+
+    // Regenerate heats
+    com.antigravity.proto.RegenerateHeatsRequest regenReq =
+        com.antigravity.proto.RegenerateHeatsRequest.getDefaultInstance();
+    io.javalin.http.Context ctxRegen = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(ctxRegen.bodyAsBytes()).thenReturn(regenReq.toByteArray());
+    when(ctxRegen.contentType(org.mockito.ArgumentMatchers.anyString())).thenReturn(ctxRegen);
+    handler.regenerateHeats(ctxRegen);
+    org.mockito.Mockito.verify(ctxRegen).result(org.mockito.ArgumentMatchers.any(byte[].class));
+  }
 }

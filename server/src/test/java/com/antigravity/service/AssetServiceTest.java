@@ -110,4 +110,68 @@ public class AssetServiceTest {
     assertNotNull(audioSet);
     org.junit.Assert.assertEquals("Test Audio Set", audioSet.getName());
   }
+
+  @Test
+  public void testSaveCustomRotation() throws Exception {
+    com.antigravity.proto.CustomHeat heat =
+        com.antigravity.proto.CustomHeat.newBuilder()
+            .addAllDriverIndices(java.util.Arrays.asList(0, 1))
+            .setGroup(1)
+            .build();
+
+    com.antigravity.proto.CustomRotation rot =
+        com.antigravity.proto.CustomRotation.newBuilder().setNumDrivers(2).addHeats(heat).build();
+
+    AssetMessage rotAsset =
+        assetService.saveCustomRotation(
+            null, "Custom 2 Lane", 2, java.util.Collections.singletonList(rot));
+    assertNotNull(rotAsset);
+    org.junit.Assert.assertEquals("Custom 2 Lane", rotAsset.getName());
+  }
+
+  @Test
+  public void testHumanReadableByteCountBin() {
+    org.junit.Assert.assertEquals("0 B", AssetService.humanReadableByteCountBin(0));
+    org.junit.Assert.assertEquals("500 B", AssetService.humanReadableByteCountBin(500));
+    org.junit.Assert.assertEquals("1.0 KiB", AssetService.humanReadableByteCountBin(1024));
+    org.junit.Assert.assertEquals("1.0 MiB", AssetService.humanReadableByteCountBin(1048576));
+    org.junit.Assert.assertEquals("-1 B", AssetService.humanReadableByteCountBin(-1));
+  }
+
+  @Test
+  public void testSaveImageSetAndAudioSet_WithByteData_AndReset() throws Exception {
+    com.google.protobuf.ByteString bytes =
+        com.google.protobuf.ByteString.copyFromUtf8("image and audio binary data");
+
+    com.antigravity.proto.SaveImageSetEntry imgEntry =
+        com.antigravity.proto.SaveImageSetEntry.newBuilder()
+            .setName("flag.png")
+            .setPercentage(100)
+            .setData(bytes)
+            .build();
+
+    AssetMessage imgSet =
+        assetService.saveImageSet(null, "Flag Set", java.util.Collections.singletonList(imgEntry));
+    assertNotNull(imgSet);
+
+    com.antigravity.proto.SaveAudioSetEntry audioEntry =
+        com.antigravity.proto.SaveAudioSetEntry.newBuilder()
+            .setName("beep.wav")
+            .setTimeSeconds(1)
+            .setData(bytes)
+            .build();
+
+    AssetMessage audioSet =
+        assetService.saveAudioSet(
+            null, "Beep Set", java.util.Collections.singletonList(audioEntry));
+    assertNotNull(audioSet);
+
+    // Delete sets to exercise physical file cleanup loops
+    assetService.deleteAsset(imgSet.getModel().getEntityId());
+    assetService.deleteAsset(audioSet.getModel().getEntityId());
+
+    // Backfill default theme and reset
+    assetService.backfillDefaultTheme();
+    assetService.resetAssets();
+  }
 }

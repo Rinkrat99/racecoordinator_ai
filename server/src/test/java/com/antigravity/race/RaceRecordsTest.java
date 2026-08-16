@@ -530,4 +530,27 @@ public class RaceRecordsTest {
     assertEquals(4.5, recordData.getOverall().getHighestScore().getValue(), 0.001);
     assertEquals("D0", recordData.getOverall().getHighestScore().getHolderName());
   }
+
+  @Test
+  public void testLaneRecordsUpdate() {
+    race.changeState(new Racing());
+
+    DriverHeatData dhd0 = race.getCurrentHeat().getDrivers().get(0);
+    dhd0.addLap(4.2, false, true);
+    race.getRecordsManager().onLap(dhd0, 4.2, 0);
+
+    DriverHeatData dhd1 = race.getCurrentHeat().getDrivers().get(1);
+    dhd1.addLap(4.8, false, true);
+    race.getRecordsManager().onLap(dhd1, 4.8, 1);
+
+    RecordData data = race.getRecordData();
+    assertNotNull(data.getCurrent());
+    assertTrue(data.getCurrent().getLaneFastestLapCount() >= 2);
+    assertEquals(4.2, data.getCurrent().getLaneFastestLap(0).getValue(), 0.001);
+    assertEquals(4.8, data.getCurrent().getLaneFastestLap(1).getValue(), 0.001);
+
+    race.changeState(new RaceOver());
+    RecordData finalData = race.getRecordData();
+    assertEquals(4.2, finalData.getOverall().getLaneFastestLap(0).getValue(), 0.001);
+  }
 }

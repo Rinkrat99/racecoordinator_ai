@@ -371,4 +371,18 @@ public class EventExecutionManagerTest {
     assertNotNull(manager.getEventDriverResultsMap());
     assertTrue(manager.getEventDriverResultsMap().isEmpty());
   }
+
+  @Test
+  public void testAdvanceToNextRaceWhenNoEvent() throws Exception {
+    EventExecutionManager manager = EventExecutionManager.getInstance();
+    manager.cancelEvent();
+    assertFalse(manager.advanceToNextRace());
+  }
+
+  @Test
+  public void testCancelAutoAdvanceTimerWhenInactive() {
+    EventExecutionManager manager = EventExecutionManager.getInstance();
+    manager.cancelAutoAdvanceTimer();
+    assertEquals(0.0, manager.getAutoAdvanceRemainingSeconds(), 0.001);
+  }
 }

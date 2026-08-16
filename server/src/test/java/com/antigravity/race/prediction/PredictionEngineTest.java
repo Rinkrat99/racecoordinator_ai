@@ -16,6 +16,8 @@ import com.antigravity.race.DriverHeatData;
 import com.antigravity.race.Heat;
 import com.antigravity.race.RaceParticipant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -703,5 +705,59 @@ public class PredictionEngineTest {
     PredictionEngine.DriverHeatState s3 = new PredictionEngine.DriverHeatState();
     s3.totalLapsCompleted = 6.0;
     assertFalse(s1.equals(s3));
+  }
+
+  @Test
+  public void testEvaluatePredictionAccuracy_NullAndEmpty() {
+    PredictionEvaluationRecord rec1 = engine.evaluatePredictionAccuracy("r1", null, null);
+    assertNotNull(rec1);
+    assertEquals(0.0, rec1.getBrierScore(), 0.001);
+
+    PredictionSnapshot snap = new PredictionSnapshot();
+    PredictionEvaluationRecord rec2 =
+        engine.evaluatePredictionAccuracy("r1", snap, Collections.emptyList());
+    assertNotNull(rec2);
+    assertEquals(0.0, rec2.getBrierScore(), 0.001);
+  }
+
+  @Test
+  public void testEvaluatePredictionAccuracy_ValidEvaluations() {
+    PredictionSnapshot snap = new PredictionSnapshot();
+    DriverProjection proj1 = new DriverProjection("d1", "Alice", 1, 50.0, 0.8, 0.95, 3.5);
+    DriverProjection proj2 = new DriverProjection("d2", "Bob", 2, 48.0, 0.2, 0.50, 3.8);
+    snap.setProjectedStandings(Arrays.asList(proj1, proj2));
+
+    Map<String, Double> winProb = new HashMap<>();
+    winProb.put("d1", 0.80);
+    winProb.put("d2", 0.20);
+    snap.setWinProbabilities(winProb);
+
+    DriverProjection actual1 = new DriverProjection("d1", "Alice", 1, 51.0, 1.0, 1.0, 3.4);
+    DriverProjection actual2 = new DriverProjection("d2", "Bob", 2, 47.0, 0.0, 0.0, 3.9);
+    List<DriverProjection> actualStandings = Arrays.asList(actual1, actual2);
+
+    PredictionEvaluationRecord eval =
+        engine.evaluatePredictionAccuracy("race_test_eval", snap, actualStandings);
+
+    assertNotNull(eval);
+    assertEquals("race_test_eval", eval.getRaceId());
+    assertEquals(2, eval.getDriverEvaluations().size());
+    assertTrue(eval.getBrierScore() >= 0.0);
+    assertTrue(eval.getRankMae() >= 0.0);
+    assertTrue(eval.getLapProjectionMae() >= 0.0);
+  }
+
+  @Test
+  public void testEvaluatePredictionAccuracy_BaselineNoData() {
+    PredictionSnapshot snap = new PredictionSnapshot();
+    DriverProjection baselineProj = new DriverProjection("d1", "Alice", -1, -1.0, 0.0, 0.0, 0.0);
+    snap.setProjectedStandings(Collections.singletonList(baselineProj));
+
+    DriverProjection actual1 = new DriverProjection("d1", "Alice", 1, 50.0, 1.0, 1.0, 3.5);
+    PredictionEvaluationRecord eval =
+        engine.evaluatePredictionAccuracy(
+            "race_baseline", snap, Collections.singletonList(actual1));
+
+    org.junit.Assert.assertNull(eval);
   }
 }

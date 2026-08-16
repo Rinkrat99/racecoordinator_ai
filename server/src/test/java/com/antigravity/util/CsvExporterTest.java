@@ -1,5 +1,7 @@
 package com.antigravity.util;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.antigravity.models.Driver;
@@ -8,6 +10,7 @@ import com.antigravity.models.HeatScoring;
 import com.antigravity.models.Lane;
 import com.antigravity.models.OverallScoring;
 import com.antigravity.models.Race;
+import com.antigravity.models.Team;
 import com.antigravity.models.Track;
 import com.antigravity.protocols.ProtocolDelegate;
 import com.antigravity.race.ClientSubscriptionManager;
@@ -15,6 +18,8 @@ import com.antigravity.race.DriverHeatData;
 import com.antigravity.race.RaceParticipant;
 import com.antigravity.race.states.Racing;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.junit.After;
 import org.junit.Before;
@@ -93,7 +98,6 @@ public class CsvExporterTest {
   public void testDecimalPaddingThreeDecimalPlaces() {
     race.changeState(new Racing());
     DriverHeatData dhd = race.getCurrentHeat().getDrivers().get(0);
-    // Add lap times: 4.5 should format as 4.500, 10.0 should format as 10.000, 5.4819876 -> 5.482
     dhd.addLap(4.5, false, true);
     dhd.addLap(10.0, false, true);
     dhd.addLap(5.4819876, false, true);
@@ -106,15 +110,74 @@ public class CsvExporterTest {
   }
 
   @Test
+  public void testExportWithNullAndEmptyRace() {
+    String nullCsv = CsvExporter.export(null);
+    assertNotNull(nullCsv);
+    assertTrue(nullCsv.contains("#Section,Race Record Data"));
+
+    com.antigravity.race.Race emptyRace =
+        new com.antigravity.race.Race.Builder()
+            .model(race.getRaceModel())
+            .drivers(Collections.emptyList())
+            .track(race.getTrack())
+            .isDemoMode(true)
+            .build();
+
+    String emptyCsv = CsvExporter.export(emptyRace);
+    assertNotNull(emptyCsv);
+    assertTrue(emptyCsv.contains("#Section,Overall Standings"));
+  }
+
+  @Test
+  public void testExportWithRecords() {
+    race.changeState(new Racing());
+    DriverHeatData dhd = race.getCurrentHeat().getDrivers().get(0);
+    race.getRecordsManager().onLap(dhd, 3.456, 0);
+
+    String csv = CsvExporter.export(race);
+    assertNotNull(csv);
+    assertTrue(csv.contains("Race Fastest Lap"));
+  }
+
+  @Test
+  public void testExportWithTeamParticipant() {
+    Driver d1 = new Driver("Team Member 1", "TM1", "tm1", "101");
+    Driver d2 = new Driver("Team Member 2", "TM2", "tm2", "102");
+    Team team =
+        new Team("Red Bull Racing", "avatar.png", Arrays.asList("tm1", "tm2"), "team1", "t1");
+
+    RaceParticipant teamParticipant = new RaceParticipant(team);
+    teamParticipant.setTeamDrivers(Arrays.asList(d1, d2));
+
+    Race raceModel =
+        new Race.Builder()
+            .withName("Team Race")
+            .withTrackEntityId("track1")
+            .withEntityId("race_team_1")
+            .build();
+
+    com.antigravity.race.Race teamRace =
+        new com.antigravity.race.Race.Builder()
+            .model(raceModel)
+            .drivers(Collections.singletonList(teamParticipant))
+            .track(race.getTrack())
+            .isDemoMode(true)
+            .build();
+
+    String csv = CsvExporter.export(teamRace);
+    assertTrue(csv.contains("Red Bull Racing"));
+  }
+
+  @Test
   public void testModelEvaluationRowAndPredictionRowAccessors() {
     CsvExporter.ModelEvaluationRow eval = new CsvExporter.ModelEvaluationRow();
     eval.brierScore = 0.123;
     eval.rankMae = 1.45;
     eval.lapProjectionMae = 2.34;
 
-    org.junit.Assert.assertEquals(0.123, eval.getBrierScore(), 0.001);
-    org.junit.Assert.assertEquals(1.45, eval.getRankMae(), 0.001);
-    org.junit.Assert.assertEquals(2.34, eval.getLapProjectionMae(), 0.001);
+    assertEquals(0.123, eval.getBrierScore(), 0.001);
+    assertEquals(1.45, eval.getRankMae(), 0.001);
+    assertEquals(2.34, eval.getLapProjectionMae(), 0.001);
 
     CsvExporter.PredictionRow pred = new CsvExporter.PredictionRow();
     pred.projectedRank = "1";
@@ -123,10 +186,42 @@ public class CsvExporterTest {
     pred.podiumProbability = "95%";
     pred.projectedLaps = "50.5";
 
-    org.junit.Assert.assertEquals("1", pred.getProjectedRank());
-    org.junit.Assert.assertEquals("Alice", pred.getDriverName());
-    org.junit.Assert.assertEquals("75%", pred.getWinProbability());
-    org.junit.Assert.assertEquals("95%", pred.getPodiumProbability());
-    org.junit.Assert.assertEquals("50.5", pred.getProjectedLaps());
+    assertEquals("1", pred.getProjectedRank());
+    assertEquals("Alice", pred.getDriverName());
+    assertEquals("75%", pred.getWinProbability());
+    assertEquals("95%", pred.getPodiumProbability());
+    assertEquals("50.5", pred.getProjectedLaps());
+
+    CsvExporter.HeatListRow heatRow = new CsvExporter.HeatListRow();
+    heatRow.heatNumber = 1;
+    heatRow.laneNumber = 2;
+    heatRow.driverName = "Bob";
+    heatRow.driverNickname = "Bobby";
+    heatRow.teamName = "Scuderia";
+
+    assertEquals(1, heatRow.getHeatNumber());
+    assertEquals(2, heatRow.getLaneNumber());
+    assertEquals("Bob", heatRow.getDriverName());
+    assertEquals("Bobby", heatRow.getDriverNickname());
+    assertEquals("Scuderia", heatRow.getTeamName());
+  }
+
+  @Test
+  public void testCsvEscaping() {
+    Driver specialDriver =
+        new Driver("Driver, with \"Quotes\"\nAnd Newline", "D,Q", "d_special", "100");
+    RaceParticipant participant = new RaceParticipant(specialDriver);
+
+    com.antigravity.race.Race specialRace =
+        new com.antigravity.race.Race.Builder()
+            .model(race.getRaceModel())
+            .drivers(Collections.singletonList(participant))
+            .track(race.getTrack())
+            .isDemoMode(true)
+            .build();
+
+    String csv = CsvExporter.export(specialRace);
+    assertNotNull(csv);
+    assertTrue(csv.contains("\"Driver, with \"\"Quotes\"\"\nAnd Newline\""));
   }
 }

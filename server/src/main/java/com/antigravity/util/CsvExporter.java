@@ -83,7 +83,7 @@ public class CsvExporter {
 
     // Section 0: Race Record Data
     sb.append("#Section,Race Record Data\n\n");
-    RecordData recordData = race.getRecordData();
+    RecordData recordData = race != null ? race.getRecordData() : null;
     if (recordData != null) {
       OverallRecords overall = recordData.getOverall();
       if (overall != null) {
@@ -107,20 +107,20 @@ public class CsvExporter {
 
     // Section 1: Track Information
     sb.append("#Section,Track Information\n\n");
-    Track track = race.getTrack();
+    Track track = race != null ? race.getTrack() : null;
     if (track != null) {
       appendTable(sb, "Track Properties", Collections.singletonList(track));
     }
 
     // Section 2: Race Configuration
     sb.append("#Section,Race Configuration\n\n");
-    if (race.getRaceModel() != null) {
+    if (race != null && race.getRaceModel() != null) {
       appendTable(sb, "Race Model", Collections.singletonList(race.getRaceModel()));
     }
 
     // Section 3: Race Statistics
     sb.append("#Section,Race Statistics\n\n");
-    if (race.getStatistics() != null) {
+    if (race != null && race.getStatistics() != null) {
       appendTable(sb, "Race Stats", Collections.singletonList(race.getStatistics()));
     }
 
@@ -129,13 +129,13 @@ public class CsvExporter {
 
     // Section 5: Overall Standings
     sb.append("#Section,Overall Standings\n\n");
-    if (race.getDrivers() != null && !race.getDrivers().isEmpty()) {
+    if (race != null && race.getDrivers() != null && !race.getDrivers().isEmpty()) {
       appendTable(sb, "Standings", race.getDrivers());
     }
 
     // Section 5: Heat List
     sb.append("#Section,Heat List\n\n");
-    List<Heat> heats = race.getHeats();
+    List<Heat> heats = race != null ? race.getHeats() : null;
     if (heats != null) {
       List<HeatListRow> heatListRows = new ArrayList<>();
       for (int hIdx = 0; hIdx < heats.size(); hIdx++) {

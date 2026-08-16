@@ -3,10 +3,12 @@ package com.antigravity.util;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.antigravity.models.Driver;
+import com.antigravity.models.Season;
 import com.antigravity.models.SeasonRaceRecord.SeasonDriverResult;
 import com.antigravity.models.SeasonScoring;
 import com.antigravity.race.DriverHeatData;
@@ -1731,5 +1733,97 @@ public class SeasonPointsCalculatorTest {
     assertNotNull(standing.getRaceScores());
     assertEquals(0.0, standing.getCurrentRacePoints(), 0.001);
     assertNull(standing.getCurrentRaceScoreDetail());
+  }
+
+  @Test
+  public void testCalculatorInstantiation() {
+    SeasonPointsCalculator calc = new SeasonPointsCalculator();
+    assertNotNull(calc);
+  }
+
+  @Test
+  public void testCalculateStandings_NullAndEmptySeason() {
+    assertTrue(SeasonPointsCalculator.calculateStandings(null).isEmpty());
+    Season emptySeason = new Season("Empty Season", 0);
+    assertTrue(SeasonPointsCalculator.calculateStandings(emptySeason).isEmpty());
+  }
+
+  @Test
+  public void testCalculateStandings_DropsAndTies() {
+    SeasonDriverResult r1A = new SeasonDriverResult("d1", "Alice", 1, 25.0, 0.0, 10.0, 0.0, 35.0);
+    SeasonDriverResult r1B = new SeasonDriverResult("d2", "Bob", 2, 18.0, 0.0, 8.0, 0.0, 26.0);
+    com.antigravity.models.SeasonRaceRecord race1 =
+        new com.antigravity.models.SeasonRaceRecord("r1", "Race 1", 1000L, Arrays.asList(r1A, r1B));
+
+    SeasonDriverResult r2A = new SeasonDriverResult("d1", "Alice", 2, 18.0, 0.0, 8.0, 0.0, 26.0);
+    SeasonDriverResult r2B = new SeasonDriverResult("d2", "Bob", 1, 25.0, 0.0, 10.0, 0.0, 35.0);
+    com.antigravity.models.SeasonRaceRecord race2 =
+        new com.antigravity.models.SeasonRaceRecord("r2", "Race 2", 2000L, Arrays.asList(r2A, r2B));
+
+    Season season = new Season("Drop Season", 1, Arrays.asList(race1, race2));
+
+    List<DriverSeasonStanding> standings = SeasonPointsCalculator.calculateStandings(season, null);
+    assertNotNull(standings);
+    assertEquals(2, standings.size());
+
+    // Both drivers drop their 26.0 race -> net is 35.0 each, gross is 61.0 each
+    assertEquals(35.0, standings.get(0).getNetPoints(), 0.001);
+    assertEquals(61.0, standings.get(0).getGrossPoints(), 0.001);
+    assertEquals(35.0, standings.get(1).getNetPoints(), 0.001);
+    assertEquals(61.0, standings.get(1).getGrossPoints(), 0.001);
+  }
+
+  @Test
+  public void testCalculateDriverResultsForRace_ComprehensiveBonuses() {
+    Race race = mock(Race.class);
+    com.antigravity.models.Race raceModel = mock(com.antigravity.models.Race.class);
+    SeasonScoring scoring =
+        new SeasonScoring(
+            Arrays.asList(25.0, 18.0),
+            Arrays.asList(10.0, 8.0),
+            3.0, // overall fastest lap
+            2.0, // overall fastest lap per lane
+            1.0, // overall led lap
+            5.0, // overall most laps led
+            false,
+            2.0, // heat fastest lap
+            1.0, // heat led lap
+            3.0, // heat most laps led
+            0.0, // heat clean race
+            0.0, // heat finishing bonus
+            false);
+    when(raceModel.getSeasonScoring()).thenReturn(scoring);
+    when(race.getRaceModel()).thenReturn(raceModel);
+    when(race.getState()).thenReturn(new RaceOver());
+
+    Driver d1 = new Driver("D1", "D1", "d1", null);
+    Driver d2 = new Driver("D2", "D2", "d2", null);
+
+    RaceParticipant rp1 = new RaceParticipant(d1);
+    rp1.setRank(1);
+    RaceParticipant rp2 = new RaceParticipant(d2);
+    rp2.setRank(2);
+
+    when(race.getDrivers()).thenReturn(Arrays.asList(rp1, rp2));
+
+    DriverHeatData dhd1 = new DriverHeatData(rp1);
+    dhd1.setLane(0);
+    dhd1.addLap(4.0, false, true);
+    dhd1.addLap(4.2, false, true);
+
+    DriverHeatData dhd2 = new DriverHeatData(rp2);
+    dhd2.setLane(1);
+    dhd2.addLap(4.5, false, true);
+    dhd2.addLap(4.6, false, true);
+
+    Heat heat1 = new Heat(1, Arrays.asList(dhd1, dhd2), false);
+    when(race.getHeats()).thenReturn(Collections.singletonList(heat1));
+
+    List<SeasonDriverResult> results = SeasonPointsCalculator.calculateDriverResultsForRace(race);
+    assertNotNull(results);
+    assertEquals(2, results.size());
+
+    // d1 wins position points (25.0) + overall fastest lap (3.0) + overall fastest lap lane 1 (2.0)
+    assertTrue(results.get(0).getTotalPoints() > 25.0);
   }
 }

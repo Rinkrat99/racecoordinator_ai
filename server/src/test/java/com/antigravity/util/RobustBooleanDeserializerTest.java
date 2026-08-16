@@ -36,8 +36,26 @@ public class RobustBooleanDeserializerTest {
   }
 
   @Test
+  public void testStringOne() throws Exception {
+    Dummy dummy = mapper.readValue("{\"flag\": \"1\"}", Dummy.class);
+    assertTrue(dummy.flag);
+  }
+
+  @Test
   public void testStringFalse() throws Exception {
     Dummy dummy = mapper.readValue("{\"flag\": \"false\"}", Dummy.class);
+    assertFalse(dummy.flag);
+  }
+
+  @Test
+  public void testStringZero() throws Exception {
+    Dummy dummy = mapper.readValue("{\"flag\": \"0\"}", Dummy.class);
+    assertFalse(dummy.flag);
+  }
+
+  @Test
+  public void testStringUnrecognized() throws Exception {
+    Dummy dummy = mapper.readValue("{\"flag\": \"random_text\"}", Dummy.class);
     assertFalse(dummy.flag);
   }
 
@@ -54,8 +72,20 @@ public class RobustBooleanDeserializerTest {
   }
 
   @Test
+  public void testIntNonZero() throws Exception {
+    Dummy dummy = mapper.readValue("{\"flag\": 42}", Dummy.class);
+    assertTrue(dummy.flag);
+  }
+
+  @Test
   public void testNull() throws Exception {
     Dummy dummy = mapper.readValue("{\"flag\": null}", Dummy.class);
     assertNull(dummy.flag);
+  }
+
+  @Test
+  public void testArrayFallback() throws Exception {
+    Dummy dummy = mapper.readValue("{\"flag\": []}", Dummy.class);
+    assertFalse(dummy.flag);
   }
 }

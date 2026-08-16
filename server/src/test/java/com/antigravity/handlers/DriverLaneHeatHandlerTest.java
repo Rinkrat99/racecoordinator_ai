@@ -114,4 +114,48 @@ public class DriverLaneHeatHandlerTest {
     handler.updateBatchUserLaps(ctx);
     verify(ctx).status(404);
   }
+
+  @Test
+  public void testWithActiveRace_ResetAndChangeLane() {
+    com.antigravity.models.Driver d1 =
+        new com.antigravity.models.Driver("Alice", "Ally", "d1", "1");
+    com.antigravity.models.Driver d2 = new com.antigravity.models.Driver("Bob", "Bobby", "d2", "2");
+    com.antigravity.race.RaceParticipant p1 = new com.antigravity.race.RaceParticipant(d1);
+    com.antigravity.race.RaceParticipant p2 = new com.antigravity.race.RaceParticipant(d2);
+
+    com.antigravity.models.Lane l1 = new com.antigravity.models.Lane("red", "black", 100);
+    com.antigravity.models.Lane l2 = new com.antigravity.models.Lane("blue", "white", 100);
+    com.antigravity.models.Track track =
+        new com.antigravity.models.Track.Builder()
+            .name("Track 1")
+            .lanes(java.util.Arrays.asList(l1, l2))
+            .build();
+
+    com.antigravity.models.Race model =
+        new com.antigravity.models.Race.Builder()
+            .withName("Active Race")
+            .withEntityId("r1")
+            .build();
+
+    com.antigravity.race.Race activeRace =
+        new com.antigravity.race.Race.Builder()
+            .model(model)
+            .drivers(java.util.Arrays.asList(p1, p2))
+            .track(track)
+            .isDemoMode(true)
+            .build();
+
+    ClientSubscriptionManager.getInstance().setRace(activeRace);
+
+    // changeLane
+    when(ctx.pathParam("fromLane")).thenReturn("0");
+    when(ctx.pathParam("toLane")).thenReturn("1");
+    handler.changeLane(ctx);
+    verify(ctx).status(200);
+
+    // resetLaneHeatData all
+    when(ctx.pathParam("lane")).thenReturn("all");
+    handler.resetLaneHeatData(ctx);
+    verify(ctx, org.mockito.Mockito.atLeastOnce()).status(200);
+  }
 }

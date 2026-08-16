@@ -1015,4 +1015,38 @@ public class RaceStatisticsUtilsTest {
     assertEquals(5.0, item.getTotalBonusPoints(), 0.001);
     assertEquals(5.0, item.getBonusPoints(), 0.001);
   }
+
+  @Test
+  public void testApplyPostJxlsLaneColors() throws Exception {
+    try (org.apache.poi.xssf.usermodel.XSSFWorkbook wb =
+        new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
+      org.apache.poi.ss.usermodel.Sheet sheet = wb.createSheet("Overall Standings");
+      org.apache.poi.ss.usermodel.Row header = sheet.createRow(0);
+      header.createCell(0).setCellValue("Rank");
+      header.createCell(1).setCellValue("Lane 1 Laps");
+      header.createCell(2).setCellValue("Lane 2 Laps");
+
+      org.apache.poi.ss.usermodel.Row data = sheet.createRow(1);
+      data.createCell(0).setCellValue(1);
+      data.createCell(1).setCellValue(50);
+      data.createCell(2).setCellValue(48);
+
+      Lane l1 = new Lane("#FF0000", "#FFFFFF", 50);
+      Lane l2 = new Lane("#00FF00", "#000000", 50);
+      Track track = new Track.Builder().name("Track").lanes(Arrays.asList(l1, l2)).build();
+      com.antigravity.race.Race mockRace = mock(com.antigravity.race.Race.class);
+      when(mockRace.getTrack()).thenReturn(track);
+
+      RaceStatisticsUtils.applyPostJxlsLaneColors(wb, mockRace);
+      assertNotNull(data.getCell(1).getCellStyle());
+    }
+  }
+
+  @Test
+  public void testSanitizeWorkbookTemplate_EdgeCases() {
+    assertNull(RaceStatisticsUtils.sanitizeWorkbookTemplate(null));
+    assertNotNull(
+        RaceStatisticsUtils.sanitizeWorkbookTemplate(
+            new java.io.ByteArrayInputStream(new byte[0])));
+  }
 }

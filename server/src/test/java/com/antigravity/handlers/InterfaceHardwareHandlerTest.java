@@ -61,6 +61,46 @@ public class InterfaceHardwareHandlerTest {
   }
 
   @Test
+  public void testPowerCommands_WithActiveRace() {
+    com.antigravity.race.Race mockRace = org.mockito.Mockito.mock(com.antigravity.race.Race.class);
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setRace(mockRace);
+
+    io.javalin.http.Context mockCtx = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx.queryParam("on")).thenReturn("true");
+    when(mockCtx.pathParam("lane")).thenReturn("2");
+    when(mockCtx.status(org.mockito.ArgumentMatchers.anyInt())).thenReturn(mockCtx);
+
+    handler.setMainPower(mockCtx);
+    org.mockito.Mockito.verify(mockRace).setMainPower(true);
+    org.mockito.Mockito.verify(mockCtx).status(200);
+
+    handler.setLanePower(mockCtx);
+    org.mockito.Mockito.verify(mockRace).setLanePower(true, 1);
+    org.mockito.Mockito.verify(mockCtx, org.mockito.Mockito.times(2)).status(200);
+  }
+
+  @Test
+  public void testPowerCommands_WithActiveProtocol() {
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setRace(null);
+    com.antigravity.protocols.ProtocolDelegate mockProto =
+        org.mockito.Mockito.mock(com.antigravity.protocols.ProtocolDelegate.class);
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setProtocol(mockProto);
+
+    io.javalin.http.Context mockCtx = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx.queryParam("on")).thenReturn("false");
+    when(mockCtx.pathParam("lane")).thenReturn("1");
+    when(mockCtx.status(org.mockito.ArgumentMatchers.anyInt())).thenReturn(mockCtx);
+
+    handler.setMainPower(mockCtx);
+    org.mockito.Mockito.verify(mockProto).setMainPower(false);
+    org.mockito.Mockito.verify(mockCtx).status(200);
+
+    handler.setLanePower(mockCtx);
+    org.mockito.Mockito.verify(mockProto).setLanePower(false, 0);
+    org.mockito.Mockito.verify(mockCtx, org.mockito.Mockito.times(2)).status(200);
+  }
+
+  @Test
   public void testUpdateInterfaceConfig_InvalidProtocolIndex() {
     com.antigravity.race.ClientSubscriptionManager.getInstance().setProtocol(null);
 
