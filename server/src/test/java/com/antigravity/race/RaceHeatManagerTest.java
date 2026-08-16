@@ -886,6 +886,77 @@ public class RaceHeatManagerTest {
     racing.exit(mockRace);
   }
 
+  @Test
+  public void testModifyHeatsWhenRaceIsOverReturnsError() {
+    testRace.changeState(new com.antigravity.race.states.RaceOver());
+    ModifyHeatsRequest request = createRequest(participants, testRace.getHeats());
+    ModifyHeatsResponse response = new RaceHeatManager(testRace).modifyHeats(request);
+
+    assertFalse("ModifyHeats should fail when race is over", response.getSuccess());
+    assertEquals("Cannot modify heats when the race is over.", response.getErrorMessage());
+  }
+
+  @Test
+  public void testRegenerateHeatsWhenRaceIsOverReturnsError() {
+    testRace.changeState(new com.antigravity.race.states.RaceOver());
+    RegenerateHeatsRequest request = RegenerateHeatsRequest.newBuilder().build();
+    RegenerateHeatsResponse response = new RaceHeatManager(testRace).regenerateHeats(request);
+
+    assertFalse("RegenerateHeats should fail when race is over", response.getSuccess());
+    assertEquals("Cannot regenerate heats when the race is over.", response.getErrorMessage());
+  }
+
+  @Test
+  public void testRegenerateHeatsMismatchingStartedHeatsReturnsError() {
+    // Start the first heat
+    testRace.getHeats().get(0).setStarted(true);
+
+    // Create a request with different drivers so the generated heat 1 won't match started heat 1
+    List<RaceParticipant> newParticipants = createParticipantList(4);
+    RegenerateHeatsRequest.Builder requestBuilder = RegenerateHeatsRequest.newBuilder();
+    for (RaceParticipant p : newParticipants) {
+      requestBuilder.addParticipants(RaceParticipantConverter.toProto(p, new HashSet<>()));
+    }
+
+    RegenerateHeatsResponse response =
+        new RaceHeatManager(testRace).regenerateHeats(requestBuilder.build());
+    assertFalse(
+        "RegenerateHeats should fail if generated heats mismatch started heats",
+        response.getSuccess());
+    assertEquals("RD_ERR_REGENERATE_STARTED_HEATS", response.getErrorMessage());
+  }
+
+  @Test
+  public void testModifyHeatsWithUnresolvableDriverFallsBackToEmptyDriver() {
+    // Create proto heat with unknown driver ID
+    com.antigravity.proto.RaceParticipant protoParticipant =
+        com.antigravity.proto.RaceParticipant.newBuilder()
+            .setObjectId("unknown_driver_id_123")
+            .build();
+
+    com.antigravity.proto.DriverHeatData protoDhd =
+        com.antigravity.proto.DriverHeatData.newBuilder()
+            .setObjectId("dhd_unknown")
+            .setDriver(protoParticipant)
+            .build();
+
+    com.antigravity.proto.Heat protoHeat =
+        com.antigravity.proto.Heat.newBuilder()
+            .setObjectId("heat_with_unknown")
+            .setHeatNumber(1)
+            .addHeatDrivers(protoDhd)
+            .build();
+
+    ModifyHeatsRequest request = ModifyHeatsRequest.newBuilder().addHeats(protoHeat).build();
+
+    ModifyHeatsResponse response = new RaceHeatManager(testRace).modifyHeats(request);
+    assertTrue(
+        "ModifyHeats should succeed and fallback unresolvable driver to EMPTY_DRIVER",
+        response.getSuccess());
+    assertEquals(1, testRace.getHeats().size());
+    assertTrue(testRace.getHeats().get(0).getDrivers().get(0).getDriver().getDriver().isEmpty());
+  }
+
   private ModifyHeatsRequest createRequest(List<RaceParticipant> participants, List<Heat> heats) {
     ModifyHeatsRequest.Builder builder = ModifyHeatsRequest.newBuilder();
     for (RaceParticipant p : participants) {

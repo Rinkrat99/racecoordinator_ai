@@ -63,6 +63,9 @@ public class SqliteRepository<T> {
   public List<T> findAll() {
     ensureTableExists();
     List<T> list = new ArrayList<>();
+    if (databaseContext == null || databaseContext.getConnection() == null) {
+      return list;
+    }
     String sql = "SELECT json_data FROM " + tableName;
     try (PreparedStatement pstmt = databaseContext.getConnection().prepareStatement(sql);
         ResultSet rs = pstmt.executeQuery()) {
@@ -84,6 +87,9 @@ public class SqliteRepository<T> {
       return null;
     }
     ensureTableExists();
+    if (databaseContext == null || databaseContext.getConnection() == null) {
+      return null;
+    }
     String sql = "SELECT json_data FROM " + tableName + " WHERE entity_id = ?";
     try (PreparedStatement pstmt = databaseContext.getConnection().prepareStatement(sql)) {
       pstmt.setString(1, id);
@@ -110,6 +116,9 @@ public class SqliteRepository<T> {
       return;
     }
     ensureTableExists();
+    if (databaseContext == null || databaseContext.getConnection() == null) {
+      return;
+    }
     String entityId = extractEntityId(entity);
     try {
       String json = objectMapper.writeValueAsString(entity);
@@ -138,6 +147,9 @@ public class SqliteRepository<T> {
       return;
     }
     ensureTableExists();
+    if (databaseContext == null || databaseContext.getConnection() == null) {
+      return;
+    }
     String sql = "DELETE FROM " + tableName + " WHERE entity_id = ?";
     try (PreparedStatement pstmt = databaseContext.getConnection().prepareStatement(sql)) {
       pstmt.setString(1, id);
@@ -149,6 +161,9 @@ public class SqliteRepository<T> {
 
   public void drop() {
     ensureTableExists();
+    if (databaseContext == null || databaseContext.getConnection() == null) {
+      return;
+    }
     String sql = "DELETE FROM " + tableName;
     try (Statement stmt = databaseContext.getConnection().createStatement()) {
       stmt.execute(sql);
@@ -158,6 +173,9 @@ public class SqliteRepository<T> {
   }
 
   public String getNextSequence() {
+    if (databaseContext == null) {
+      return null;
+    }
     return databaseContext.getNextSequence(tableName);
   }
 }

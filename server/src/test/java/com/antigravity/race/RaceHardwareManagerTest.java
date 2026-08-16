@@ -181,6 +181,127 @@ public class RaceHardwareManagerTest {
 
     hardwareManager.updatePowerForFlag(RaceFlag.WHITE);
     assertTrue("Main power should be ON for WHITE flag", race.isMainPower());
+
+    hardwareManager.updatePowerForFlag(RaceFlag.GREEN_YELLOW);
+    assertTrue("Main power should be ON for GREEN_YELLOW (warmup) flag", race.isMainPower());
+
+    // Checkered flag with allow finish disabled
+    when(race.getRaceModel().getHeatScoring().getAllowFinish())
+        .thenReturn(HeatScoring.AllowFinish.None);
+    hardwareManager.updatePowerForFlag(RaceFlag.CHECKERED);
+    assertFalse(
+        "Main power should be OFF for CHECKERED when allow finish is disabled", race.isMainPower());
+
+    // Checkered flag with allow finish enabled
+    when(race.getRaceModel().getHeatScoring().getAllowFinish())
+        .thenReturn(HeatScoring.AllowFinish.Allow);
+    hardwareManager.updatePowerForFlag(RaceFlag.CHECKERED);
+    assertTrue(
+        "Main power should be ON for CHECKERED when allow finish is enabled", race.isMainPower());
+  }
+
+  private com.antigravity.race.Race createHotStartRace(ProtocolDelegate protocols) {
+    Race hotRaceModel =
+        new Race.Builder()
+            .withName("Hot Start Race")
+            .withTrackEntityId("track1")
+            .withHotStart(true)
+            .withStartAtCurrent(true)
+            .withEntityId("race_hot")
+            .withId("race_hot_id")
+            .build();
+
+    com.antigravity.race.Race hotRace =
+        new com.antigravity.race.Race.Builder()
+            .model(hotRaceModel)
+            .drivers(race.getDrivers())
+            .track(race.getTrack())
+            .isDemoMode(false)
+            .build();
+
+    when(protocols.isHealthy()).thenReturn(true);
+    when(protocols.open()).thenReturn(true);
+    hotRace.injectProtocols(protocols);
+    hotRace.init();
+
+    Heat heat1 = hotRace.getHeats().get(0);
+    heat1.setStarted(true);
+
+    List<DriverHeatData> heat2Drivers = new ArrayList<>();
+    heat2Drivers.add(new DriverHeatData(race.getDrivers().get(0)));
+    Heat heat2 = new Heat(2, heat2Drivers, hotRace.getRaceModel().getHeatScoring(), false);
+    hotRace.getHeats().add(heat2);
+    hotRace.setCurrentHeat(heat2);
+
+    Starting testStarting =
+        new Starting() {
+          @Override
+          public void enter(com.antigravity.race.Race race) {}
+
+          @Override
+          public void exit(com.antigravity.race.Race race) {}
+        };
+    hotRace.changeState(testStarting);
+    return hotRace;
+  }
+
+  @Test
+  public void testHotStartPowerControlsWithoutPerLaneRelays() {
+    ProtocolDelegate hotProtocols = mock(ProtocolDelegate.class);
+    when(hotProtocols.hasPerLaneRelays()).thenReturn(false);
+
+    com.antigravity.race.Race hotRace = createHotStartRace(hotProtocols);
+    RaceHardwareManager hotManager = hotRace.getHardwareManager();
+
+    hotManager.updatePowerForFlag(RaceFlag.RED);
+    assertFalse(
+        "Main power should be OFF if cold lanes exist and no per-lane relays",
+        hotRace.isMainPower());
+  }
+
+  @Test
+  public void testHotStartPowerControlsWithPerLaneRelays() {
+    ProtocolDelegate hotProtocols = mock(ProtocolDelegate.class);
+    when(hotProtocols.hasPerLaneRelays()).thenReturn(true);
+
+    com.antigravity.race.Race hotRace = createHotStartRace(hotProtocols);
+    RaceHardwareManager hotManager = hotRace.getHardwareManager();
+
+    hotManager.updatePowerForFlag(RaceFlag.RED);
+    assertTrue("Main power should be ON when per-lane relays are available", hotRace.isMainPower());
+    assertFalse("Cold lane power should be OFF", hotRace.isLanePower(0));
+  }
+
+  @Test
+  public void testInitializeHardwareState() {
+    hardwareManager.initializeHardwareState();
+    verify(mockProtocols).initializeHardwareState();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testCreateProtocolsRealModeWithoutConfigsThrowsException() {
+    Track emptyTrack =
+        new Track.Builder()
+            .name("Empty Track")
+            .lanes(Collections.emptyList())
+            .arduinoConfigs(Collections.emptyList())
+            .phidgetConfigs(Collections.emptyList())
+            .trackmateConfigs(Collections.emptyList())
+            .bartConfigs(Collections.emptyList())
+            .entityId("empty_track")
+            .id("empty_track_id")
+            .build();
+
+    com.antigravity.race.Race emptyRace =
+        new com.antigravity.race.Race.Builder()
+            .model(race.getRaceModel())
+            .drivers(race.getDrivers())
+            .track(emptyTrack)
+            .isDemoMode(false)
+            .build();
+
+    RaceHardwareManager manager = new RaceHardwareManager(emptyRace);
+    manager.createProtocols(false, DemoConfig.getDefaultInstance());
   }
 
   @Test

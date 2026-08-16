@@ -141,6 +141,94 @@ describe("ParticipantValidationService", () => {
     expect(result.isValid).toBeTrue();
   });
 
+  it("should validate plain object drivers, teams, and participants (duck typing)", () => {
+    const plainDriver1 = { entity_id: "d1", name: "Driver 1", nickname: "D1" };
+    const plainDriver2 = { entity_id: "d2", name: "Driver 2", nickname: "D2" };
+    const plainTeam = { entity_id: "t1", name: "Team 1", driverIds: ["d1"] };
+    const plainParticipant = {
+      objectId: "rp1",
+      driver: { entity_id: "d1", name: "Driver 1" },
+    };
+
+    // Valid plain drivers
+    const res1 = service.validate(
+      [plainDriver1 as any, plainDriver2 as any],
+      allTeams,
+      allDrivers,
+    );
+    expect(res1.isValid).toBeTrue();
+
+    // Conflict between plain driver and plain team
+    const res2 = service.validate(
+      [plainDriver1 as any, plainTeam as any],
+      allTeams,
+      allDrivers,
+    );
+    expect(res2.isValid).toBeFalse();
+    expect(res2.errorCode).toBe("DUPE_INDIVIDUAL_TEAM");
+
+    // Plain participant
+    const res3 = service.validate(
+      [plainParticipant as any, plainDriver1 as any],
+      allTeams,
+      allDrivers,
+    );
+    expect(res3.isValid).toBeFalse();
+    expect(res3.errorCode).toBe("DUPE_INDIVIDUAL_TEAM");
+  });
+
+  it("should fallback to raw driver ID if driver is not in allDrivers list", () => {
+    const unlistedDriverId = "unlisted_999";
+    const driver = new Driver(unlistedDriverId, "Unlisted", "U");
+    const team = new Team("t99", "Team 99", undefined, [unlistedDriverId]);
+
+    const result = service.validate([driver, team], [team], []); // allDrivers is empty
+    expect(result.isValid).toBeFalse();
+    expect(result.errorCode).toBe("DUPE_INDIVIDUAL_TEAM");
+    expect(result.driverName).toBe(unlistedDriverId);
+
+    // Multi-team conflict with unlisted driver
+    const teamA = new Team("tA", "Team A", undefined, [unlistedDriverId]);
+    const teamB = new Team("tB", "Team B", undefined, [unlistedDriverId]);
+    const resMulti = service.validate([teamA, teamB], [teamA, teamB], []);
+    expect(resMulti.isValid).toBeFalse();
+    expect(resMulti.errorCode).toBe("DUPE_MULTIPLE_TEAMS");
+    expect(resMulti.driverName).toBe(unlistedDriverId);
+  });
+
+  it("should fail when duplicate individual RaceParticipants with same driver are added", () => {
+    const rp1 = new RaceParticipant(
+      "rp1",
+      allDrivers[0],
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      100,
+    );
+    const rp2 = new RaceParticipant(
+      "rp2",
+      allDrivers[0],
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      100,
+    );
+
+    const result = service.validate([rp1, rp2], allTeams, allDrivers);
+    expect(result.isValid).toBeFalse();
+    expect(result.errorCode).toBe("DUPE_INDIVIDUAL_TEAM");
+  });
+
   describe("getErrorMessage", () => {
     let mockTranslationService: any;
 
@@ -160,8 +248,20 @@ describe("ParticipantValidationService", () => {
       );
     });
 
-    it("should return empty string if result is valid", () => {
-      const result = { isValid: true };
+    it("should return empty string if result is valid or missing errorCode", () => {
+      expect(
+        service.getErrorMessage({ isValid: true }, mockTranslationService),
+      ).toBe("");
+      expect(
+        service.getErrorMessage({ isValid: false }, mockTranslationService),
+      ).toBe("");
+    });
+
+    it("should return empty string for unknown error code", () => {
+      const result: any = {
+        isValid: false,
+        errorCode: "UNKNOWN_CODE",
+      };
       expect(service.getErrorMessage(result, mockTranslationService)).toBe("");
     });
 

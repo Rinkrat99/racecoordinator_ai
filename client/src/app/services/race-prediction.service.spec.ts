@@ -15,7 +15,7 @@ import {
 describe("RacePredictionService", () => {
   let service: RacePredictionService;
   let httpMock: HttpTestingController;
-  let mockDataService: Partial<DataService>;
+  let mockDataService: any;
 
   beforeEach(() => {
     mockDataService = {
@@ -112,6 +112,35 @@ describe("RacePredictionService", () => {
 
     expect(req.request.method).toBe("GET");
     req.flush(mockEvaluation);
+  });
+
+  it("should handle error gracefully and return null when getRacePredictions fails", () => {
+    service.getRacePredictions("race_999", false).subscribe((result) => {
+      expect(result).toBeNull();
+    });
+
+    const req = httpMock.expectOne((request) =>
+      request.url.startsWith(
+        "http://localhost:8080/api/predictions/races/race_999",
+      ),
+    );
+
+    req.flush("Server error", {
+      status: 500,
+      statusText: "Internal Server Error",
+    });
+  });
+
+  it("should handle empty or missing serverUrl gracefully", () => {
+    mockDataService.serverUrl = "";
+
+    service.getRacePredictions("race_123", false).subscribe();
+
+    const req = httpMock.expectOne((request) =>
+      request.url.startsWith("/api/predictions/races/race_123"),
+    );
+    expect(req.request.method).toBe("GET");
+    req.flush({} as any);
   });
 
   it("should handle error gracefully and return null when getPredictionEvaluation fails", () => {

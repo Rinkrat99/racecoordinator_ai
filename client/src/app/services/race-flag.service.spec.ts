@@ -189,6 +189,122 @@ describe("RaceFlagService", () => {
       expect(url).toBe("http://custom/green.png");
     });
 
+    it("should resolve via settings for all behavioral flag keys when theme slot is null", () => {
+      themeService.resolveAssetId.and.returnValue(null);
+      settingsService.getSettings.and.returnValue({
+        serverIp: "localhost",
+        serverPort: 7070,
+        flagRacing: "/racing.png",
+        flagHeatPaused: "/paused.png",
+        flagHeatOver: "/heat_over.png",
+        flagRaceOver: "/race_over.png",
+        flagNotStarted: "/not_started.png",
+        flagStarting: "/starting.png",
+        flagRestarting: "/restarting.png",
+        flagOneLapToGo: "/one_lap.png",
+        flagHeatFinishing: "/finishing.png",
+        flagWarmup: "/warmup.png",
+        flagDriverFinished: "/driver_finished.png",
+        flagPenalty: "/penalty.png",
+      });
+
+      expect(service.getFlagUrl("flag.racing")).toBe(
+        "http://localhost:7070/racing.png",
+      );
+      expect(service.getFlagUrl("flag.heat_paused")).toBe(
+        "http://localhost:7070/paused.png",
+      );
+      expect(service.getFlagUrl("flag.heat_over")).toBe(
+        "http://localhost:7070/heat_over.png",
+      );
+      expect(service.getFlagUrl("flag.race_over")).toBe(
+        "http://localhost:7070/race_over.png",
+      );
+      expect(service.getFlagUrl("flag.not_started")).toBe(
+        "http://localhost:7070/not_started.png",
+      );
+      expect(service.getFlagUrl("flag.starting")).toBe(
+        "http://localhost:7070/starting.png",
+      );
+      expect(service.getFlagUrl("flag.restarting")).toBe(
+        "http://localhost:7070/restarting.png",
+      );
+      expect(service.getFlagUrl("flag.one_lap_to_go")).toBe(
+        "http://localhost:7070/one_lap.png",
+      );
+      expect(service.getFlagUrl("flag.heat_finishing")).toBe(
+        "http://localhost:7070/finishing.png",
+      );
+      expect(service.getFlagUrl("flag.warmup")).toBe(
+        "http://localhost:7070/warmup.png",
+      );
+      expect(service.getFlagUrl("flag.driver_finished")).toBe(
+        "http://localhost:7070/driver_finished.png",
+      );
+      expect(service.getFlagUrl("flag.penalty")).toBe(
+        "http://localhost:7070/penalty.png",
+      );
+    });
+
+    it("should handle asset matching by model.entityId, _id, or dataService.getAssetUrl", () => {
+      themeService.resolveAssetId.and.returnValue("asset-custom");
+      const dataService = TestBed.inject(DataService) as any;
+      dataService.getAssetUrl = jasmine
+        .createSpy("getAssetUrl")
+        .and.returnValue("https://cdn.example.com/asset.png");
+
+      // Match by model.entityId
+      (service as any).assets = [
+        { model: { entityId: "asset-custom" }, url: "assets/custom1.png" },
+      ];
+      expect(service.getFlagUrl("flag.racing")).toBe(
+        "http://localhost:7070/assets/custom1.png",
+      );
+
+      // Match by _id
+      (service as any).assets = [
+        { _id: "asset-custom", url: "https://external.com/custom2.png" },
+      ];
+      expect(service.getFlagUrl("flag.racing")).toBe(
+        "https://external.com/custom2.png",
+      );
+
+      // Fallback to dataService.getAssetUrl
+      (service as any).assets = [];
+      expect(service.getFlagUrl("flag.racing")).toBe(
+        "https://cdn.example.com/asset.png",
+      );
+    });
+
+    it("should fallback to unknown state switch cases when state is UNKNOWN_STATE", () => {
+      raceStateSubject.next(RaceState.UNKNOWN_STATE);
+
+      expect(service.getBehavioralFlagKey(RaceFlag.GREEN)).toBe("flag.racing");
+      expect(service.getBehavioralFlagKey(RaceFlag.YELLOW)).toBe(
+        "flag.heat_paused",
+      );
+      expect(service.getBehavioralFlagKey(RaceFlag.RED)).toBe(
+        "flag.not_started",
+      );
+      expect(service.getBehavioralFlagKey(RaceFlag.CHECKERED)).toBe(
+        "flag.heat_finishing",
+      );
+      expect(service.getBehavioralFlagKey(RaceFlag.UNKNOWN_FLAG)).toBe(
+        "flag.not_started",
+      );
+    });
+
+    it("should test getFlagTypeForFlag and getFlagColor branches", () => {
+      expect(service.getFlagTypeForFlag(RaceFlag.GREEN)).toBe("green");
+      expect(service.getFlagTypeForFlag(RaceFlag.YELLOW)).toBe("yellow");
+      expect(service.getFlagTypeForFlag(RaceFlag.RED)).toBe("red");
+      expect(service.getFlagTypeForFlag(RaceFlag.WHITE)).toBe("white");
+      expect(service.getFlagTypeForFlag(RaceFlag.CHECKERED)).toBe("checkered");
+      expect(service.getFlagTypeForFlag(RaceFlag.BLACK)).toBe("black");
+      expect(service.getFlagTypeForFlag(RaceFlag.GREEN_YELLOW)).toBe("green");
+      expect(service.getFlagTypeForFlag(RaceFlag.UNKNOWN_FLAG)).toBe("red");
+    });
+
     it("should fallback to an empty string if neither theme nor settings provide a URL", () => {
       themeService.resolveAssetId.and.returnValue(null);
       settingsService.getSettings.and.returnValue({

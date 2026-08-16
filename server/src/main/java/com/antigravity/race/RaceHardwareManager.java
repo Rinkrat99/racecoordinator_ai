@@ -24,6 +24,10 @@ public class RaceHardwareManager {
     return protocols;
   }
 
+  public void setProtocols(ProtocolDelegate protocols) {
+    this.protocols = protocols;
+  }
+
   public void createProtocols(boolean isDemoMode, DemoConfig demoConfig) {
     List<IProtocol> protocols_list = new ArrayList<>();
     if (isDemoMode) {

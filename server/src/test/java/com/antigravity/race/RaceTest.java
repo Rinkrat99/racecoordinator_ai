@@ -934,6 +934,40 @@ public class RaceTest {
     }
 
     @Test
+    public void testFalseStartWithRestartOnFalseStartEnabled() throws Exception {
+      com.antigravity.models.Race model =
+          new com.antigravity.models.Race.Builder()
+              .withName("False Start Race")
+              .withTrackEntityId("track1")
+              .withRestartOnFalseStart(true)
+              .withFalseStartLapPenalty(1.0)
+              .withFalseStartTimePenalty(3.0)
+              .withEntityId("race_fs")
+              .withId("race_fs_id")
+              .build();
+
+      DriverHeatData dhd = race.getCurrentHeat().getDrivers().get(0);
+      assertEquals(0, dhd.getFalseStarts());
+
+      java.lang.reflect.Field modelField =
+          com.antigravity.race.Race.class.getDeclaredField("model");
+      modelField.setAccessible(true);
+      modelField.set(race, model);
+
+      race.startRace();
+      assertTrue(race.getState() instanceof Starting);
+
+      // Trigger false start on lane 0
+      race.onLap(0, 1.0, 1, 0);
+
+      assertEquals(1, dhd.getFalseStarts());
+      assertEquals(3.0, dhd.getRemainingFalseStartTimePenalty(), 0.001);
+      assertTrue(
+          "Should reset to NotStarted because restart on false start is enabled",
+          race.getState() instanceof NotStarted);
+    }
+
+    @Test
     public void testAutoStartRunsOnSecondHeat() throws Exception {
       injectAutoStartTime(10.0);
 

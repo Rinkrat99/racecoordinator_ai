@@ -1,4 +1,8 @@
 import { TestBed } from "@angular/core/testing";
+import { Driver } from "@app/models/driver";
+import { Race } from "@app/models/race";
+import { RaceParticipant } from "@app/models/race_participant";
+import { Track } from "@app/models/track";
 import { Heat } from "@app/race/heat";
 
 import { RaceService } from "./race.service";
@@ -15,6 +19,72 @@ describe("RaceService", () => {
 
   it("should be created", () => {
     expect(service).toBeTruthy();
+  });
+
+  it("should set and get racing drivers", () => {
+    const drivers = [new Driver("d1", "Driver 1", "D1")];
+    service.setRacingDrivers(drivers);
+    expect(service.getRacingDrivers()).toEqual(drivers);
+  });
+
+  it("should set participants and update racing drivers", () => {
+    const driver1 = new Driver("d1", "Driver 1", "D1");
+    const driver2 = new Driver("d2", "Driver 2", "D2");
+    const rp1 = new RaceParticipant(
+      "rp1",
+      driver1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      100,
+    );
+    const rp2 = new RaceParticipant(
+      "rp2",
+      driver2,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      100,
+    );
+
+    service.setParticipants([rp1, rp2]);
+    expect(service.getParticipants()).toEqual([rp1, rp2]);
+    expect(service.getRacingDrivers()).toEqual([driver1, driver2]);
+  });
+
+  it("should set group participants and current group", () => {
+    const driver = new Driver("d1", "Driver 1", "D1");
+    const rp = new RaceParticipant("rp1", driver, 1, 0, 0, 0, 0, 0, 0, 0, 100);
+
+    let receivedGroup: number | undefined;
+    const sub = service.currentGroup$.subscribe((g) => {
+      receivedGroup = g;
+    });
+
+    service.setGroupParticipants([rp], 2);
+    expect(receivedGroup).toBe(2);
+    sub.unsubscribe();
+  });
+
+  it("should set and get selected race", () => {
+    const mockTrack = new Track({
+      entity_id: "t1",
+      name: "Test Track",
+      lanes: [],
+    });
+    const mockRace = new Race("race-1", "Test Race", mockTrack);
+    service.setRace(mockRace);
+    expect(service.getRace()).toBe(mockRace);
   });
 
   it("should set and get heats", () => {
@@ -50,6 +120,19 @@ describe("RaceService", () => {
     sub.unsubscribe();
   });
 
+  it("should handle setCurrentHeat when heats list is empty or heat does not match", () => {
+    service.setHeats([]);
+    const heat1 = new Heat("heat-1", 1, [], [], false);
+    service.setCurrentHeat(heat1);
+    expect(service.getCurrentHeat()).toBe(heat1);
+
+    // With heats list that does not contain this heat
+    const heat2 = new Heat("heat-2", 2, [], [], false);
+    service.setHeats([heat2]);
+    service.setCurrentHeat(heat1);
+    expect(service.getCurrentHeat()).toBe(heat1);
+  });
+
   it("should clear all state when clear is called", () => {
     const mockHeat = new Heat("heat-1", 1, [], [], false);
     service.setHeats([mockHeat]);
@@ -58,5 +141,6 @@ describe("RaceService", () => {
     expect(service.getCurrentHeat()).toBeUndefined();
     expect(service.getParticipants()).toEqual([]);
     expect(service.getRace()).toBeUndefined();
+    expect(service.getRacingDrivers()).toEqual([]);
   });
 });

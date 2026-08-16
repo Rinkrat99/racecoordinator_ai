@@ -993,13 +993,7 @@ public class Race implements ProtocolListener {
   /** Only for testing! */
   public void injectProtocols(ProtocolDelegate protocols) {
     if (hardwareManager != null) {
-      try {
-        java.lang.reflect.Field field = RaceHardwareManager.class.getDeclaredField("protocols");
-        field.setAccessible(true);
-        field.set(hardwareManager, protocols);
-      } catch (Exception e) {
-        logger.error("Failed to inject protocols", e);
-      }
+      hardwareManager.setProtocols(protocols);
     }
   }
 
