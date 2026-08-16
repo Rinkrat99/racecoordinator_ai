@@ -4,12 +4,12 @@
       <div class="modal-header">
         <div class="header-title">
           <span class="ghost-icon">👻</span>
-          <h3>Pacing & Trajectory Comparison</h3>
+          <h3>{{ "GTD_TITLE" | translate }}</h3>
         </div>
         <button
           class="close-btn"
           (click)="onDismiss()"
-          aria-label="Close dialog"
+          [attr.aria-label]="'GTD_CLOSE_ARIA' | translate"
         >
           ✕
         </button>
@@ -19,12 +19,14 @@
         <!-- Drivers Banner -->
         <div class="driver-matchup-bar">
           <div class="driver-card driver-a">
-            <span class="driver-role">Live Driver</span>
+            <span class="driver-role">{{ "GTD_LIVE_DRIVER" | translate }}</span>
             <span class="driver-name">{{ driverAName() }}</span>
           </div>
-          <div class="vs-badge">VS</div>
+          <div class="vs-badge">{{ "GTD_VS" | translate }}</div>
           <div class="driver-card driver-b">
-            <span class="driver-role">Ghost / Reference</span>
+            <span class="driver-role">{{
+              "GTD_GHOST_REFERENCE" | translate
+            }}</span>
             <span class="driver-name">{{ driverBName() }}</span>
           </div>
         </div>
@@ -32,23 +34,31 @@
         <!-- Metrics Overview -->
         <div class="metrics-grid">
           <div class="metric-card">
-            <span class="metric-label">Lead Changes</span>
+            <span class="metric-label">{{
+              "GTD_LEAD_CHANGES" | translate
+            }}</span>
             <span class="metric-value">{{ comparison().leadChanges }}</span>
           </div>
           <div class="metric-card">
-            <span class="metric-label">Max Advantage</span>
+            <span class="metric-label">{{
+              "GTD_MAX_ADVANTAGE" | translate
+            }}</span>
             <span class="metric-value text-emerald"
               >+{{ comparison().maxAdvantageLive.toFixed(2) }}s</span
             >
           </div>
           <div class="metric-card">
-            <span class="metric-label">Max Deficit</span>
+            <span class="metric-label">{{
+              "GTD_MAX_DEFICIT" | translate
+            }}</span>
             <span class="metric-value text-rose"
               >-{{ comparison().maxAdvantageGhost.toFixed(2) }}s</span
             >
           </div>
           <div class="metric-card">
-            <span class="metric-label">Avg Delta / Lap</span>
+            <span class="metric-label">{{
+              "GTD_AVG_DELTA_LAP" | translate
+            }}</span>
             <span class="metric-value"
               >{{ comparison().avgDeltaPerLap.toFixed(2) }}s</span
             >
@@ -60,11 +70,11 @@
           <table class="trajectory-table">
             <thead>
               <tr>
-                <th>Lap</th>
-                <th>{{ driverAName() }} (Cum.)</th>
-                <th>{{ driverBName() }} (Cum.)</th>
-                <th>Delta</th>
-                <th>Status</th>
+                <th>{{ "GTD_TH_LAP" | translate }}</th>
+                <th>{{ driverAName() }} {{ "GTD_CUMULATIVE" | translate }}</th>
+                <th>{{ driverBName() }} {{ "GTD_CUMULATIVE" | translate }}</th>
+                <th>{{ "GTD_TH_DELTA" | translate }}</th>
+                <th>{{ "GTD_TH_STATUS" | translate }}</th>
               </tr>
             </thead>
             <tbody>
@@ -87,7 +97,10 @@
                   </td>
                   <td>
                     <span class="status-badge" [class.lead]="pt.isAhead">
-                      {{ pt.isAhead ? "Ahead" : "Behind" }}
+                      {{
+                        (pt.isAhead ? "GTD_STATUS_AHEAD" : "GTD_STATUS_BEHIND")
+                          | translate
+                      }}
                     </span>
                   </td>
                 </tr>
@@ -95,7 +108,7 @@
               @if (comparison().points.length === 0) {
                 <tr>
                   <td colspan="5" class="empty-row">
-                    No lap data available for trajectory comparison
+                    {{ "GTD_NO_DATA" | translate }}
                   </td>
                 </tr>
               }
@@ -105,7 +118,9 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="onDismiss()">Close</button>
+        <button class="btn btn-secondary" (click)="onDismiss()">
+          {{ "GTD_CLOSE" | translate }}
+        </button>
       </div>
     </div>
   </div>

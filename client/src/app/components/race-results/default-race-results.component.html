@@ -27,7 +27,7 @@
           <button
             class="ghost-trajectory-btn no-print"
             (click)="openTrajectoryDialog()"
-            title="Ghost Trajectory Comparison"
+            [title]="'RD_GHOST_TRAJECTORY_TOOLTIP' | translate"
           >
             <span class="ghost-icon">👻</span>
           </button>

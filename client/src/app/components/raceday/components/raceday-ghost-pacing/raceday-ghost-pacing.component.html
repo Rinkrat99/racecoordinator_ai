@@ -12,7 +12,9 @@
       <span class="benchmark-tag">
         <span class="ghost-icon">👻</span>
         <span class="benchmark-name"
-          >{{ benchmarkLabel() }} ({{ targetGhostLapTime().toFixed(2) }}s)</span
+          >{{ benchmarkLabelKey() | translate }} ({{
+            targetGhostLapTime().toFixed(2)
+          }}s)</span
         >
       </span>
 
@@ -44,7 +46,7 @@
       <div
         class="ghost-marker"
         [style.left.%]="progressWidthPct()"
-        title="Live Telemetry Position"
+        [title]="'RD_GHOST_TELEMETRY_POSITION' | translate"
       >
         <div class="marker-dot"></div>
       </div>
@@ -52,7 +54,9 @@
   } @else {
     <div class="pacing-empty">
       <span class="ghost-icon-dim">👻</span>
-      <span class="no-benchmark-text">No ghost benchmark</span>
+      <span class="no-benchmark-text">{{
+        "RD_GHOST_NO_BENCHMARK" | translate
+      }}</span>
     </div>
   }
 </div>

@@ -1,22 +1,25 @@
 import { CommonModule } from "@angular/common";
 import { Component, computed, inject, input } from "@angular/core";
 import { RacedayFormatUtils } from "@app/components/raceday/utils/raceday-format.utils";
+import { TranslatePipe } from "@app/pipes/translate.pipe";
 import { DriverHeatData } from "@app/race/driver_heat_data";
 import {
   GhostBenchmarkType,
   GhostGapResult,
   GhostPacingService,
 } from "@app/services/ghost-pacing.service";
+import { TranslationService } from "@app/services/translation.service";
 
 @Component({
   standalone: true,
   selector: "app-raceday-ghost-pacing",
   templateUrl: "./raceday-ghost-pacing.component.html",
   styleUrls: ["./raceday-ghost-pacing.component.css"],
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
 })
 export class RacedayGhostPacingComponent {
   private ghostPacingService = inject(GhostPacingService);
+  private translationService = inject(TranslationService);
 
   driverHeatData = input<DriverHeatData | null>(null);
   laneRecord = input<number>(0);
@@ -76,17 +79,21 @@ export class RacedayGhostPacingComponent {
     );
   });
 
-  // Human-readable benchmark label
-  benchmarkLabel = computed(() => {
+  benchmarkLabelKey = computed(() => {
     switch (this.benchmarkType()) {
       case "PERSONAL_BEST":
-        return "Personal Best";
+        return "RD_GHOST_PERSONAL_BEST";
       case "HEAT_LEADER":
-        return "Heat Leader";
+        return "RD_GHOST_HEAT_LEADER";
       case "LANE_RECORD":
       default:
-        return "Lane Record";
+        return "RD_GHOST_LANE_RECORD";
     }
+  });
+
+  // Human-readable benchmark label
+  benchmarkLabel = computed(() => {
+    return this.translationService.translate(this.benchmarkLabelKey());
   });
 
   // Percentage formatted for progress indicator (0 to 100%)

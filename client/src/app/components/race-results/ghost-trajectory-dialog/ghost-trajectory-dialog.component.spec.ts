@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DriverHeatData } from "@app/race/driver_heat_data";
 import { GhostPacingService } from "@app/services/ghost-pacing.service";
+import { TranslationService } from "@app/services/translation.service";
 
 import { GhostTrajectoryDialogComponent } from "./ghost-trajectory-dialog.component";
 
@@ -9,9 +10,41 @@ describe("GhostTrajectoryDialogComponent", () => {
   let fixture: ComponentFixture<GhostTrajectoryDialogComponent>;
 
   beforeEach(async () => {
+    const mockTranslationService = {
+      translate: jasmine.createSpy("translate").and.callFake((key: string) => {
+        const map: Record<string, string> = {
+          GTD_TITLE: "Pacing & Trajectory Comparison",
+          GTD_CLOSE_ARIA: "Close dialog",
+          GTD_LIVE_DRIVER: "Live Driver",
+          GTD_GHOST_REFERENCE: "Ghost / Reference",
+          GTD_VS: "VS",
+          GTD_LEAD_CHANGES: "Lead Changes",
+          GTD_MAX_ADVANTAGE: "Max Advantage",
+          GTD_MAX_DEFICIT: "Max Deficit",
+          GTD_AVG_DELTA_LAP: "Avg Delta / Lap",
+          GTD_TH_LAP: "Lap",
+          GTD_CUMULATIVE: "(Cum.)",
+          GTD_TH_DELTA: "Delta",
+          GTD_TH_STATUS: "Status",
+          GTD_STATUS_AHEAD: "Ahead",
+          GTD_STATUS_BEHIND: "Behind",
+          GTD_NO_DATA: "No lap data available for trajectory comparison",
+          GTD_CLOSE: "Close",
+          GTD_DRIVER_A: "Driver A",
+          GTD_DRIVER_B: "Driver B",
+          GTD_GHOST: "Ghost",
+          GTD_BENCHMARK: "Benchmark",
+        };
+        return map[key] || key;
+      }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [GhostTrajectoryDialogComponent],
-      providers: [GhostPacingService],
+      providers: [
+        GhostPacingService,
+        { provide: TranslationService, useValue: mockTranslationService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(GhostTrajectoryDialogComponent);

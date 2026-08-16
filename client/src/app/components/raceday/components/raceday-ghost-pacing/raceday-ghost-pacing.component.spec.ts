@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DriverHeatData } from "@app/race/driver_heat_data";
 import { GhostPacingService } from "@app/services/ghost-pacing.service";
+import { TranslationService } from "@app/services/translation.service";
 
 import { RacedayGhostPacingComponent } from "./raceday-ghost-pacing.component";
 
@@ -9,9 +10,25 @@ describe("RacedayGhostPacingComponent", () => {
   let fixture: ComponentFixture<RacedayGhostPacingComponent>;
 
   beforeEach(async () => {
+    const mockTranslationService = {
+      translate: jasmine.createSpy("translate").and.callFake((key: string) => {
+        const map: Record<string, string> = {
+          RD_GHOST_LANE_RECORD: "Lane Record",
+          RD_GHOST_PERSONAL_BEST: "Personal Best",
+          RD_GHOST_HEAT_LEADER: "Heat Leader",
+          RD_GHOST_NO_BENCHMARK: "No ghost benchmark",
+          RD_GHOST_TELEMETRY_POSITION: "Live Telemetry Position",
+        };
+        return map[key] || key;
+      }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [RacedayGhostPacingComponent],
-      providers: [GhostPacingService],
+      providers: [
+        GhostPacingService,
+        { provide: TranslationService, useValue: mockTranslationService },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(RacedayGhostPacingComponent);
