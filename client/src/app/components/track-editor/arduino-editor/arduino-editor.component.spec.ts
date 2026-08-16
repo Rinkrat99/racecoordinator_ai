@@ -1334,5 +1334,68 @@ describe("ArduinoEditorComponent", () => {
       expect(mockDataService.updateInterfaceConfig).toHaveBeenCalled();
       expect(component.sendLedStringState).toHaveBeenCalledWith(0);
     });
+
+    it("should translate LED base behavior keys", () => {
+      expect(
+        (component as any).getLedBaseTranslationKey(
+          "RGB_LED_BEHAVIOR_HEAT_LEADER_BASE",
+        ),
+      ).toBe("AE_LED_BEHAVIOR_HEAT_LEADER_LANE");
+      expect(
+        (component as any).getLedBaseTranslationKey(
+          "RGB_LED_BEHAVIOR_FUEL_LEVEL_BASE",
+        ),
+      ).toBe("AE_LED_BEHAVIOR_FUEL_LEVEL_LANE");
+      expect(
+        (component as any).getLedBaseTranslationKey(
+          "RGB_LED_BEHAVIOR_REFUELING_BASE",
+        ),
+      ).toBe("AE_LED_BEHAVIOR_REFUELING_LANE");
+      expect(
+        (component as any).getLedBaseTranslationKey(
+          "RGB_LED_BEHAVIOR_LAP_INDICATOR_BASE",
+        ),
+      ).toBe("AE_LED_BEHAVIOR_LAP_INDICATOR_LANE");
+      expect(
+        (component as any).getLedBaseTranslationKey(
+          "RGB_LED_BEHAVIOR_LAP_SENSOR_BASE",
+        ),
+      ).toBe("AE_LED_BEHAVIOR_LAP_SENSOR_LANE");
+      expect((component as any).getLedBaseTranslationKey("CUSTOM_KEY")).toBe(
+        "CUSTOM_KEY",
+      );
+    });
+
+    it("should handle removeInterface, trackBy helpers, and dialog requests", () => {
+      const mockEvent = {
+        stopPropagation: jasmine.createSpy("stopPropagation"),
+      };
+      spyOn(component.remove, "emit");
+      component.removeInterface(mockEvent as any);
+      expect(mockEvent.stopPropagation).toHaveBeenCalled();
+      expect(component.remove.emit).toHaveBeenCalled();
+
+      spyOn(component.requestLedStringDialog, "emit");
+      component.onCreateLedString();
+      expect(component.requestLedStringDialog.emit).toHaveBeenCalled();
+
+      expect(component.trackByLedString(0, { pin: 5 } as any)).toBe(5);
+      expect(component.trackByLedString(2, { pin: 0 } as any)).toBe(2);
+      expect(component.trackByLed(3, {})).toBe(3);
+      expect(
+        component.trackByLane(1, new Lane("l1", "#ffffff", "#ff0000", 50)),
+      ).toBeDefined();
+    });
+
+    it("should generate voltage help guide steps when voltage lanes exist", () => {
+      spyOn(component, "getVoltageLanes").and.returnValue([0]);
+      const steps = component.getHelpSteps();
+      expect(
+        steps.some((s) => s.title === "TE_HELP_ARDUINO_VOLTAGE_TITLE"),
+      ).toBeTrue();
+      expect(
+        steps.some((s) => s.title === "TE_HELP_ARDUINO_VOLTAGE_MAX_TITLE"),
+      ).toBeTrue();
+    });
   });
 });

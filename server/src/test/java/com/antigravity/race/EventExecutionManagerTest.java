@@ -364,4 +364,11 @@ public class EventExecutionManagerTest {
       }
     }
   }
+
+  @Test
+  public void testGetEventDriverResultsMap_ReturnsCopy() {
+    EventExecutionManager manager = EventExecutionManager.getInstance();
+    assertNotNull(manager.getEventDriverResultsMap());
+    assertTrue(manager.getEventDriverResultsMap().isEmpty());
+  }
 }

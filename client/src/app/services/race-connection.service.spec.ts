@@ -523,5 +523,88 @@ describe("RaceConnectionService", () => {
       expect((service as any).isConnected).toBeFalse();
       expect((service as any).connectionCount).toBe(0);
     }));
+
+    it("should process race updates with event, season, driver, and heat payloads", fakeAsync(() => {
+      service.connect();
+
+      const mockExistingRace: any = {
+        entity_id: "old_race_id",
+        practice: false,
+      };
+      mockRaceService.getRace = jasmine
+        .createSpy("getRace")
+        .and.returnValue(mockExistingRace);
+      mockRaceService.setRace = jasmine.createSpy("setRace");
+      mockRaceService.setParticipants = jasmine.createSpy("setParticipants");
+      mockRaceService.setHeats = jasmine.createSpy("setHeats");
+      mockRaceService.setCurrentHeat = jasmine.createSpy("setCurrentHeat");
+
+      const updatePayload: any = {
+        race: {
+          model: { entityId: "new_race_id" },
+          name: "Championship Race",
+          heatScoring: { finishMethod: 1 },
+          overallScoring: { rankingMethod: 1 },
+          lanes: [],
+        },
+        isEvent: true,
+        eventId: "event_123",
+        eventName: "Grand Prix Cup",
+        currentEventRaceIndex: 2,
+        totalEventRaces: 5,
+        autoAdvanceRemainingSeconds: 15,
+        isSeason: true,
+        seasonId: "season_456",
+        seasonName: "2026 Pro Season",
+        seasonStandings: [{ driverId: "d1", points: 25 }],
+        drivers: [
+          {
+            driver: { model: { entityId: "d1" }, name: "Driver 1" },
+            car: { name: "Car 1" },
+          },
+        ],
+        heats: [
+          {
+            heatNumber: 1,
+            heatDrivers: [],
+          },
+        ],
+        currentHeat: {
+          heatNumber: 1,
+          heatDrivers: [],
+        },
+        recordData: { trackRecords: [] },
+      };
+
+      (service as any).driversLoaded = true;
+      (service as any).processRaceUpdate(updatePayload);
+      tick();
+
+      expect(mockRaceService.setRace).toHaveBeenCalled();
+      expect(mockRaceService.setParticipants).toHaveBeenCalled();
+      expect(mockRaceService.setHeats).toHaveBeenCalled();
+      expect(mockRaceService.setCurrentHeat).toHaveBeenCalled();
+    }));
+
+    it("should handle error in driver loading gracefully and flush pendingUpdate", fakeAsync(() => {
+      const errorDriversSubject = new Subject<any>();
+      mockDataService.getDrivers.and.returnValue(
+        errorDriversSubject.asObservable(),
+      );
+
+      service.connect();
+      (service as any).driversLoaded = false;
+      (service as any).pendingUpdate = { isEvent: true };
+      spyOn(service as any, "processRaceUpdate");
+
+      errorDriversSubject.error(new Error("Network failure"));
+      tick();
+
+      expect((service as any).driversLoaded).toBeTrue();
+      expect((service as any).processRaceUpdate).toHaveBeenCalledWith({
+        isEvent: true,
+      });
+      expect((service as any).pendingUpdate).toBeNull();
+    }));
   });
 });

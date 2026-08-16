@@ -14,7 +14,9 @@ import { BehaviorSubject as _BehaviorSubject, of } from "rxjs";
 import { AnalyticsService } from "@app/analytics.service";
 import { HelpOverlayComponent } from "@app/components/shared/help-overlay/help-overlay.component";
 import { DataService } from "@app/data.service";
+import { Driver } from "@app/models/driver";
 import { Settings as _Settings } from "@app/models/settings";
+import { Team } from "@app/models/team";
 import { TranslatePipe } from "@app/pipes/translate.pipe";
 import { InitializeRaceResponse, Race } from "@app/proto/antigravity";
 import { FileSystemService } from "@app/services/file-system.service";
@@ -1468,5 +1470,54 @@ describe("DefaultRacedaySetupComponent", () => {
       component.toggleAvailableDrivers();
       expect(component.isAvailableDriversCollapsed).toBeFalse();
     });
+
+    it("should randomize participants in selected list", fakeAsync(() => {
+      const d1 = { entity_id: "d1", name: "Driver 1", nickname: "D1" } as any;
+      const d2 = { entity_id: "d2", name: "Driver 2", nickname: "D2" } as any;
+      const d3 = { entity_id: "d3", name: "Driver 3", nickname: "D3" } as any;
+
+      component.selectedParticipants = [d1, d2, d3];
+      component.randomizeParticipants();
+      tick(50);
+
+      expect(component.selectedParticipants.length).toBe(3);
+    }));
+
+    it("should safely return Driver or Team from getDriver and getTeam", () => {
+      const driver = new Driver("d1", "Driver 1", "D1");
+      const team = new Team("t1", "Team 1", undefined, ["d1"]);
+
+      expect(component.getDriver(driver)).toBe(driver);
+      expect(component.getDriver(team)).toBeUndefined();
+      expect(component.getTeam(team)).toBe(team);
+      expect(component.getTeam(driver)).toBeUndefined();
+    });
+
+    it("should show validation error modal when addParticipant or addAllParticipants fails validation", fakeAsync(() => {
+      const validationService = (component as any).validationService;
+      validationService.validate.and.returnValue({
+        isValid: false,
+        errorType: "DUPLICATE_DRIVER",
+      });
+      validationService.getErrorMessage.and.returnValue(
+        "Duplicate driver detected",
+      );
+
+      const d1 = { entity_id: "d1", name: "Driver 1", nickname: "D1" } as any;
+      component.selectedParticipants = [];
+      component.unselectedParticipants = [d1];
+
+      component.toggleParticipantSelection(d1, false);
+      tick(50);
+
+      expect(component.showErrorModal).toBeTrue();
+      expect(component.errorMessage).toBe("Duplicate driver detected");
+
+      component.showErrorModal = false;
+      component.addAllParticipants();
+      tick(50);
+
+      expect(component.showErrorModal).toBeTrue();
+    }));
   });
 });

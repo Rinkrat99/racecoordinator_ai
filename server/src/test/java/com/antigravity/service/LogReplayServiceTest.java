@@ -229,6 +229,34 @@ public class LogReplayServiceTest {
     // 6. ReplayCommandDump - endRace
     processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"endRace\"}");
 
+    // Additional commands
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setRace(activeRace);
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"nextHeat\"}");
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"restartHeat\"}");
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"skipHeat\"}");
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"skipRace\"}");
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"deferHeat\"}");
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"abortTimers\"}");
+    processMethod.invoke(
+        replayService,
+        "ReplayCommandDump: {\"command\":\"changeLane\",\"parameters\":{\"fromLane\":0,\"toLane\":1}}");
+    processMethod.invoke(
+        replayService,
+        "ReplayCommandDump: {\"command\":\"resetLaneHeatData\",\"parameters\":{\"lane\":-1}}");
+    processMethod.invoke(
+        replayService,
+        "ReplayCommandDump: {\"command\":\"resetLaneHeatData\",\"parameters\":{\"lane\":0}}");
+    processMethod.invoke(
+        replayService,
+        "ReplayCommandDump: {\"command\":\"updateUserLaps\",\"parameters\":{\"lane\":0,\"body\":{\"userLaps\":3.5}}}");
+    processMethod.invoke(
+        replayService,
+        "ReplayCommandDump: {\"command\":\"updateHeatUserLaps\",\"parameters\":{\"heatNumber\":1,\"lane\":0,\"body\":{\"userLaps\":2.0}}}");
+    processMethod.invoke(
+        replayService,
+        "ReplayCommandDump: {\"command\":\"updateBatchUserLaps\",\"parameters\":{\"updates\":[{\"lane\":0,\"userLaps\":1.0}]}}");
+    processMethod.invoke(replayService, "ReplayCommandDump: {\"command\":\"finalizeModifyHeats\"}");
+
     // 7. Register & unregister connection
     com.antigravity.protocols.interfaces.LogReaderSerialConnection conn =
         new com.antigravity.protocols.interfaces.LogReaderSerialConnection();

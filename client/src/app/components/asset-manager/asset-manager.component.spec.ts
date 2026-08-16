@@ -722,5 +722,44 @@ describe("AssetManagerComponent", () => {
       tick(5000);
       fixture.detectChanges();
     }));
+
+    it("should handle custom rotation navigation and saved handlers", () => {
+      component.openNewCustomRotationEditor();
+      expect(mockRouter.navigate).toHaveBeenCalledWith(
+        ["/custom-rotation-editor"],
+        jasmine.any(Object),
+      );
+
+      const mockAsset = {
+        id: "rot_1",
+        name: "Rotation 1",
+        type: "custom_rotation",
+      } as any;
+      component.openEditCustomRotationEditor(mockAsset);
+      expect(mockRouter.navigate).toHaveBeenCalledWith(
+        ["/custom-rotation-editor"],
+        {
+          queryParams: { id: "rot_1", from: null, returnUrl: null },
+        },
+      );
+
+      spyOn(component, "loadAssets");
+      component.onCustomRotationSaved({} as any);
+      expect(component.loadAssets).toHaveBeenCalled();
+
+      component.showAudioSetEditor = true;
+      component.onAudioSetSaved({} as any);
+      expect(component.showAudioSetEditor).toBeFalse();
+    });
+
+    it("should return guide steps for help walkthrough", () => {
+      const steps = component.getHelpSteps();
+      expect(steps.length).toBeGreaterThan(0);
+      for (const step of steps) {
+        if (step.onEnter) {
+          step.onEnter();
+        }
+      }
+    });
   });
 });

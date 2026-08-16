@@ -2505,4 +2505,26 @@ describe("UIEditorComponent", () => {
       expect(config).toEqual({ type: "audio_set", url: "default_countdown" });
     });
   });
+
+  describe("getHelpSteps", () => {
+    it("should execute all onEnter hooks in help steps", () => {
+      component.editingSettings.activeThemeId = "theme_1";
+      const steps = component.getHelpSteps();
+      expect(steps.length).toBeGreaterThan(0);
+
+      for (const step of steps) {
+        if (step.onEnter) {
+          step.onEnter();
+        }
+      }
+
+      expect(component.sectionsExpanded["themes"]).toBeTrue();
+      expect(component.sectionsExpanded["theme_1"]).toBeTrue();
+      expect(component.sectionsExpanded["flags"]).toBeTrue();
+      expect(component.sectionsExpanded["countdown"]).toBeTrue();
+      expect(component.sectionsExpanded["fuelGauge"]).toBeTrue();
+      expect(component.sectionsExpanded["audio"]).toBeTrue();
+      expect(component.sectionsExpanded["config"]).toBeTrue();
+    });
+  });
 });

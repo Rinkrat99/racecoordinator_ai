@@ -88,4 +88,106 @@ public class HistoryPredictionTaskHandlerTest {
     verify(mockCtx).header("Cache-Control", "no-cache, no-store, must-revalidate");
     verify(mockCtx).status(404);
   }
+
+  @Test
+  public void testGetRaceHistoryList_Success() {
+    Context mockCtx = mock(Context.class);
+    when(mockCtx.queryParam("scope")).thenReturn("demo");
+    when(mockCtx.status(any(Integer.class))).thenReturn(mockCtx);
+
+    handler.getRaceHistoryList(mockCtx);
+    verify(mockCtx).json(any());
+  }
+
+  @Test
+  public void testGetRaceHistoryById_NotFound() {
+    Context mockCtx = mock(Context.class);
+    when(mockCtx.pathParam("id")).thenReturn("non_existent_history_id");
+    when(mockCtx.status(404)).thenReturn(mockCtx);
+
+    handler.getRaceHistoryById(mockCtx);
+    verify(mockCtx).status(404);
+  }
+
+  @Test
+  public void testExportRaceHistoryCsv_NotFound() {
+    Context mockCtx = mock(Context.class);
+    when(mockCtx.pathParam("id")).thenReturn("non_existent_history_id");
+    when(mockCtx.status(404)).thenReturn(mockCtx);
+
+    handler.exportRaceHistoryCsv(mockCtx);
+    verify(mockCtx).status(404);
+  }
+
+  @Test
+  public void testGetGlobalStatistics_Success() {
+    Context mockCtx = mock(Context.class);
+    when(mockCtx.queryParam("raceId")).thenReturn("race_abc");
+    when(mockCtx.status(any(Integer.class))).thenReturn(mockCtx);
+
+    handler.getGlobalStatistics(mockCtx);
+    verify(mockCtx).json(any());
+  }
+
+  @Test
+  public void testGetDriverStatistics_NotFound() {
+    Context mockCtx = mock(Context.class);
+    when(mockCtx.pathParam("driverId")).thenReturn("unknown_driver");
+    when(mockCtx.queryParam("raceId")).thenReturn("race_xyz");
+    when(mockCtx.status(any(Integer.class))).thenReturn(mockCtx);
+
+    handler.getDriverStatistics(mockCtx);
+    verify(mockCtx).json(any());
+  }
+
+  @Test
+  public void testGetRacePredictionRecord_NotFound() {
+    Context mockCtx = mock(Context.class);
+    when(mockCtx.pathParam("id")).thenReturn("missing_race_prediction");
+    when(mockCtx.status(404)).thenReturn(mockCtx);
+
+    com.antigravity.race.ClientSubscriptionManager.getInstance().setRace(null);
+
+    handler.getRacePredictionRecord(mockCtx);
+    verify(mockCtx).status(404);
+  }
+
+  @Test
+  public void testIsStalePredictionRecord_VariousConditions() {
+    // Missing simulations in projection
+    RacePredictionRecord record = new RacePredictionRecord();
+    RacePredictionRecord.PredictionSnapshot preRace = new RacePredictionRecord.PredictionSnapshot();
+    List<RacePredictionRecord.DriverProjection> standings = new ArrayList<>();
+    RacePredictionRecord.DriverProjection dp1 =
+        new RacePredictionRecord.DriverProjection("d_1", "Driver 1", 1, 100.0, 0.0, 0.6, 0.9);
+    dp1.setTotalSimulations(0); // 0 simulations -> stale
+    standings.add(dp1);
+    preRace.setProjectedStandings(standings);
+    record.setPreRace(preRace);
+
+    assertTrue(handler.isStalePredictionRecord(mockDbCtx, record, null, false));
+
+    // Empty lane driver in standings -> stale
+    standings.clear();
+    RacePredictionRecord.DriverProjection dpEmpty =
+        new RacePredictionRecord.DriverProjection(
+            "EMPTY_LANE", "Empty Lane", 1, 100.0, 0.0, 0.6, 0.9);
+    dpEmpty.setTotalSimulations(1000);
+    standings.add(dpEmpty);
+    preRace.setProjectedStandings(standings);
+    record.setPreRace(preRace);
+
+    assertTrue(handler.isStalePredictionRecord(mockDbCtx, record, null, false));
+
+    // Fallback rank -1 -> stale
+    standings.clear();
+    RacePredictionRecord.DriverProjection dpFallback =
+        new RacePredictionRecord.DriverProjection("d_1", "Driver 1", -1, 100.0, 0.0, 0.6, 0.9);
+    dpFallback.setTotalSimulations(1000);
+    standings.add(dpFallback);
+    preRace.setProjectedStandings(standings);
+    record.setPreRace(preRace);
+
+    assertTrue(handler.isStalePredictionRecord(mockDbCtx, record, null, false));
+  }
 }

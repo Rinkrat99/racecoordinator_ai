@@ -81,6 +81,8 @@ describe("ModifyHeatsModalComponent", () => {
 
     const mockRouter = {
       navigate: jasmine.createSpy("navigate"),
+      navigateByUrl: jasmine.createSpy("navigateByUrl"),
+      url: "/raceday",
       events: of(),
     };
 
@@ -1501,6 +1503,42 @@ describe("ModifyHeatsModalComponent", () => {
       expect(
         component["localHeats"][0].heatDrivers[0].actualDriver?.entity_id,
       ).toBe("d2");
+    });
+
+    it("should handle navigation to team manager and driver manager", () => {
+      const router = TestBed.inject(Router);
+      component.onManageTeams();
+      expect(router.navigate).toHaveBeenCalledWith(
+        ["/team-manager"],
+        jasmine.any(Object),
+      );
+
+      component.onManageDrivers();
+      expect(router.navigate).toHaveBeenCalledWith(
+        ["/driver-manager"],
+        jasmine.any(Object),
+      );
+    });
+
+    it("should handle exit confirmation and cancellation", () => {
+      const router = TestBed.inject(Router);
+      spyOn(component.close, "emit");
+
+      (component as any).onExitCancel();
+      expect((component as any).showExitConfirmation).toBeFalse();
+
+      (component as any).onExitConfirm();
+      expect(component.close.emit).toHaveBeenCalledWith(false);
+      expect(router.navigateByUrl).toHaveBeenCalled();
+    });
+
+    it("should handle ack modal close and canSave evaluation", () => {
+      (component as any).showAckModal = true;
+      (component as any).onAckModalClose();
+      expect((component as any).showAckModal).toBeFalse();
+
+      expect(component.canSave).toBeDefined();
+      expect(component.currentValidationError).toBeDefined();
     });
   });
 });

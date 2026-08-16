@@ -72,4 +72,29 @@ public class DatabaseInitializerTest {
     long practiceCount = races.stream().filter(r -> "Practice".equals(r.getName())).count();
     assertEquals(1, practiceCount);
   }
+
+  @Test
+  public void testResetDriversAndTeamsDirectly() {
+    initializer.resetDrivers(context);
+    SqliteRepository<Driver> driverRepo = new SqliteRepository<>(context, "drivers", Driver.class);
+    List<Driver> drivers = driverRepo.findAll();
+    assertTrue(drivers.size() > 0);
+
+    initializer.resetTeams(context);
+    SqliteRepository<Team> teamRepo = new SqliteRepository<>(context, "teams", Team.class);
+    List<Team> teams = teamRepo.findAll();
+    assertEquals(2, teams.size());
+  }
+
+  @Test
+  public void testResetTracksAndRacesDirectly() {
+    Track track = initializer.resetTracks(context);
+    assertNotNull(track);
+    assertEquals("The Heights", track.getName());
+
+    initializer.resetRaces(context, track);
+    SqliteRepository<Race> raceRepo = new SqliteRepository<>(context, "races", Race.class);
+    List<Race> races = raceRepo.findAll();
+    assertTrue(races.size() >= 3);
+  }
 }

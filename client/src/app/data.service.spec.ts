@@ -1295,5 +1295,99 @@ describe("DataService", () => {
         InterfaceEvent.decode(mockInterfaceEvent.slice()),
       );
     });
+
+    it("should handle connectToRaceDataSocket life cycle and reconnection", () => {
+      // Mock WebSocket
+      const mockWs: any = {
+        readyState: WebSocket.OPEN,
+        close: jasmine.createSpy("close"),
+        send: jasmine.createSpy("send"),
+      };
+      (service as any).raceDataSocket = mockWs;
+
+      // Early return if already open
+      service.connectToRaceDataSocket();
+      expect(mockWs.close).not.toHaveBeenCalled();
+
+      // Closed state
+      mockWs.readyState = WebSocket.CLOSED;
+      (service as any).connectionIntent = "VIEWER";
+      localStorage.setItem("director_token", "test_tok");
+
+      let createdSocket: any;
+      function MockWs(this: any) {
+        createdSocket = this;
+        this.binaryType = "arraybuffer";
+        this.onopen = null;
+        this.onmessage = null;
+        this.onclose = null;
+        this.onerror = null;
+        this.close = jasmine.createSpy("close");
+      }
+      spyOn(window as any, "WebSocket").and.callFake(MockWs as any);
+
+      service.connectToRaceDataSocket();
+      expect(createdSocket).toBeDefined();
+
+      // Trigger onopen with shouldSubscribeToRaceData
+      (service as any).shouldSubscribeToRaceData = true;
+      spyOn(service as any, "sendRaceSubscriptionRequest");
+      createdSocket.onopen();
+      expect((service as any).sendRaceSubscriptionRequest).toHaveBeenCalledWith(
+        true,
+      );
+
+      // Trigger onerror & onclose
+      createdSocket.onerror(new Event("error"));
+      createdSocket.onclose();
+      expect((service as any).raceDataSocket).toBeUndefined();
+      localStorage.removeItem("director_token");
+    });
+
+    it("should handle connectToInterfaceDataSocket life cycle and message decoding", () => {
+      const mockWs: any = {
+        readyState: WebSocket.OPEN,
+        close: jasmine.createSpy("close"),
+      };
+      (service as any).interfaceDataSocket = mockWs;
+      service.connectToInterfaceDataSocket();
+      expect(mockWs.close).not.toHaveBeenCalled();
+
+      mockWs.readyState = WebSocket.CLOSED;
+      let createdSocket: any;
+      function MockInterfaceWs(this: any) {
+        createdSocket = this;
+        this.binaryType = "arraybuffer";
+        this.onopen = null;
+        this.onmessage = null;
+        this.onclose = null;
+        this.onerror = null;
+        this.close = jasmine.createSpy("close");
+      }
+      spyOn(window as any, "WebSocket").and.callFake(MockInterfaceWs as any);
+
+      service.connectToInterfaceDataSocket();
+      createdSocket.onopen();
+
+      // Message with Base64 data
+      const mockEvt = InterfaceEvent.encode({
+        digitalPin: { pin: 7, state: 0 },
+      }).finish();
+      const base64Str = btoa(
+        String.fromCharCode.apply(null, Array.from(mockEvt)),
+      );
+      let receivedEv: any;
+      service.getInterfaceEvents().subscribe((ev) => {
+        receivedEv = ev;
+      });
+
+      createdSocket.onmessage({ data: `"${base64Str}"` });
+      expect(receivedEv?.digitalPin?.pin).toBe(7);
+
+      // Message with unknown data type
+      createdSocket.onmessage({ data: { unknown: true } });
+      // Invalid base64
+      createdSocket.onmessage({ data: "!!!not_base64!!!" });
+    });
   });
 });

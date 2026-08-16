@@ -112,4 +112,33 @@ public class InterfaceHardwareHandlerTest {
     handler.setInterfaceRgbLedState(mockCtx2);
     org.mockito.Mockito.verify(mockCtx2).result(org.mockito.ArgumentMatchers.any(byte[].class));
   }
+
+  @Test
+  public void testInitializeInterface_WithArduinoTrackmateBart() {
+    com.antigravity.proto.InitializeInterfaceRequest req =
+        com.antigravity.proto.InitializeInterfaceRequest.newBuilder()
+            .setLaneCount(4)
+            .addConfigs(com.antigravity.proto.ArduinoConfig.newBuilder().setName("Ard1").build())
+            .addTrackmateConfigs(
+                com.antigravity.proto.TrackmateConfig.newBuilder().setName("TM1").build())
+            .addBartConfigs(com.antigravity.proto.BartConfig.newBuilder().setName("Bart1").build())
+            .build();
+
+    io.javalin.http.Context mockCtx = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx.bodyAsBytes()).thenReturn(req.toByteArray());
+    when(mockCtx.contentType(org.mockito.ArgumentMatchers.anyString())).thenReturn(mockCtx);
+
+    handler.initializeInterface(mockCtx);
+    org.mockito.Mockito.verify(mockCtx).result(org.mockito.ArgumentMatchers.any(byte[].class));
+  }
+
+  @Test
+  public void testGetPhidgetDevices_ShouldReturnResponse() {
+    io.javalin.http.Context mockCtx = org.mockito.Mockito.mock(io.javalin.http.Context.class);
+    when(mockCtx.status(org.mockito.ArgumentMatchers.anyInt())).thenReturn(mockCtx);
+    when(mockCtx.contentType(org.mockito.ArgumentMatchers.anyString())).thenReturn(mockCtx);
+
+    handler.getPhidgetDevices(mockCtx);
+    org.mockito.Mockito.verify(mockCtx).status(org.mockito.ArgumentMatchers.anyInt());
+  }
 }

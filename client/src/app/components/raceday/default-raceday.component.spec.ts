@@ -5441,5 +5441,56 @@ describe("DefaultRacedayComponent", () => {
       component.currentColumnLayouts = { colB: { "top-right": "1" } };
       expect(component.currentColumnLayouts["colB"]).toBeDefined();
     });
+
+    it("should evaluate event, group, and auto-advance getters", () => {
+      (component as any).race = {
+        group_options: { enabled: true },
+        is_event: true,
+        event_name: "Formula Series",
+        current_event_race_index: 3,
+        total_event_races: 8,
+        auto_advance_remaining_seconds: 12,
+        heat_scoring: {
+          allowFinish: "NoneAutoSegments",
+          finishMethod: FinishMethod.Timed,
+          finishValue: 3665,
+        },
+      } as any;
+
+      expect(component.groupEnabled).toBeTrue();
+      expect(component.isEvent).toBeTrue();
+      expect(component.eventName).toBe("Formula Series");
+      expect(component.currentEventRaceIndex).toBe(4);
+      expect(component.totalEventRaces).toBe(8);
+      expect(component.autoAdvanceRemainingSeconds).toBe(12);
+      expect((component as any).isAutoSegments).toBeTrue();
+
+      (component as any).autoStartRemaining = 5;
+      expect((component as any).autoStatusLabel).toBe("RD_AUTO_STARTING");
+      (component as any).autoStartRemaining = 0;
+      (component as any).autoAdvanceRemaining = 3;
+      expect((component as any).autoStatusLabel).toBe("RD_AUTO_ADVANCING");
+      (component as any).autoAdvanceRemaining = 0;
+      expect((component as any).autoStatusLabel).toBe("");
+
+      (component as any).raceState = RaceState.NOT_STARTED;
+      expect((component as any).formattedTime).toBe("1:01:05");
+
+      (component as any).race.heat_scoring.finishValue = 125;
+      expect((component as any).formattedTime).toBe("2:05");
+
+      (component as any).race.heat_scoring.finishValue = 45;
+      expect((component as any).formattedTime).toBe("45");
+    });
+
+    it("should format leaderboard scores for time and lap formats", () => {
+      expect((component as any).getLeaderboardScoreFormat(null)).toBe("1.0-0");
+      expect(
+        (component as any).getLeaderboardScoreFormat({ isTime: true }),
+      ).toBe("1.3-3");
+      expect(
+        (component as any).getLeaderboardScoreFormat({ isTime: false }),
+      ).toBe("1.2-2");
+    });
   });
 });

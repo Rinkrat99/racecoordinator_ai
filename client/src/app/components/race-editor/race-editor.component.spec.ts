@@ -1937,6 +1937,28 @@ describe("RaceEditorComponent", () => {
       const steps = component.getHelpSteps();
       expect(steps.length).toBeGreaterThan(5);
       expect(steps[0].title).toBe("RE_HELP_WELCOME_TITLE");
+
+      for (const step of steps) {
+        if (step.onEnter) {
+          step.onEnter();
+        }
+      }
+    });
+
+    it("should compute fuel usage paths with Quadratic and Cubic models", () => {
+      component.editingRace.fuel_options!.usage_type = FuelUsageType.QUADRATIC;
+      expect(component.getFuelUsagePath()).toContain("M ");
+
+      component.editingRace.fuel_options!.usage_type = FuelUsageType.CUBIC;
+      expect(component.getFuelUsagePath()).toContain("M ");
+
+      component.editingRace.digital_fuel_options!.usage_type =
+        FuelUsageType.QUADRATIC;
+      expect(component.getDigitalUsagePath()).toContain("M ");
+
+      component.editingRace.digital_fuel_options!.usage_type =
+        FuelUsageType.CUBIC;
+      expect(component.getDigitalUsagePath()).toContain("M ");
     });
   });
 });

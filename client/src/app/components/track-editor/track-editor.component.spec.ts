@@ -904,5 +904,48 @@ describe("TrackEditorComponent", () => {
       (component as any).ensureSectionsExpandedForHelp();
       expect(component.sectionsExpanded.interfaces).toBeTrue();
     });
+
+    it("should handle updateTrack with navigation back and config synchronization", fakeAsync(() => {
+      const mockSavedTrack = {
+        entity_id: "new_t1",
+        name: "Saved Track",
+        lanes: [
+          { background_color: "#ff0000", line_color: "#000000", length: 50 },
+        ],
+        arduino_configs: [
+          { name: "A1", digitalIds: [1], analogIds: [], ledStrings: [] },
+        ],
+        trackmate_configs: [{ name: "TM1", digitalIds: [2] }],
+        phidget_configs: [{ name: "PH1", serialNumber: 999 }],
+        bart_configs: [{ name: "B1", comPort: "COM1" }],
+      };
+      dataService.createTrack.and.returnValue(of(mockSavedTrack as any));
+      dataService.getTracks.and.returnValue(of([mockSavedTrack as any]));
+      spyOn(component, "onBack");
+
+      component.navigateBackOnSave = true;
+      component.editingTrack = {
+        entity_id: "new",
+        name: "New Track",
+        lanes: [
+          { background_color: "#ff0000", line_color: "#000000", length: 50 },
+        ],
+      } as any;
+
+      component.updateTrack();
+      tick();
+
+      expect(component.onBack).toHaveBeenCalled();
+      expect(component.arduinoConfigs.length).toBe(1);
+      expect(component.trackmateConfigs.length).toBe(1);
+      expect(component.phidgetConfigs.length).toBe(1);
+      expect(component.bartConfigs.length).toBe(1);
+    }));
+
+    it("should toggle sections correctly", () => {
+      component.sectionsExpanded["lanes"] = true;
+      component.toggleSection("lanes");
+      expect(component.sectionsExpanded["lanes"]).toBeFalse();
+    });
   });
 });

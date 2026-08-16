@@ -1,16 +1,15 @@
 package com.antigravity.handlers;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.antigravity.context.DatabaseContext;
 import com.antigravity.race.ClientSubscriptionManager;
 import io.javalin.http.Context;
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Collections;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,7 +19,6 @@ public class RaceExportSaveHandlerTest {
   private DatabaseContext databaseContext;
   private RaceExportSaveHandler handler;
   private Context ctx;
-  private HttpServletResponse res;
 
   @Before
   public void setUp() throws Exception {
@@ -33,9 +31,11 @@ public class RaceExportSaveHandlerTest {
     ClientSubscriptionManager.setInstance(null);
     handler = new RaceExportSaveHandler(databaseContext);
 
-    HttpServletRequest req = mock(HttpServletRequest.class);
-    res = mock(HttpServletResponse.class);
-    ctx = new Context(req, res, Collections.emptyMap());
+    ctx = mock(Context.class);
+    when(ctx.status(any(Integer.class))).thenReturn(ctx);
+    when(ctx.contentType(any(String.class))).thenReturn(ctx);
+    when(ctx.header(any(), any())).thenReturn(ctx);
+    when(ctx.result(any(String.class))).thenReturn(ctx);
   }
 
   @After
@@ -46,13 +46,55 @@ public class RaceExportSaveHandlerTest {
   @Test
   public void testSaveRace_NoActiveRace_ShouldReturn404() {
     handler.saveRace(ctx);
-    verify(res).setStatus(404);
+    verify(ctx).status(404);
   }
 
   @Test
   public void testExportCsv_NoActiveRace_ShouldReturn404() {
     handler.exportRaceCsv(ctx);
-    verify(res).setStatus(404);
+    verify(ctx).status(404);
+  }
+
+  @Test
+  public void testSaveRace_WhenRacing_ShouldReturn400() {
+    com.antigravity.race.Race mockRace = mock(com.antigravity.race.Race.class);
+    when(mockRace.getState()).thenReturn(new com.antigravity.race.states.Racing());
+    ClientSubscriptionManager.getInstance().setRace(mockRace);
+
+    handler.saveRace(ctx);
+    verify(ctx).status(400);
+  }
+
+  @Test
+  public void testGetSavedRaces_Success() {
+    handler.getSavedRaces(ctx);
+    verify(ctx).contentType("application/json");
+  }
+
+  @Test
+  public void testDeleteSavedRace_NotFound() {
+    when(ctx.pathParam("filename")).thenReturn("non_existent_race.json");
+    handler.deleteSavedRace(ctx);
+    verify(ctx).status(404);
+  }
+
+  @Test
+  public void testLoadRace_NullFilename_Returns400() {
+    java.util.HashMap<String, Object> body = new java.util.HashMap<>();
+    when(ctx.bodyAsClass(java.util.HashMap.class)).thenReturn(body);
+
+    handler.loadRace(ctx);
+    verify(ctx).status(400);
+  }
+
+  @Test
+  public void testLoadRace_NotFound_Returns404() {
+    java.util.HashMap<String, Object> body = new java.util.HashMap<>();
+    body.put("filename", "missing_save.json");
+    when(ctx.bodyAsClass(java.util.HashMap.class)).thenReturn(body);
+
+    handler.loadRace(ctx);
+    verify(ctx).status(404);
   }
 
   @Test
