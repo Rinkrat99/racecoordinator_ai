@@ -290,22 +290,28 @@ describe("Protocol Integration End-to-End Test Suite", () => {
 
   describe("3. WebSocket Heartbeat, Watchdog & Reconnection Flow", () => {
     it("should handle interface status transitions, watchdog disconnects, and automatic reconnection", fakeAsync(() => {
-      // Connect to interface data socket
+      // Connect to race data socket and interface data socket
+      dataService.connectToRaceDataSocket();
       dataService.connectToInterfaceDataSocket();
       tick();
 
-      const latestSocket = activeSockets[activeSockets.length - 1];
-      expect(latestSocket).toBeDefined();
-      if (latestSocket.onopen) {
-        latestSocket.onopen();
-      }
-      tick();
+      const raceSocket = activeSockets[0];
+      const interfaceSocket = activeSockets[1];
+      expect(raceSocket).toBeDefined();
+      expect(interfaceSocket).toBeDefined();
 
-      // Verify connection stream is active
       let isSocketActive = false;
       dataService.socketConnected$.subscribe((connected) => {
         isSocketActive = connected;
       });
+
+      if (raceSocket.onopen) {
+        raceSocket.onopen();
+      }
+      if (interfaceSocket.onopen) {
+        interfaceSocket.onopen();
+      }
+      tick();
       expect(isSocketActive).toBeTrue();
 
       // 1. Simulate interface event (Status CONNECTED)
@@ -315,8 +321,8 @@ describe("Protocol Integration End-to-End Test Suite", () => {
       const base64Connect = btoa(
         String.fromCharCode(...Array.from(connectEvent)),
       );
-      if (latestSocket.onmessage) {
-        latestSocket.onmessage({ data: `"${base64Connect}"` });
+      if (interfaceSocket.onmessage) {
+        interfaceSocket.onmessage({ data: `"${base64Connect}"` });
       }
       tick();
 
@@ -329,27 +335,27 @@ describe("Protocol Integration End-to-End Test Suite", () => {
         type: Lap.LapType.LAP,
       }).finish();
       const base64Lap = btoa(String.fromCharCode(...Array.from(lapProto)));
-      if (latestSocket.onmessage) {
-        latestSocket.onmessage({ data: `"${base64Lap}"` });
+      if (interfaceSocket.onmessage) {
+        interfaceSocket.onmessage({ data: `"${base64Lap}"` });
       }
       tick();
 
       // 3. Simulate Socket Disconnect / Close
-      if (latestSocket.onclose) {
-        latestSocket.onclose({ code: 1006, reason: "Abnormal Closure" });
+      if (raceSocket.onclose) {
+        raceSocket.onclose({ code: 1006, reason: "Abnormal Closure" });
       }
       tick();
       expect(isSocketActive).toBeFalse();
 
-      // 4. Simulate Reconnect via connectToInterfaceDataSocket
-      dataService.connectToInterfaceDataSocket();
+      // 4. Simulate Reconnect via connectToRaceDataSocket
+      dataService.connectToRaceDataSocket();
       tick();
 
-      const reconnectedSocket = activeSockets[activeSockets.length - 1];
-      expect(reconnectedSocket).toBeDefined();
+      const reconnectedRaceSocket = activeSockets[activeSockets.length - 1];
+      expect(reconnectedRaceSocket).toBeDefined();
 
-      if (reconnectedSocket.onopen) {
-        reconnectedSocket.onopen();
+      if (reconnectedRaceSocket.onopen) {
+        reconnectedRaceSocket.onopen();
       }
       tick();
       expect(isSocketActive).toBeTrue();
