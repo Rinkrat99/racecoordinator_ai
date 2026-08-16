@@ -130,6 +130,7 @@ test.describe("UI Editor Visuals", () => {
     );
 
     // Try to navigate away to trigger pending changes guard inside Angular zone
+    await page.waitForTimeout(300);
     await page.evaluate(() => {
       const ngZone = (window as any).ngZone;
       const router = (window as any).angularRouter;
@@ -149,7 +150,7 @@ test.describe("UI Editor Visuals", () => {
     const modalContent = modal.locator(".modal-content");
     await modalContent.waitFor({ state: "visible" });
     await page.mouse.move(0, 0);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     await expect(modalContent).toHaveScreenshot(
       "ui-editor-discard-confirm.png",
@@ -183,7 +184,7 @@ test.describe("UI Editor Visuals", () => {
     const configSectionPractice = page.locator(".config-section").nth(1);
     await configSectionPractice.scrollIntoViewIfNeeded();
     await page.mouse.move(0, 0);
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     await expect(configSectionPractice).toHaveScreenshot(
       "ui-editor-practice-layout-section.png",

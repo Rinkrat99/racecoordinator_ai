@@ -1,5 +1,7 @@
 import { Locator } from "@playwright/test";
 
+import { ManagerHeaderHarnessBase } from "../../shared/manager-header/testing/manager-header.harness.base";
+import { ManagerHeaderHarnessE2e } from "../../shared/manager-header/testing/manager-header.harness.e2e";
 import { RaceManagerHarnessBase } from "./race-manager.harness.base";
 
 export class RaceManagerHarnessE2e implements RaceManagerHarnessBase {
@@ -26,9 +28,9 @@ export class RaceManagerHarnessE2e implements RaceManagerHarnessBase {
   }
 
   async clickDelete(): Promise<void> {
-    await this.locator
-      .locator("app-manager-header")
-      .getByRole("button", { name: /delete/i })
-      .click();
+    const header = new ManagerHeaderHarnessE2e(
+      this.locator.locator(ManagerHeaderHarnessBase.hostSelector),
+    );
+    await (await header.getToolbar()).clickDelete();
   }
 }
