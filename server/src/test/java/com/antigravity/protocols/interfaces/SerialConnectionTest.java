@@ -35,6 +35,55 @@ public class SerialConnectionTest {
     }
   }
 
+  @Test
+  public void testWriteDataThrowsWhenDisconnected() {
+    SerialConnection connection = new SerialConnection();
+    assertFalse(connection.isOpen());
+
+    try {
+      connection.writeData(new byte[] {0x01, 0x02});
+      fail("Should have thrown IOException");
+    } catch (IOException e) {
+      assertEquals("Port not open", e.getMessage());
+    }
+
+    try {
+      connection.writeData("TEST_STRING");
+      fail("Should have thrown IOException");
+    } catch (IOException e) {
+      assertEquals("Port not open", e.getMessage());
+    }
+  }
+
+  @Test
+  public void testDisconnectWhenClosedIsSafe() {
+    SerialConnection connection = new SerialConnection();
+    connection.disconnect();
+    assertFalse(connection.isOpen());
+  }
+
+  @Test
+  public void testAddListenerNullSafety() {
+    SerialConnection connection = new SerialConnection();
+    connection.addListener(null);
+    connection.addDataListener(null);
+  }
+
+  @Test
+  public void testBytesToHexHelper() throws Exception {
+    java.lang.reflect.Method method =
+        SerialConnection.class.getDeclaredMethod("bytesToHex", byte[].class);
+    method.setAccessible(true);
+
+    byte[] input = new byte[] {0x0A, (byte) 0xFF, 0x00, 0x5C};
+    String result = (String) method.invoke(null, (Object) input);
+    assertEquals("0A FF 00 5C", result);
+  }
+
+  private void assertEquals(String expected, String actual) {
+    org.junit.Assert.assertEquals(expected, actual);
+  }
+
   private void assertTrue(boolean condition) {
     org.junit.Assert.assertTrue(condition);
   }
