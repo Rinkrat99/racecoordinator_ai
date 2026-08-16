@@ -75,8 +75,28 @@ export class LaneViewInspectorComponent {
   }
 
   getColumnLabel(key: string): string {
+    if (
+      key === "imageset_fuel-gauge-builtin" ||
+      key === "imageset_default_fuel-gauge-builtin" ||
+      key === "imageset_default_fuel_gauge" ||
+      key === "fuel-gauge-builtin" ||
+      key === "default_fuel_gauge" ||
+      key.toLowerCase() === "default fuel gauge" ||
+      key.toLowerCase() === "default fuel guage"
+    ) {
+      return "RD_COL_FUEL_GAUGE";
+    }
     const col = this.availableColumns().find((c) => c.key === key);
-    return col ? col.label : key;
+    if (col) {
+      if (
+        col.label?.toLowerCase() === "default fuel gauge" ||
+        col.label?.toLowerCase() === "default fuel guage"
+      ) {
+        return "RD_COL_FUEL_GAUGE";
+      }
+      return col.label;
+    }
+    return key;
   }
 
   drop(event: CdkDragDrop<string[]>) {

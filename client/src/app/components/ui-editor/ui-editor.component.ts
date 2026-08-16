@@ -818,12 +818,16 @@ export class UIEditorComponent implements OnInit, OnDestroy, DirtyComponent {
           .filter(
             (a: any) =>
               a.type === "image_set" &&
-              a.name !== "Fuel Gauge" &&
+              a.name?.toLowerCase() !== "fuel gauge" &&
+              a.name?.toLowerCase() !== "default fuel gauge" &&
+              a.name?.toLowerCase() !== "default fuel guage" &&
               a.model?.entityId !== "fuel-gauge-builtin" &&
-              a.model?.entityId !== "default_fuel-gauge-builtin",
+              a.model?.entityId !== "default_fuel-gauge-builtin" &&
+              a.model?.entityId !== "default_fuel_gauge" &&
+              a.id !== "default_fuel_gauge",
           )
           .map((a: any) => ({
-            key: `imageset_${a.model?.entityId}`,
+            key: `imageset_${a.model?.entityId || a.id}`,
             label: a.name || "AM_UNKNOWN_ASSET",
           }));
 

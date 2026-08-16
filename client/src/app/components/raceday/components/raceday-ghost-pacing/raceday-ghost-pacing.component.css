@@ -24,7 +24,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .benchmark-tag {
@@ -35,11 +36,23 @@
   font-weight: 500;
   color: #94a3b8;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.benchmark-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ghost-icon {
   font-size: 0.85rem;
   filter: drop-shadow(0 0 4px rgba(148, 163, 184, 0.4));
+  flex-shrink: 0;
 }
 
 .delta-badge {
@@ -55,6 +68,8 @@
   color: #94a3b8;
   border: 1px solid rgba(148, 163, 184, 0.2);
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .delta-badge.ahead {
@@ -74,6 +89,12 @@
 .delta-arrow {
   font-size: 0.65rem;
   line-height: 1;
+  flex-shrink: 0;
+}
+
+.delta-value {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .pacing-track {

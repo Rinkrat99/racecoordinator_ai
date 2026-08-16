@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common";
 import { Component, computed, inject, input } from "@angular/core";
+import { RacedayFormatUtils } from "@app/components/raceday/utils/raceday-format.utils";
 import { DriverHeatData } from "@app/race/driver_heat_data";
 import {
   GhostBenchmarkType,
@@ -25,9 +26,16 @@ export class RacedayGhostPacingComponent {
   compact = input<boolean>(false);
   lapProgress = input<number | null>(null);
 
+  isEmptyDriver = computed(() => {
+    const hd = this.driverHeatData();
+    if (!hd) return true;
+    return RacedayFormatUtils.isEmptyDriver(hd);
+  });
+
   // Effective benchmark ghost lap time in seconds
   targetGhostLapTime = computed(() => {
     const hd = this.driverHeatData();
+    if (!hd || this.isEmptyDriver()) return 0;
     const laneIndex = hd?.laneIndex ?? 0;
     return this.ghostPacingService.resolveGhostBenchmarkTime(
       this.benchmarkType(),
@@ -89,6 +97,9 @@ export class RacedayGhostPacingComponent {
 
   // Formatted delta string: e.g. "+0.34s" or "-0.52s"
   formattedDelta = computed(() => {
+    if (this.isEmptyDriver()) {
+      return "--";
+    }
     const gap = this.ghostGap();
     if (gap.ghostLapTime <= 0 || gap.progressPct <= 0.02) {
       return "--";

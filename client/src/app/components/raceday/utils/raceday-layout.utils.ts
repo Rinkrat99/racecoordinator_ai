@@ -248,6 +248,11 @@ export class RacedayLayoutUtils {
       "participant.fuelLevel": "RD_COL_FUEL_LEVEL",
       fuelCapacity: "RD_COL_FUEL_CAPACITY",
       fuelPercentage: "RD_COL_FUEL_PERCENTAGE",
+      "imageset_fuel-gauge-builtin": "RD_COL_FUEL_GAUGE",
+      imageset_default_fuel_gauge: "RD_COL_FUEL_GAUGE",
+      "imageset_default_fuel-gauge-builtin": "RD_COL_FUEL_GAUGE",
+      "fuel-gauge-builtin": "RD_COL_FUEL_GAUGE",
+      default_fuel_gauge: "RD_COL_FUEL_GAUGE",
       seed: "RD_COL_SEED",
       rankHeat: "RD_COL_RANK_HEAT",
       rankOverall: "RD_COL_RANK_OVERALL",
@@ -264,7 +269,20 @@ export class RacedayLayoutUtils {
       qrCode: "RD_COL_LANE_QR",
       driverViewQrCode: "RD_COL_DRIVER_VIEW_QR",
       laneNumber: "RD_COL_LANE",
+      ghostPacing: "RD_COL_GHOST_PACING",
     };
+    if (typeof propertyKey === "string" && labels[propertyKey]) {
+      return labels[propertyKey];
+    }
+    if (
+      typeof propertyKey === "string" &&
+      (propertyKey.startsWith("imageset_fuel-gauge") ||
+        propertyKey.startsWith("imageset_default_fuel") ||
+        propertyKey.includes("fuel-gauge") ||
+        propertyKey.includes("fuel_gauge"))
+    ) {
+      return "RD_COL_FUEL_GAUGE";
+    }
     return labels[baseKey] ?? "UNKNOWN";
   }
 

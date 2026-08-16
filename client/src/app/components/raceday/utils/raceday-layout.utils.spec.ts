@@ -226,6 +226,12 @@ describe("RacedayLayoutUtils", () => {
     expect(RacedayLayoutUtils.getLabelKeyForColumn("driver.name")).toBe(
       "RD_COL_NAME",
     );
+    expect(RacedayLayoutUtils.getLabelKeyForColumn("ghostPacing")).toBe(
+      "RD_COL_GHOST_PACING",
+    );
+    expect(
+      RacedayLayoutUtils.getLabelKeyForColumn("imageset_fuel-gauge-builtin"),
+    ).toBe("RD_COL_FUEL_GAUGE");
     expect(RacedayLayoutUtils.getLabelKeyForColumn("unknown_prop")).toBe(
       "UNKNOWN",
     );

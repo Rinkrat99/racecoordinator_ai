@@ -433,16 +433,24 @@
                       </div>
                     }
                     @if (entry.property === "ghostPacing") {
-                      <app-raceday-ghost-pacing
-                        [driverHeatData]="hd"
-                        [compact]="true"
-                        [laneRecord]="
-                          parent()?.getLaneRecord
-                            ? parent().getLaneRecord(hd)
-                            : 0
-                        "
-                        [heatLeaderBest]="parent()?.heatBestTime || 0"
-                      ></app-raceday-ghost-pacing>
+                      @if (
+                        parent()?.isEmptyDriver
+                          ? parent().isEmptyDriver(hd)
+                          : !parent()?.isLaneOccupied(hd)
+                      ) {
+                        <span>--</span>
+                      } @else {
+                        <app-raceday-ghost-pacing
+                          [driverHeatData]="hd"
+                          [compact]="true"
+                          [laneRecord]="
+                            parent()?.getLaneRecord
+                              ? parent().getLaneRecord(hd)
+                              : 0
+                          "
+                          [heatLeaderBest]="parent()?.heatBestTime || 0"
+                        ></app-raceday-ghost-pacing>
+                      }
                     } @else if (entry.property === "lastLaps") {
                       <div
                         [style.display]="'flex'"

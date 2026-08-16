@@ -36,6 +36,7 @@ describe("RacedayGhostPacingComponent", () => {
     const mockHd = {
       laneIndex: 0,
       currentLapTime: 2.0,
+      driver: { name: "Driver 1" },
     } as unknown as DriverHeatData;
 
     fixture.componentRef.setInput("driverHeatData", mockHd);
@@ -54,6 +55,7 @@ describe("RacedayGhostPacingComponent", () => {
     const mockHd = {
       laneIndex: 0,
       currentLapTime: 1.5,
+      driver: { name: "Driver 1" },
     } as unknown as DriverHeatData;
 
     fixture.componentRef.setInput("driverHeatData", mockHd);
@@ -72,6 +74,7 @@ describe("RacedayGhostPacingComponent", () => {
     const mockHd = {
       laneIndex: 0,
       currentLapTime: 4.0,
+      driver: { name: "Driver 1" },
     } as unknown as DriverHeatData;
 
     fixture.componentRef.setInput("driverHeatData", mockHd);
@@ -83,7 +86,29 @@ describe("RacedayGhostPacingComponent", () => {
     expect(component.formattedDelta()).toContain("-");
   });
 
+  it("should render -- for empty driver lanes", () => {
+    const mockEmptyHd = {
+      laneIndex: 0,
+      isEmpty: true,
+    } as unknown as DriverHeatData;
+
+    fixture.componentRef.setInput("driverHeatData", mockEmptyHd);
+    fixture.componentRef.setInput("laneRecord", 5.0);
+    fixture.detectChanges();
+
+    expect(component.isEmptyDriver()).toBeTrue();
+    expect(component.targetGhostLapTime()).toBe(0);
+    expect(component.formattedDelta()).toBe("--");
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain("--");
+  });
+
   it("should support Personal Best and Heat Leader benchmark types", () => {
+    const mockHd = {
+      laneIndex: 0,
+      driver: { name: "Driver 1" },
+    } as unknown as DriverHeatData;
+    fixture.componentRef.setInput("driverHeatData", mockHd);
     fixture.componentRef.setInput("benchmarkType", "PERSONAL_BEST");
     fixture.componentRef.setInput("personalBest", 4.8);
     fixture.detectChanges();

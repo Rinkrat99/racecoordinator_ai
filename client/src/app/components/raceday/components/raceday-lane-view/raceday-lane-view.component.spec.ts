@@ -2,6 +2,7 @@ import { DragDropModule } from "@angular/cdk/drag-drop";
 import { TestbedHarnessEnvironment } from "@angular/cdk/testing/testbed";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BehaviorSubject } from "rxjs";
+import { AnchorPoint } from "@app/components/raceday/column_definition";
 import { Role } from "@app/models/role";
 import { TranslatePipe } from "@app/pipes/translate.pipe";
 import { TranslationService } from "@app/services/translation.service";
@@ -106,7 +107,9 @@ describe("RacedayLaneViewComponent", () => {
         if (prop === "lapCount") return "5";
         return "";
       },
-      isAvatarProperty: (_prop: string) => false,
+      isEmptyDriver: (hd: any) => hd?.isEmpty === true,
+      getLaneRecord: (_hd: any) => 5.2,
+      heatBestTime: 4.9,
       trackByLayout: (idx: number, entry: any) => entry.property,
     };
 
@@ -381,5 +384,42 @@ describe("RacedayLaneViewComponent", () => {
       customSettings: { columnLabels: { "driver.nickname": "Custom Name" } },
     });
     expect(component.getColumnLabel(col)).toBe("Custom Name");
+  });
+
+  it("should render ghost pacing widget for occupied lane and -- for empty lane", () => {
+    mockParent.columns = [
+      {
+        propertyName: "ghostPacing",
+        labelKey: "RD_COL_GHOST_PACING",
+        layout: {
+          [AnchorPoint.CenterCenter]: "ghostPacing",
+        },
+      } as any,
+    ];
+    mockParent.sortedHeatDrivers = [
+      {
+        objectId: "1",
+        laneIndex: 0,
+        driver: { name: "Alice" },
+        isEmpty: false,
+      },
+      {
+        objectId: "2",
+        laneIndex: 1,
+        driver: { name: "Empty" },
+        isEmpty: true,
+      },
+    ];
+    fixture.detectChanges();
+
+    const pacingWidgets = fixture.nativeElement.querySelectorAll(
+      "app-raceday-ghost-pacing",
+    );
+    expect(pacingWidgets.length).toBe(1);
+
+    const rows = fixture.nativeElement.querySelectorAll(".table-row");
+    expect(rows.length).toBe(2);
+    // Row 2 is empty driver, so it renders --
+    expect(rows[1].textContent).toContain("--");
   });
 });

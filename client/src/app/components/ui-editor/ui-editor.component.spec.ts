@@ -562,12 +562,18 @@ describe("UIEditorComponent", () => {
     // Simulate multiple assets that could match "Fuel Gauge"
     // 1. One by name
     // 2. One by builtin entityId
+    // 3. One with name "Default Fuel Gauge" / id "default_fuel_gauge"
     mockDataService.listAssets.and.returnValue(
       of([
         {
           type: "image_set",
           name: "Fuel Gauge",
           model: { entityId: "custom-id" },
+        },
+        {
+          type: "image_set",
+          name: "Default Fuel Gauge",
+          model: { entityId: "default_fuel_gauge" },
         },
         {
           type: "image_set",

@@ -1,9 +1,13 @@
 <div
   class="ghost-pacing-widget"
   [class.compact]="compact()"
-  [class.has-data]="targetGhostLapTime() > 0"
+  [class.has-data]="!isEmptyDriver() && targetGhostLapTime() > 0"
 >
-  @if (targetGhostLapTime() > 0) {
+  @if (isEmptyDriver()) {
+    <div class="pacing-empty">
+      <span class="no-benchmark-text">--</span>
+    </div>
+  } @else if (targetGhostLapTime() > 0) {
     <div class="pacing-header">
       <span class="benchmark-tag">
         <span class="ghost-icon">👻</span>

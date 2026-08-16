@@ -142,6 +142,15 @@ describe("LaneViewInspectorComponent", () => {
 
   it("should return the correct column label", () => {
     expect(component.getColumnLabel("col1")).toBe("Col 1");
+    expect(component.getColumnLabel("imageset_fuel-gauge-builtin")).toBe(
+      "RD_COL_FUEL_GAUGE",
+    );
+    expect(component.getColumnLabel("default_fuel_gauge")).toBe(
+      "RD_COL_FUEL_GAUGE",
+    );
+    expect(component.getColumnLabel("Default Fuel Gauge")).toBe(
+      "RD_COL_FUEL_GAUGE",
+    );
     expect(component.getColumnLabel("unknown")).toBe("unknown");
   });
 
