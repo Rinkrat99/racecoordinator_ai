@@ -104,4 +104,29 @@ public class CsvExporterTest {
     assertTrue("CSV should contain padded lap time 10.000", csv.contains("10.000"));
     assertTrue("CSV should contain rounded lap time 5.482", csv.contains("5.482"));
   }
+
+  @Test
+  public void testModelEvaluationRowAndPredictionRowAccessors() {
+    CsvExporter.ModelEvaluationRow eval = new CsvExporter.ModelEvaluationRow();
+    eval.brierScore = 0.123;
+    eval.rankMae = 1.45;
+    eval.lapProjectionMae = 2.34;
+
+    org.junit.Assert.assertEquals(0.123, eval.getBrierScore(), 0.001);
+    org.junit.Assert.assertEquals(1.45, eval.getRankMae(), 0.001);
+    org.junit.Assert.assertEquals(2.34, eval.getLapProjectionMae(), 0.001);
+
+    CsvExporter.PredictionRow pred = new CsvExporter.PredictionRow();
+    pred.projectedRank = "1";
+    pred.driverName = "Alice";
+    pred.winProbability = "75%";
+    pred.podiumProbability = "95%";
+    pred.projectedLaps = "50.5";
+
+    org.junit.Assert.assertEquals("1", pred.getProjectedRank());
+    org.junit.Assert.assertEquals("Alice", pred.getDriverName());
+    org.junit.Assert.assertEquals("75%", pred.getWinProbability());
+    org.junit.Assert.assertEquals("95%", pred.getPodiumProbability());
+    org.junit.Assert.assertEquals("50.5", pred.getProjectedLaps());
+  }
 }

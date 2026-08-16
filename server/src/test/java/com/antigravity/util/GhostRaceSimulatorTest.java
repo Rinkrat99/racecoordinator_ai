@@ -6,6 +6,7 @@ import com.antigravity.models.TiebreakerMethod;
 import com.antigravity.race.DriverHeatData;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.Assert;
@@ -25,6 +26,12 @@ public class GhostRaceSimulatorTest {
     }
     dhd.setLaps(laps);
     return dhd;
+  }
+
+  @Test
+  public void testSimulatorInstantiation() {
+    GhostRaceSimulator simulator = new GhostRaceSimulator();
+    Assert.assertNotNull(simulator);
   }
 
   @Test
@@ -129,6 +136,13 @@ public class GhostRaceSimulatorTest {
         GhostRaceSimulator.calculateLapsLed(
                 new ArrayList<>(), RankingMethod.LAP_COUNT, TiebreakerMethod.AVERAGE_LAP_TIME)
             .isEmpty());
+    Map<String, Integer> zeroLaps =
+        GhostRaceSimulator.calculateLapsLed(
+            Collections.singletonList(createDriverHeatData("d1")),
+            RankingMethod.LAP_COUNT,
+            TiebreakerMethod.AVERAGE_LAP_TIME);
+    Assert.assertEquals(1, zeroLaps.size());
+    Assert.assertEquals(0, (int) zeroLaps.get("d1"));
   }
 
   @Test
@@ -152,5 +166,40 @@ public class GhostRaceSimulatorTest {
             Arrays.asList(d, empty), RankingMethod.LAP_COUNT, TiebreakerMethod.AVERAGE_LAP_TIME);
     Assert.assertEquals(1, led.size());
     Assert.assertEquals(2, (int) led.get("d1"));
+  }
+
+  @Test
+  public void testGetDriverId() {
+    Assert.assertNull(GhostRaceSimulator.getDriverId(null));
+
+    DriverHeatData dhd = new DriverHeatData();
+    dhd.setActualDriver(new Driver("drv123", "Nick", "id1", ""));
+    Assert.assertEquals("id1", GhostRaceSimulator.getDriverId(dhd));
+  }
+
+  @Test
+  public void testLapPerformanceSnapshotAccessors() {
+    GhostRaceSimulator.LapPerformanceSnapshot snapshot =
+        new GhostRaceSimulator.LapPerformanceSnapshot("p1", 10, 55.5, 4.8, 5.55, 5.5, false, 42);
+
+    Assert.assertEquals("p1", snapshot.getParticipantId());
+    Assert.assertEquals(10.0, snapshot.getAdjustedLapCount(), 0.001);
+    Assert.assertEquals(55.5, snapshot.getTotalTime(), 0.001);
+    Assert.assertEquals(4.8, snapshot.getBestLapTime(), 0.001);
+    Assert.assertEquals(5.55, snapshot.getAverageLapTime(), 0.001);
+    Assert.assertEquals(5.5, snapshot.getMedianLapTime(), 0.001);
+    Assert.assertFalse(snapshot.isEmptyParticipant());
+    Assert.assertEquals(42, snapshot.getSeed());
+  }
+
+  @Test
+  public void testCalculateLapsLedWithZeroOrNegativeLapTimes() {
+    DriverHeatData a = createDriverHeatData("A", 0.0, -1.0, 5.0);
+    DriverHeatData b = createDriverHeatData("B", 6.0, 6.0, 6.0);
+
+    Map<String, Integer> led =
+        GhostRaceSimulator.calculateLapsLed(
+            Arrays.asList(a, b), RankingMethod.FASTEST_LAP, TiebreakerMethod.TOTAL_TIME);
+    Assert.assertNotNull(led);
   }
 }

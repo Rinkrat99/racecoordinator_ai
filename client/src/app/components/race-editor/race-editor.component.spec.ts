@@ -1786,4 +1786,48 @@ describe("RaceEditorComponent", () => {
       expect(component.showResetSuccess).toBeFalse();
     });
   });
+
+  describe("Section Toggling, Config Validation, and Discard Flow", () => {
+    it("should toggle sections and save to localStorage", () => {
+      spyOn(localStorage, "setItem");
+      expect(component.sectionsExpanded.general).toBeTrue();
+
+      component.toggleSection("general");
+      expect(component.sectionsExpanded.general).toBeFalse();
+      expect(localStorage.setItem).toHaveBeenCalledWith(
+        "race_editor_expanders",
+        jasmine.any(String),
+      );
+    });
+
+    it("should validate config state accurately", () => {
+      component.isLoading = false;
+      component.editingRace = {
+        name: "Test Race",
+        track_entity_id: "t1",
+        heat_rotation_type: "RoundRobin" as any,
+      } as any;
+      expect(component.isConfigValid()).toBeTrue();
+
+      component.editingRace.name = "";
+      expect(component.isConfigValid()).toBeFalse();
+    });
+
+    it("should handle discard confirmation modal resolution", fakeAsync(() => {
+      let resolvedValue: boolean | undefined;
+      component.confirmDiscard().then((val) => (resolvedValue = val));
+      expect(component.showDiscardConfirm).toBeTrue();
+
+      component.onConfirmDiscard();
+      tick();
+      expect(component.showDiscardConfirm).toBeFalse();
+      expect(resolvedValue).toBeTrue();
+
+      // Test cancel discard
+      component.confirmDiscard().then((val) => (resolvedValue = val));
+      component.onCancelDiscard();
+      tick();
+      expect(resolvedValue).toBeFalse();
+    }));
+  });
 });

@@ -1685,4 +1685,51 @@ public class SeasonPointsCalculatorTest {
     assertNull(r2.getHeatBonusBreakdown().get("fastest_lap_heat_1"));
     assertNull(r2.getHeatBonusBreakdown().get("fastest_lap_heat_3"));
   }
+
+  @Test
+  public void testDriverSeasonStandingAndDetailAccessors() {
+    DriverRaceScoreDetail detail1 =
+        new DriverRaceScoreDetail("r1", "Race 1", 1, 25.0, 5.0, null, 10.0, 2.0, null, 42.0);
+    detail1.setDropped(true);
+    assertEquals("r1", detail1.getRaceId());
+    assertEquals("Race 1", detail1.getRaceName());
+    assertEquals(1, detail1.getOverallRank());
+    assertEquals(25.0, detail1.getOverallPoints(), 0.001);
+    assertEquals(5.0, detail1.getOverallBonusPoints(), 0.001);
+    assertEquals(10.0, detail1.getHeatPoints(), 0.001);
+    assertEquals(2.0, detail1.getHeatBonusPoints(), 0.001);
+    assertEquals(42.0, detail1.getTotalPoints(), 0.001);
+    assertEquals(true, detail1.isDropped());
+    assertNotNull(detail1.getOverallBonusBreakdown());
+    assertNotNull(detail1.getHeatBonusBreakdown());
+
+    DriverRaceScoreDetail liveDetail =
+        new DriverRaceScoreDetail("live_race", "Live Race", 2, 18.0, 0.0, 8.0, 0.0, 26.0);
+
+    DriverSeasonStanding standing =
+        new DriverSeasonStanding(
+            "d10", "Driver Ten", 100.0, 120.0, 5, Arrays.asList(detail1, liveDetail));
+
+    assertEquals("d10", standing.getDriverId());
+    assertEquals("Driver Ten", standing.getDriverName());
+    assertEquals(100.0, standing.getNetPoints(), 0.001);
+    assertEquals(120.0, standing.getGrossPoints(), 0.001);
+    assertEquals(5, standing.getRacesRun());
+    assertEquals(2, standing.getRaceScores().size());
+    assertEquals(26.0, standing.getCurrentRacePoints(), 0.001);
+    assertEquals(liveDetail, standing.getCurrentRaceScoreDetail());
+  }
+
+  @Test
+  public void testDriverSeasonStandingWithNulls() {
+    DriverSeasonStanding standing = new DriverSeasonStanding(null, null, null, null, null, null);
+    assertEquals("", standing.getDriverId());
+    assertEquals("", standing.getDriverName());
+    assertEquals(0.0, standing.getNetPoints(), 0.001);
+    assertEquals(0.0, standing.getGrossPoints(), 0.001);
+    assertEquals(0, standing.getRacesRun());
+    assertNotNull(standing.getRaceScores());
+    assertEquals(0.0, standing.getCurrentRacePoints(), 0.001);
+    assertNull(standing.getCurrentRaceScoreDetail());
+  }
 }
