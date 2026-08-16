@@ -2,15 +2,20 @@ package com.antigravity.race;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.antigravity.converters.HeatConverter;
 import com.antigravity.converters.RaceParticipantConverter;
 import com.antigravity.models.Driver;
+import com.antigravity.models.GroupOptions;
 import com.antigravity.models.HeatRotationType;
 import com.antigravity.models.HeatScoring;
+import com.antigravity.models.HeatScoring.FinishMethod;
 import com.antigravity.models.Lane;
 import com.antigravity.models.OverallScoring;
 import com.antigravity.models.Team;
@@ -19,16 +24,19 @@ import com.antigravity.proto.ModifyHeatsRequest;
 import com.antigravity.proto.ModifyHeatsResponse;
 import com.antigravity.proto.RegenerateHeatsRequest;
 import com.antigravity.proto.RegenerateHeatsResponse;
+import com.antigravity.protocols.ProtocolDelegate;
 import com.antigravity.protocols.arduino.ArduinoConfig;
+import com.antigravity.race.states.Racing;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class RaceModifyHeatsTest {
+public class RaceHeatManagerTest {
 
   private com.antigravity.race.Race testRace;
   private List<RaceParticipant> participants;
@@ -104,9 +112,23 @@ public class RaceModifyHeatsTest {
             .build();
   }
 
+  @After
+  public void tearDown() {
+    if (testRace != null && testRace.getState() != null) {
+      try {
+        testRace.getState().exit(testRace);
+      } catch (Exception ignored) {
+      }
+    }
+    ClientSubscriptionManager.setInstance(null);
+  }
+
+  // -------------------------------------------------------------
+  // Heat Modification & Validation Tests
+  // -------------------------------------------------------------
+
   @Test
   public void testModifyHeats_ValidChange() {
-    // Swap drivers in Heat 1 (which is NOT started)
     Heat heat1 = testRace.getHeats().get(0);
     List<DriverHeatData> drivers = new ArrayList<>();
     drivers.add(new DriverHeatData(participants.get(1))); // p2
@@ -132,10 +154,8 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_DeleteStartedHeat_Fails() {
-    // Start Heat 1
     testRace.getHeats().get(0).setStarted(true);
 
-    // Request with ONLY Heat 2 (effectively deleting Heat 1)
     ModifyHeatsRequest request =
         createRequest(participants, Collections.singletonList(testRace.getHeats().get(1)));
     ModifyHeatsResponse response = testRace.modifyHeats(request);
@@ -147,14 +167,11 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_RemoveParticipantFromStartedHeat_Fails() {
-    // Start Heat 1 (contains p1 and p2)
     testRace.getHeats().get(0).setStarted(true);
 
-    // Request removing p1 from participants list
     List<RaceParticipant> newParticipants = new ArrayList<>(participants);
     newParticipants.remove(0); // remove p1
 
-    // Update Heat 2 to not use p1 (p1 is in Heat 1)
     ModifyHeatsRequest request = createRequest(newParticipants, testRace.getHeats());
     ModifyHeatsResponse response = testRace.modifyHeats(request);
 
@@ -167,10 +184,8 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_ChangeDriverInStartedHeat_Fails() {
-    // Start Heat 1
     testRace.getHeats().get(0).setStarted(true);
 
-    // Try to swap drivers in Heat 1
     Heat heat1 = testRace.getHeats().get(0);
     List<DriverHeatData> drivers = new ArrayList<>();
     drivers.add(new DriverHeatData(participants.get(1)));
@@ -190,10 +205,8 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_ChangeLanesInStartedHeat_Fails() {
-    // Start Heat 1
     testRace.getHeats().get(0).setStarted(true);
 
-    // Try to remove a lane from Heat 1 (make it 1 lane instead of 2)
     Heat heat1 = testRace.getHeats().get(0);
     List<DriverHeatData> drivers = new ArrayList<>();
     drivers.add(new DriverHeatData(participants.get(0)));
@@ -213,10 +226,8 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_ChangeEmptyToDriverInStartedHeat_Fails() {
-    // Start Heat 2 (contains p3 and EMPTY)
     testRace.getHeats().get(1).setStarted(true);
 
-    // Try to change EMPTY to p1 in Heat 2
     Heat heat2 = testRace.getHeats().get(1);
     List<DriverHeatData> drivers = new ArrayList<>();
     drivers.add(new DriverHeatData(participants.get(2))); // p3
@@ -237,12 +248,10 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_AddNewParticipant() {
-    // Add a new participant p4
     RaceParticipant p4 = new RaceParticipant(new Driver("Driver 4", "D4", "d4", "1"), "p4");
     List<RaceParticipant> newParticipants = new ArrayList<>(participants);
     newParticipants.add(p4);
 
-    // Replace EMPTY in Heat 2 with p4
     Heat heat2 = testRace.getHeats().get(1);
     List<DriverHeatData> drivers = new ArrayList<>();
     drivers.add(new DriverHeatData(participants.get(2))); // p3
@@ -267,12 +276,10 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_ReorderHeats() {
-    // Swap Heat 1 and Heat 2 (unstarted)
     List<Heat> newHeats = new ArrayList<>();
     newHeats.add(testRace.getHeats().get(1));
     newHeats.add(testRace.getHeats().get(0));
 
-    // Update heat numbers to match new order
     newHeats.get(0).setHeatNumber(1);
     newHeats.get(1).setHeatNumber(2);
 
@@ -292,16 +299,14 @@ public class RaceModifyHeatsTest {
     testRace.setCurrentHeat(heat);
     assertFalse("Heat should not be started before Racing state", heat.isStarted());
 
-    testRace.changeState(new com.antigravity.race.states.Racing());
+    testRace.changeState(new Racing());
     assertTrue("Heat should be started after entering Racing state", heat.isStarted());
   }
 
   @Test
   public void testRegenerateHeats_StartedHeat_AllowsSame_FailsChanged() {
-    // Start Heat 1 (which contains p1 and p2)
     testRace.getHeats().get(0).setStarted(true);
 
-    // 1. Regenerate with same participants -> should succeed under new rules!
     RegenerateHeatsRequest.Builder requestBuilder = RegenerateHeatsRequest.newBuilder();
     for (RaceParticipant p : participants) {
       requestBuilder.addParticipants(RaceParticipantConverter.toProto(p, new HashSet<>()));
@@ -310,8 +315,6 @@ public class RaceModifyHeatsTest {
     assertTrue(
         "Should succeed to regenerate if started heats are not modified", response.getSuccess());
 
-    // 2. Try to regenerate with different participants (removing p1) -> should
-    // fail!
     List<RaceParticipant> differentParticipants = new ArrayList<>(participants);
     differentParticipants.remove(0); // Remove p1
 
@@ -324,8 +327,6 @@ public class RaceModifyHeatsTest {
         "Should fail to regenerate if started heat would be modified", failResponse.getSuccess());
     assertTrue(failResponse.getErrorMessage().contains("RD_ERR_REGENERATE_STARTED_HEATS"));
 
-    // 3. Try to regenerate with different participants (removing p3, who did NOT
-    // run in started Heat 1) -> should succeed!
     List<RaceParticipant> allowedParticipants = new ArrayList<>(participants);
     allowedParticipants.remove(2); // Remove p3 (Driver 3)
 
@@ -342,7 +343,6 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_RaceOver_Fails() {
-    // Set race to over
     testRace.changeState(new com.antigravity.race.states.RaceOver());
 
     ModifyHeatsRequest request = createRequest(participants, testRace.getHeats());
@@ -354,7 +354,6 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testRegenerateHeats_RaceOver_Fails() {
-    // Set race to over
     testRace.changeState(new com.antigravity.race.states.RaceOver());
 
     RegenerateHeatsRequest request = RegenerateHeatsRequest.newBuilder().build();
@@ -365,20 +364,8 @@ public class RaceModifyHeatsTest {
         response.getErrorMessage().contains("Cannot regenerate heats when the race is over"));
   }
 
-  private ModifyHeatsRequest createRequest(List<RaceParticipant> participants, List<Heat> heats) {
-    ModifyHeatsRequest.Builder builder = ModifyHeatsRequest.newBuilder();
-    for (RaceParticipant p : participants) {
-      builder.addParticipants(RaceParticipantConverter.toProto(p, new HashSet<>()));
-    }
-    for (Heat h : heats) {
-      builder.addHeats(HeatConverter.toProto(h, new HashSet<>()));
-    }
-    return builder.build();
-  }
-
   @Test
   public void testModifyHeats_DuplicateDriverInHeat_Succeeds() {
-    // Assign p1 to both lanes in Heat 1
     Heat heat1 = testRace.getHeats().get(0);
     List<DriverHeatData> drivers = new ArrayList<>();
     drivers.add(new DriverHeatData(participants.get(0))); // p1
@@ -397,7 +384,6 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_DuplicateParticipant_Fails() {
-    // Request with p1 added twice
     List<RaceParticipant> dupeParticipants = new ArrayList<>(participants);
     dupeParticipants.add(participants.get(0)); // p1 again
 
@@ -410,12 +396,10 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_OverlappingDriverInTeam_Fails() {
-    // Create a team containing Driver 1 (p1)
     Team team1 = new Team("Team 1", "url", Collections.singletonList("d1"), "t1", "1");
     RaceParticipant teamParticipant = new RaceParticipant(team1);
     teamParticipant.setObjectId("pt1");
 
-    // Request with both p1 AND team1 (which contains p1)
     List<RaceParticipant> overlappingParticipants = new ArrayList<>(participants);
     overlappingParticipants.add(teamParticipant);
 
@@ -430,7 +414,6 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_OverlappingTeams_Fails() {
-    // Create two teams sharing Driver 1
     Team team1 = new Team("Team 1", "url", Collections.singletonList("d1"), "t1", "1");
     RaceParticipant pt1 = new RaceParticipant(team1);
     pt1.setObjectId("pt1");
@@ -452,9 +435,7 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_DriverInMultipleGroups_Fails() {
-    // 1. Enable groups in race model
-    com.antigravity.models.GroupOptions groupOptions =
-        new com.antigravity.models.GroupOptions(true, 2, true, false, false, false, 0);
+    GroupOptions groupOptions = new GroupOptions(true, 2, true, false, false, false, 0);
     com.antigravity.models.Race groupRaceModel =
         new com.antigravity.models.Race.Builder()
             .from(raceModel)
@@ -470,14 +451,11 @@ public class RaceModifyHeatsTest {
             .isDemoMode(true)
             .build();
 
-    // 2. Set Heat 1 to Group 0 (Group 1) and Heat 2 to Group 1 (Group 2)
     Heat heat1 = groupRace.getHeats().get(0);
     Heat heat2 = groupRace.getHeats().get(1);
     heat1.setGroup(0);
     heat2.setGroup(1);
 
-    // 3. Put Driver 1 (p1) in both Heat 1 (Group 0) and Heat 2 (Group 1)
-    // p1 is already in Heat 1 from setUp()
     List<DriverHeatData> heat2Drivers = new ArrayList<>();
     heat2Drivers.add(new DriverHeatData(participants.get(0))); // p1
     heat2Drivers.add(new DriverHeatData(new RaceParticipant(Driver.EMPTY_DRIVER)));
@@ -494,9 +472,7 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_NonSequentialGroup_Succeeds() {
-    // 1. Enable groups
-    com.antigravity.models.GroupOptions groupOptions =
-        new com.antigravity.models.GroupOptions(true, 2, true, false, false, false, 0);
+    GroupOptions groupOptions = new GroupOptions(true, 2, true, false, false, false, 0);
     com.antigravity.models.Race groupRaceModel =
         new com.antigravity.models.Race.Builder()
             .from(raceModel)
@@ -512,7 +488,6 @@ public class RaceModifyHeatsTest {
             .isDemoMode(true)
             .build();
 
-    // 2. Set Heat 1 to Group 0 and Heat 2 to Group 2 (GAP!)
     Heat heat1 = groupRace.getHeats().get(0);
     Heat heat2 = groupRace.getHeats().get(1);
     heat1.setGroup(0);
@@ -526,13 +501,11 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_PreservesAndUpdatesSeeds() {
-    // We will change the seeds of existing participants
     List<RaceParticipant> updatedParticipants = new ArrayList<>();
     for (int i = 0; i < participants.size(); i++) {
       RaceParticipant p = participants.get(i);
-      // Create a copy to send in request with a modified seed
       RaceParticipant pCopy = new RaceParticipant(p.getDriver(), p.getObjectId());
-      pCopy.setSeed(i + 10); // change seed to something distinct
+      pCopy.setSeed(i + 10);
       updatedParticipants.add(pCopy);
     }
 
@@ -550,23 +523,17 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_DeleteAllUnstartedHeats_TransitionsToRaceOver() {
-    // 1. Mark Heat 1 as started
     testRace.getHeats().get(0).setStarted(true);
 
-    // 2. Request modifying heats to ONLY contain Heat 1 (effectively deleting the unstarted Heat 2)
     ModifyHeatsRequest request =
         createRequest(participants, Collections.singletonList(testRace.getHeats().get(0)));
     ModifyHeatsResponse response = testRace.modifyHeats(request);
 
     assertTrue("Modify heats should succeed", response.getSuccess());
-
-    // 3. modifyHeats is auto-save during editing — it should NOT change state.
-    //    State reconciliation is deferred to finalizeModifyHeats (when user navigates away).
     assertFalse(
-        "Race should NOT transition to RaceOver during modification (deferred to finalize)",
+        "Race should NOT transition to RaceOver during modification",
         testRace.getState() instanceof com.antigravity.race.states.RaceOver);
 
-    // 4. Verify that all remaining heats are started (precondition for finalize to transition)
     boolean allStarted = !testRace.getHeats().isEmpty();
     for (Heat h : testRace.getHeats()) {
       if (!h.isStarted()) {
@@ -579,18 +546,14 @@ public class RaceModifyHeatsTest {
 
   @Test
   public void testModifyHeats_DeleteAllUnstartedHeatsAndAddNew_DoesNotTransitionToRaceOver() {
-    // 1. Mark Heat 1 as started
     testRace.getHeats().get(0).setStarted(true);
 
-    // 2. Add a new unstarted Heat 3
     List<DriverHeatData> heat3Drivers = new ArrayList<>();
     heat3Drivers.add(new DriverHeatData(participants.get(0)));
     heat3Drivers.add(new DriverHeatData(participants.get(1)));
     Heat heat3 = new Heat(3, heat3Drivers, raceModel.getHeatScoring(), false);
     heat3.setObjectId("heat3");
 
-    // 3. Request modifying heats to contain Heat 1 and Heat 3 (effectively deleting Heat 2, but
-    // adding Heat 3)
     ModifyHeatsRequest request =
         createRequest(participants, Arrays.asList(testRace.getHeats().get(0), heat3));
     ModifyHeatsResponse response = testRace.modifyHeats(request);
@@ -600,7 +563,6 @@ public class RaceModifyHeatsTest {
         "Race should NOT transition to RaceOver",
         testRace.getState() instanceof com.antigravity.race.states.RaceOver);
 
-    // 4. Verify finalization logic does not transition it since there is an unstarted Heat 3
     boolean allStarted = !testRace.getHeats().isEmpty();
     for (Heat h : testRace.getHeats()) {
       if (!h.isStarted()) {
@@ -611,170 +573,350 @@ public class RaceModifyHeatsTest {
     assertFalse("Not all heats are started", allStarted);
   }
 
-  // ---- Tests for finalizeModifyHeats reconciliation logic ----
-  // These simulate the server-side reconciliation that runs when the user
-  // navigates away from the modify heats page.
+  // -------------------------------------------------------------
+  // Group Validation & Sequence Tests
+  // -------------------------------------------------------------
 
-  /**
-   * Simulates the reconciliation logic from ClientCommandTaskHandler.finalizeModifyHeats(). This
-   * mirrors the server code so we can test state transitions without HTTP plumbing.
-   */
-  private void simulateFinalizeModifyHeats(com.antigravity.race.Race race) {
-    boolean allStarted = !race.getHeats().isEmpty();
-    Heat firstUnstarted = null;
-    for (Heat h : race.getHeats()) {
-      if (!h.isStarted()) {
-        allStarted = false;
-        if (firstUnstarted == null) {
-          firstUnstarted = h;
+  @Test
+  public void testValidateGroups_Sequential() {
+    com.antigravity.race.Race mockR = mock(com.antigravity.race.Race.class);
+    com.antigravity.models.Race mockM = mock(com.antigravity.models.Race.class);
+    when(mockR.getRaceModel()).thenReturn(mockM);
+    RaceHeatManager manager = new RaceHeatManager(mockR);
+    GroupOptions options = new GroupOptions(true, 10, true, true, false, false, 0);
+    when(mockM.getGroupOptions()).thenReturn(options);
+
+    ModifyHeatsRequest request =
+        ModifyHeatsRequest.newBuilder()
+            .addHeats(com.antigravity.proto.Heat.newBuilder().setGroup(0).build())
+            .addHeats(com.antigravity.proto.Heat.newBuilder().setGroup(1).build())
+            .build();
+
+    String error = manager.validateGroups(request);
+    assertNull("Should be valid", error);
+  }
+
+  @Test
+  public void testValidateGroups_Gap() {
+    com.antigravity.race.Race mockR = mock(com.antigravity.race.Race.class);
+    com.antigravity.models.Race mockM = mock(com.antigravity.models.Race.class);
+    when(mockR.getRaceModel()).thenReturn(mockM);
+    RaceHeatManager manager = new RaceHeatManager(mockR);
+    GroupOptions options = new GroupOptions(true, 10, true, true, false, false, 0);
+    when(mockM.getGroupOptions()).thenReturn(options);
+
+    ModifyHeatsRequest request =
+        ModifyHeatsRequest.newBuilder()
+            .addHeats(com.antigravity.proto.Heat.newBuilder().setGroup(0).build())
+            .addHeats(com.antigravity.proto.Heat.newBuilder().setGroup(2).build())
+            .build();
+
+    String error = manager.validateGroups(request);
+    assertNull("Should be valid even with a gap", error);
+  }
+
+  @Test
+  public void testValidateGroups_Negative() {
+    com.antigravity.race.Race mockR = mock(com.antigravity.race.Race.class);
+    com.antigravity.models.Race mockM = mock(com.antigravity.models.Race.class);
+    when(mockR.getRaceModel()).thenReturn(mockM);
+    RaceHeatManager manager = new RaceHeatManager(mockR);
+    GroupOptions options = new GroupOptions(true, 10, true, true, false, false, 0);
+    when(mockM.getGroupOptions()).thenReturn(options);
+
+    ModifyHeatsRequest request =
+        ModifyHeatsRequest.newBuilder()
+            .addHeats(com.antigravity.proto.Heat.newBuilder().setGroup(-1).build())
+            .build();
+
+    String error = manager.validateGroups(request);
+    assertEquals("RD_ERR_GROUP_MIN_VALUE", error);
+  }
+
+  @Test
+  public void testValidateGroups_Disabled() {
+    com.antigravity.race.Race mockR = mock(com.antigravity.race.Race.class);
+    com.antigravity.models.Race mockM = mock(com.antigravity.models.Race.class);
+    when(mockR.getRaceModel()).thenReturn(mockM);
+    RaceHeatManager manager = new RaceHeatManager(mockR);
+    GroupOptions options = new GroupOptions(false, 10, true, true, false, false, 0);
+    when(mockM.getGroupOptions()).thenReturn(options);
+
+    ModifyHeatsRequest request =
+        ModifyHeatsRequest.newBuilder()
+            .addHeats(com.antigravity.proto.Heat.newBuilder().setGroup(5).build())
+            .build();
+
+    String error = manager.validateGroups(request);
+    assertNull("Should be valid when groups disabled", error);
+  }
+
+  // -------------------------------------------------------------
+  // Group Isolation & Group Rotation Tests
+  // -------------------------------------------------------------
+
+  @Test
+  public void testGrouping_Isolation() {
+    GroupOptions groupOptions = new GroupOptions(true, 2, false, true, false, false, 0);
+    com.antigravity.models.Race gModel =
+        new com.antigravity.models.Race.Builder()
+            .from(raceModel)
+            .withGroupOptions(groupOptions)
+            .build();
+
+    List<Lane> lanes4 = new ArrayList<>();
+    lanes4.add(new Lane("Blue", "blue", 1));
+    lanes4.add(new Lane("Red", "red", 2));
+    lanes4.add(new Lane("White", "white", 3));
+    lanes4.add(new Lane("Yellow", "yellow", 4));
+    Track track4 = new Track.Builder().name("T4").lanes(lanes4).build();
+
+    List<RaceParticipant> p8 = createParticipantList(8);
+
+    com.antigravity.race.Race gRace =
+        new com.antigravity.race.Race.Builder()
+            .model(gModel)
+            .drivers(p8)
+            .track(track4)
+            .isDemoMode(true)
+            .build();
+
+    List<Heat> heats = HeatBuilder.buildHeats(gRace, p8, new ArrayList<>());
+    assertEquals(8, heats.size());
+
+    for (Heat heat : heats) {
+      int group = -1;
+      for (DriverHeatData dhd : heat.getDrivers()) {
+        if (!dhd.getDriver().getDriver().isEmpty()) {
+          int driverIdx = Integer.parseInt(dhd.getDriver().getDriver().getEntityId()) - 1;
+          int expectedGroup = (driverIdx < 4) ? 0 : 1;
+          if (group == -1) {
+            group = expectedGroup;
+          }
+          assertEquals("Drivers from different groups in the same heat!", group, expectedGroup);
+          assertEquals("Heat group label mismatch!", group, heat.getGroup());
         }
       }
     }
+  }
 
-    if (allStarted && !(race.getState() instanceof com.antigravity.race.states.RaceOver)) {
-      race.changeState(new com.antigravity.race.states.RaceOver());
-    } else if (race.getCurrentHeat() != null
-        && race.getCurrentHeat().isStarted()
-        && race.getState() instanceof com.antigravity.race.states.NotStarted) {
-      if (firstUnstarted != null) {
-        race.setCurrentHeat(firstUnstarted);
-      } else {
-        race.changeState(new com.antigravity.race.states.RaceOver());
-      }
+  @Test
+  public void testGrouping_RotateHeats() {
+    GroupOptions groupOptions = new GroupOptions(true, 2, false, true, false, true, 0);
+    com.antigravity.models.Race gModel =
+        new com.antigravity.models.Race.Builder()
+            .from(raceModel)
+            .withGroupOptions(groupOptions)
+            .build();
+
+    List<Lane> lanes4 = new ArrayList<>();
+    lanes4.add(new Lane("Blue", "blue", 1));
+    lanes4.add(new Lane("Red", "red", 2));
+    lanes4.add(new Lane("White", "white", 3));
+    lanes4.add(new Lane("Yellow", "yellow", 4));
+    Track track4 = new Track.Builder().name("T4").lanes(lanes4).build();
+
+    List<RaceParticipant> p8 = createParticipantList(8);
+
+    com.antigravity.race.Race gRace =
+        new com.antigravity.race.Race.Builder()
+            .model(gModel)
+            .drivers(p8)
+            .track(track4)
+            .isDemoMode(true)
+            .build();
+
+    List<Heat> heats = HeatBuilder.buildHeats(gRace, p8, new ArrayList<>());
+    assertEquals(8, heats.size());
+
+    for (int i = 0; i < heats.size(); i++) {
+      assertEquals(
+          "Heat " + i + " should be from group " + (i % 2), i % 2, heats.get(i).getGroup());
     }
   }
 
   @Test
-  public void testFinalize_CurrentHeatStarted_AdvancesToFirstUnstartedHeat() {
-    // Scenario: Heat 1 is started, heat 2 is unstarted, current heat points to heat 1
-    // (e.g. after modifying heats where the current heat index landed on a completed heat)
-    testRace.getHeats().get(0).setStarted(true);
-    testRace.setCurrentHeat(testRace.getHeats().get(0)); // On started heat 1
+  public void testGrouping_BalanceSeeds() {
+    GroupOptions groupOptions = new GroupOptions(true, 2, true, true, false, false, 0);
+    com.antigravity.models.Race gModel =
+        new com.antigravity.models.Race.Builder()
+            .from(raceModel)
+            .withGroupOptions(groupOptions)
+            .build();
 
-    // State is NotStarted (as if user advanced past heat 1, then heats were modified)
-    assertTrue(
-        "Precondition: race should be in NotStarted",
-        testRace.getState() instanceof com.antigravity.race.states.NotStarted);
+    List<Lane> lanes4 = new ArrayList<>();
+    lanes4.add(new Lane("Blue", "blue", 1));
+    lanes4.add(new Lane("Red", "red", 2));
+    lanes4.add(new Lane("White", "white", 3));
+    lanes4.add(new Lane("Yellow", "yellow", 4));
+    Track track4 = new Track.Builder().name("T4").lanes(lanes4).build();
 
-    simulateFinalizeModifyHeats(testRace);
+    List<RaceParticipant> p8 = createParticipantList(8);
 
-    // Should advance to heat 2 (the first unstarted heat)
-    assertFalse(
-        "Race should NOT be in RaceOver",
-        testRace.getState() instanceof com.antigravity.race.states.RaceOver);
-    assertEquals("Current heat should be heat 2", 2, testRace.getCurrentHeat().getHeatNumber());
-    assertFalse("Current heat should NOT be started", testRace.getCurrentHeat().isStarted());
+    com.antigravity.race.Race gRace =
+        new com.antigravity.race.Race.Builder()
+            .model(gModel)
+            .drivers(p8)
+            .track(track4)
+            .isDemoMode(true)
+            .build();
+
+    List<Heat> heats = HeatBuilder.buildHeats(gRace, p8, new ArrayList<>());
+
+    for (Heat heat : heats) {
+      if (heat.getGroup() == 0) {
+        for (DriverHeatData dhd : heat.getDrivers()) {
+          if (!dhd.getDriver().getDriver().isEmpty()) {
+            int seed = Integer.parseInt(dhd.getDriver().getDriver().getEntityId());
+            assertEquals("Balanced seed should be odd in group 0", 1, seed % 2);
+          }
+        }
+      } else {
+        for (DriverHeatData dhd : heat.getDrivers()) {
+          if (!dhd.getDriver().getDriver().isEmpty()) {
+            int seed = Integer.parseInt(dhd.getDriver().getDriver().getEntityId());
+            assertEquals("Balanced seed should be even in group 1", 0, seed % 2);
+          }
+        }
+      }
+    }
   }
 
-  @Test
-  public void testFinalize_AllHeatsStarted_TransitionsToRaceOver() {
-    // Scenario: All heats are started, current heat points to a started heat
-    testRace.getHeats().get(0).setStarted(true);
-    testRace.getHeats().get(1).setStarted(true);
-    testRace.setCurrentHeat(testRace.getHeats().get(0));
-
-    simulateFinalizeModifyHeats(testRace);
-
-    assertTrue(
-        "Race should transition to RaceOver",
-        testRace.getState() instanceof com.antigravity.race.states.RaceOver);
-  }
+  // -------------------------------------------------------------
+  // Heat Reset & Progression Tests
+  // -------------------------------------------------------------
 
   @Test
-  public void testFinalize_CurrentHeatNotStarted_NoStateChange() {
-    // Scenario: Current heat is unstarted — no reconciliation needed
-    testRace.setCurrentHeat(testRace.getHeats().get(0));
-    assertFalse("Precondition: heat should not be started", testRace.getCurrentHeat().isStarted());
+  public void testHeatRecordResetOnHeatChange() {
+    testRace.injectProtocols(mock(ProtocolDelegate.class));
+    testRace.changeState(new Racing());
+    testRace.getCurrentHeat().getDrivers().get(0).setReactionTime(0.5);
+    testRace.onLap(0, 1.5, 0, 0);
 
-    simulateFinalizeModifyHeats(testRace);
+    assertEquals(2.0, testRace.getRecordData().getCurrent().getHeatFastestLap().getValue(), 0.001);
 
-    assertTrue(
-        "Race should remain in NotStarted",
-        testRace.getState() instanceof com.antigravity.race.states.NotStarted);
+    Heat nextHeat = new Heat(2, new ArrayList<>(), new HeatScoring(), false);
+    testRace.setCurrentHeat(nextHeat);
+
     assertEquals(
-        "Current heat should still be heat 1", 1, testRace.getCurrentHeat().getHeatNumber());
-  }
-
-  @Test
-  public void testFinalize_ReproduceBugScenario_AdvancesToNewHeat() {
-    // Full reproduction of the original bug:
-    // 1. Run heat 1 (mark as started)
-    // 2. Advance to heat 2 (don't start it)
-    // 3. Modify heats: delete heat 2, add new heat 3
-    // 4. After modification, current heat lands on started heat 1
-    // 5. Finalize should advance to unstarted heat 3
-
-    // Step 1: Heat 1 is started
-    testRace.getHeats().get(0).setStarted(true);
-
-    // Step 3: Modify heats - delete heat 2, add heat 3
-    List<DriverHeatData> heat3Drivers = new ArrayList<>();
-    heat3Drivers.add(new DriverHeatData(participants.get(2)));
-    heat3Drivers.add(new DriverHeatData(new RaceParticipant(Driver.EMPTY_DRIVER)));
-    Heat heat3 = new Heat(2, heat3Drivers, raceModel.getHeatScoring(), false);
-    heat3.setObjectId("heat3");
-
-    ModifyHeatsRequest request =
-        createRequest(participants, Arrays.asList(testRace.getHeats().get(0), heat3));
-    ModifyHeatsResponse response = testRace.modifyHeats(request);
-    assertTrue("Modify heats should succeed", response.getSuccess());
-
-    // Step 4: Verify current heat is the started heat 1
-    // (finalizeModification sets it based on previous heat number)
-    assertTrue(
-        "Precondition: current heat should be started", testRace.getCurrentHeat().isStarted());
-
-    // State is still NotStarted (never changed during modification)
-    assertTrue(
-        "Precondition: race should be in NotStarted",
-        testRace.getState() instanceof com.antigravity.race.states.NotStarted);
-
-    // Step 5: Finalize (user navigates away from modify heats page)
-    simulateFinalizeModifyHeats(testRace);
-
-    // Should advance to heat 2 (the new unstarted heat, formerly heat3)
-    assertFalse(
-        "Race should NOT be in RaceOver",
-        testRace.getState() instanceof com.antigravity.race.states.RaceOver);
-    assertFalse("Current heat should NOT be started", testRace.getCurrentHeat().isStarted());
+        "Heat record should be reset to 0",
+        0.0,
+        testRace.getRecordData().getCurrent().getHeatFastestLap().getValue(),
+        0.001);
     assertEquals(
-        "Current heat should be heat 2 (the new unstarted heat)",
-        2,
-        testRace.getCurrentHeat().getHeatNumber());
+        "Heat record holder should be empty",
+        "",
+        testRace.getRecordData().getCurrent().getHeatFastestLap().getHolderName());
+    assertEquals(
+        "Race record should be preserved",
+        2.0,
+        testRace.getRecordData().getCurrent().getFastestLap().getValue(),
+        0.001);
   }
 
   @Test
-  public void testFinalize_OnlyStartedHeatRemaining_TransitionsToRaceOver() {
-    // Scenario from original bug but without regenerating:
-    // Heat 1 started, all other heats deleted, no new heats added
-    testRace.getHeats().get(0).setStarted(true);
+  public void testTimedRaceProgress() throws InterruptedException {
+    com.antigravity.race.Race mockRace = mock(com.antigravity.race.Race.class);
+    Heat mockHeat = mock(Heat.class);
+    HeatExecutionManager mockExecution = mock(HeatExecutionManager.class);
+    when(mockRace.getCurrentHeat()).thenReturn(mockHeat);
+    when(mockRace.getHeatExecutionManager()).thenReturn(mockExecution);
+    when(mockRace.getStatistics()).thenReturn(new RaceStatistics());
+    when(mockHeat.getStatistics()).thenReturn(new RaceHeatStatistics());
 
-    // Delete heat 2, keep only started heat 1
-    ModifyHeatsRequest request =
-        createRequest(participants, Collections.singletonList(testRace.getHeats().get(0)));
-    ModifyHeatsResponse response = testRace.modifyHeats(request);
-    assertTrue("Modify heats should succeed", response.getSuccess());
+    HeatScoring timedScoring = new HeatScoring(FinishMethod.Timed, 60L, null, null, null);
+    com.antigravity.models.Race m =
+        new com.antigravity.models.Race.Builder().withHeatScoring(timedScoring).build();
+    when(mockRace.getRaceModel()).thenReturn(m);
 
-    // Finalize should detect all heats are started and transition to RaceOver
-    simulateFinalizeModifyHeats(testRace);
+    final float[] raceTime = {60.0f};
+    when(mockRace.getRaceTime()).thenAnswer(invocation -> raceTime[0]);
 
-    assertTrue(
-        "Race should transition to RaceOver when only started heats remain",
-        testRace.getState() instanceof com.antigravity.race.states.RaceOver);
+    Racing racing = new Racing();
+    racing.enter(mockRace);
+
+    Thread.sleep(150);
+    verify(mockRace, atLeastOnce()).setHeatProgress(0.0);
+
+    raceTime[0] = 30.0f;
+    Thread.sleep(150);
+    verify(mockRace, atLeastOnce()).setHeatProgress(0.5);
+
+    raceTime[0] = 0.0f;
+    Thread.sleep(150);
+    verify(mockRace, atLeastOnce()).setHeatProgress(1.0);
+
+    racing.exit(mockRace);
   }
 
   @Test
-  public void testFinalize_StateNotNotStarted_NoReconciliation() {
-    // If race is already in RaceOver or another state, finalize should not change anything
-    testRace.getHeats().get(0).setStarted(true);
-    testRace.setCurrentHeat(testRace.getHeats().get(0));
-    testRace.changeState(new com.antigravity.race.states.RaceOver());
+  public void testLapBasedRaceProgress() throws InterruptedException {
+    com.antigravity.race.Race mockRace = mock(com.antigravity.race.Race.class);
+    Heat mockHeat = mock(Heat.class);
+    HeatExecutionManager mockExecution = mock(HeatExecutionManager.class);
+    when(mockRace.getCurrentHeat()).thenReturn(mockHeat);
+    when(mockRace.getHeatExecutionManager()).thenReturn(mockExecution);
+    when(mockRace.getStatistics()).thenReturn(new RaceStatistics());
+    when(mockHeat.getStatistics()).thenReturn(new RaceHeatStatistics());
 
-    // Calling finalize again should be a no-op (already RaceOver)
-    simulateFinalizeModifyHeats(testRace);
+    HeatScoring lapScoring = new HeatScoring(FinishMethod.Lap, 10L, null, null, null);
+    com.antigravity.models.Race m =
+        new com.antigravity.models.Race.Builder().withHeatScoring(lapScoring).build();
+    when(mockRace.getRaceModel()).thenReturn(m);
 
-    assertTrue(
-        "Race should remain in RaceOver",
-        testRace.getState() instanceof com.antigravity.race.states.RaceOver);
+    DriverHeatData d1 = mock(DriverHeatData.class);
+    final int[] lapCount = {0};
+    when(d1.getLapCount()).thenAnswer(invocation -> lapCount[0]);
+    when(mockHeat.getDrivers()).thenReturn(Collections.singletonList(d1));
+
+    Racing racing = new Racing();
+    racing.enter(mockRace);
+
+    Thread.sleep(150);
+    verify(mockRace, atLeastOnce()).setHeatProgress(0.0);
+
+    lapCount[0] = 5;
+    Thread.sleep(150);
+    verify(mockRace, atLeastOnce()).setHeatProgress(0.5);
+
+    lapCount[0] = 10;
+    Thread.sleep(150);
+    verify(mockRace, atLeastOnce()).setHeatProgress(1.0);
+
+    racing.exit(mockRace);
+  }
+
+  private ModifyHeatsRequest createRequest(List<RaceParticipant> participants, List<Heat> heats) {
+    ModifyHeatsRequest.Builder builder = ModifyHeatsRequest.newBuilder();
+    for (RaceParticipant p : participants) {
+      builder.addParticipants(RaceParticipantConverter.toProto(p, new HashSet<>()));
+    }
+    for (Heat h : heats) {
+      builder.addHeats(HeatConverter.toProto(h, new HashSet<>()));
+    }
+    return builder.build();
+  }
+
+  private List<RaceParticipant> createParticipantList(int count) {
+    List<RaceParticipant> list = new ArrayList<>();
+    for (int i = 1; i <= count; i++) {
+      list.add(
+          new RaceParticipant(
+              new Driver(
+                  "D" + i,
+                  "d" + i,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  String.valueOf(i),
+                  null)));
+    }
+    return list;
   }
 }

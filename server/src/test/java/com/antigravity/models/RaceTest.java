@@ -7,7 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-public class RacePersistenceFieldsTest {
+public class RaceTest {
 
   @Test
   public void testRaceBuilderWithGroupOptions() {

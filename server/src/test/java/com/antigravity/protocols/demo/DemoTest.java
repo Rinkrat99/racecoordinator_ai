@@ -15,7 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.junit.Before;
 import org.junit.Test;
 
-public class DemoProtocolTest {
+public class DemoTest {
 
   private TestableDemo demo;
   private MockScheduler scheduler;
@@ -658,5 +658,56 @@ public class DemoProtocolTest {
     for (long offset : testDemo.laneStates[0].segmentOffsets) {
       assertEquals("Segment offset should be cleared to 0 on reset", 0, offset);
     }
+  }
+
+  @Test
+  public void testStatusSchedulerCleanup() throws Exception {
+    Demo realDemo = new Demo(2, false);
+    final java.util.concurrent.atomic.AtomicInteger statusUpdates =
+        new java.util.concurrent.atomic.AtomicInteger(0);
+
+    com.antigravity.protocols.ProtocolListener mockListener =
+        new com.antigravity.protocols.ProtocolListener() {
+          @Override
+          public void onLap(int lane, double lapTime, int interfaceId, int interfaceIndex) {}
+
+          @Override
+          public void onSegment(
+              int lane, double segmentTime, int interfaceId, int interfaceIndex) {}
+
+          @Override
+          public void onCallbutton(int lane, int interfaceIndex) {}
+
+          @Override
+          public void onCarData(com.antigravity.protocols.CarData carData) {}
+
+          @Override
+          public void onInterfaceStatus(
+              com.antigravity.proto.InterfaceStatus status, int interfaceIndex) {
+            if (status == com.antigravity.proto.InterfaceStatus.CONNECTED) {
+              statusUpdates.incrementAndGet();
+            }
+          }
+
+          @Override
+          public void onInterfaceEvent(com.antigravity.proto.InterfaceEvent event) {}
+        };
+
+    realDemo.setListener(mockListener);
+    realDemo.open();
+
+    long start = System.currentTimeMillis();
+    while (statusUpdates.get() == 0 && (System.currentTimeMillis() - start) < 2000) {
+      Thread.sleep(100);
+    }
+
+    assertTrue("Should have received at least one CONNECTED status", statusUpdates.get() > 0);
+
+    realDemo.close();
+    Thread.sleep(1000);
+    statusUpdates.set(0);
+    Thread.sleep(1000);
+
+    assertEquals("Should receive 0 updates after close", 0, statusUpdates.get());
   }
 }

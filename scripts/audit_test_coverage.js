@@ -64,7 +64,7 @@ function auditServer() {
 
   const testFiles = walkDir(
     SERVER_TEST_DIR,
-    (name) => name.endsWith('.java')
+    (name) => name.endsWith('Test.java')
   );
 
   const testFileMap = new Map();

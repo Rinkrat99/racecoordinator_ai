@@ -2,6 +2,9 @@ package com.antigravity.race;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 import com.antigravity.models.Driver;
 import com.antigravity.models.HeatRotationType;
@@ -11,17 +14,17 @@ import com.antigravity.models.OverallScoring;
 import com.antigravity.models.Race;
 import com.antigravity.models.Team;
 import com.antigravity.models.Track;
+import com.antigravity.util.CsvExporter;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
 
-// Instead, let's verify HeatBuilder logic first.
-
-public class RacePersistenceTest {
+public class RaceSaveDataTest {
 
   @Test
   public void testHeatBuilderAssignsActualDriver() {
-    // Setup
     Driver d1 =
         new Driver(
             "D1", "Driver One", null, null, null, null, null, null, null, null, null, "d1", null);
@@ -67,21 +70,14 @@ public class RacePersistenceTest {
             .isDemoMode(true)
             .build();
 
-    // Execute
     List<Heat> heats = HeatBuilder.buildHeats(race, drivers, new ArrayList<>());
 
-    // Verify
     assertNotNull(heats);
-    assertEquals(2, heats.size()); // 2 drivers, round robin likely 2 heats if 2 lanes?
-    // Round robin with 2 lanes and 1 driver (team) -> 1 driver means 1 heat?
-    // Wait, drivers.size() = 1.
-    // RoundRobin uses max(drivers.size(), rotationSequence.size())
-    // rotationSequence size = 2 (2 lanes). So 2 heats.
+    assertEquals(2, heats.size());
 
     Heat h1 = heats.get(0);
     Heat h2 = heats.get(1);
 
-    // Find the team in h1
     DriverHeatData dhd1 =
         h1.getDrivers().stream()
             .filter(d -> d.getDriver().getTeam() != null)
@@ -89,9 +85,8 @@ public class RacePersistenceTest {
             .orElse(null);
     assertNotNull(dhd1);
     assertNotNull(dhd1.getActualDriver());
-    System.out.println("Heat 1 Driver: " + dhd1.getActualDriver().getName());
+    assertEquals("D1", dhd1.getActualDriver().getName());
 
-    // Find the team in h2
     DriverHeatData dhd2 =
         h2.getDrivers().stream()
             .filter(d -> d.getDriver().getTeam() != null)
@@ -99,15 +94,6 @@ public class RacePersistenceTest {
             .orElse(null);
     assertNotNull(dhd2);
     assertNotNull(dhd2.getActualDriver());
-    System.out.println("Heat 2 Driver: " + dhd2.getActualDriver().getName());
-
-    // Verify they are different drivers (d1 and d2)
-    // Logic: int driverIdx = h % participant.getTeamDrivers().size();
-    // h=0 => idx 0 => d1
-    // h=1 => idx 1 => d2
-    System.out.println("Expected: D1, Actual: " + dhd1.getActualDriver().getName());
-    assertEquals("D1", dhd1.getActualDriver().getName());
-    System.out.println("Expected: D2, Actual: " + dhd2.getActualDriver().getName());
     assertEquals("D2", dhd2.getActualDriver().getName());
   }
 
@@ -135,18 +121,14 @@ public class RacePersistenceTest {
             .withEntityId("race1")
             .build();
 
-    // Create a deserialized Heat where DriverHeatData contains a separate instance of
-    // RaceParticipant with matching stable ID
     RaceParticipant deserializedRp = new RaceParticipant(d1);
-    // Ensure they are separate objects
-    org.junit.Assert.assertNotSame(masterRp, deserializedRp);
+    assertNotSame(masterRp, deserializedRp);
 
     List<DriverHeatData> heatDrivers = new ArrayList<>();
     heatDrivers.add(new DriverHeatData(deserializedRp));
     List<Heat> heats = new ArrayList<>();
     heats.add(new Heat(1, heatDrivers, new HeatScoring(), false));
 
-    // Build the race with these heats
     com.antigravity.race.Race restoredRace =
         new com.antigravity.race.Race.Builder()
             .model(raceModel)
@@ -156,9 +138,8 @@ public class RacePersistenceTest {
             .isDemoMode(true)
             .build();
 
-    // Verify they are now the same master instance
     RaceParticipant linkedRp = restoredRace.getHeats().get(0).getDrivers().get(0).getDriver();
-    org.junit.Assert.assertSame(masterRp, linkedRp);
+    assertSame(masterRp, linkedRp);
   }
 
   @Test
@@ -201,18 +182,14 @@ public class RacePersistenceTest {
     saveData.setDrivers(masterDrivers);
     saveData.setHeats(heats);
 
-    // Simulate SQLite JSON Save and Load via Jackson
-    com.fasterxml.jackson.databind.ObjectMapper mapper =
-        new com.fasterxml.jackson.databind.ObjectMapper();
-    mapper.configure(
-        com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     String json = mapper.writeValueAsString(saveData);
     RaceSaveData decodedSaveData = mapper.readValue(json, RaceSaveData.class);
 
     DriverHeatData decodedDhd = decodedSaveData.getHeats().get(0).getDrivers().get(0);
     assertEquals(5.432, decodedDhd.getBestLapTime(), 0.001);
 
-    // Reconstruct loaded race
     com.antigravity.race.Race loadedRace =
         new com.antigravity.race.Race.Builder()
             .model(decodedSaveData.getModel())
@@ -222,7 +199,6 @@ public class RacePersistenceTest {
             .isDemoMode(true)
             .build();
 
-    // Verify OverallStandings recalculation on loaded race preserves best lap time
     OverallStandings standings =
         new OverallStandings(
             loadedRace.getRaceModel().getHeatScoring(),
@@ -234,9 +210,7 @@ public class RacePersistenceTest {
     RaceParticipant loadedParticipant = loadedRace.getDrivers().get(0);
     assertEquals(5.432, loadedParticipant.getBestLapTime(), 0.001);
 
-    // Verify CSV export output contains best lap time
-    String csv = com.antigravity.util.CsvExporter.export(loadedRace);
-    org.junit.Assert.assertTrue(
-        "CSV export should contain non-zero best lap time 5.432", csv.contains("5.432"));
+    String csv = CsvExporter.export(loadedRace);
+    assertTrue("CSV export should contain non-zero best lap time 5.432", csv.contains("5.432"));
   }
 }

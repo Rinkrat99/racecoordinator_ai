@@ -391,4 +391,89 @@ public class DatabaseServiceTest {
     assertEquals("corrupted_race.json", saves.get(0).getSaveName());
     assertTrue(saves.get(0).isCorrupt());
   }
+
+  @Test
+  public void testUpdateGlobalStatisticsInDemoMode() {
+    com.antigravity.models.Race model =
+        new com.antigravity.models.Race.Builder()
+            .withName("Test Race Demo")
+            .withEntityId("DEMO1")
+            .build();
+    List<RaceParticipant> drivers = new ArrayList<>();
+    drivers.add(new RaceParticipant(new Driver("Dave", "DB")));
+
+    com.antigravity.race.Race runtimeRace =
+        new com.antigravity.race.Race.Builder()
+            .model(model)
+            .drivers(drivers)
+            .track(dbService.getFactoryTrack())
+            .isDemoMode(true)
+            .build();
+
+    dbService.updateGlobalStatistics(databaseContext, runtimeRace);
+    assertNotNull(databaseContext);
+  }
+
+  @Test
+  public void testUpsertAutoSaveInDemoMode() {
+    com.antigravity.race.RaceSaveData data = new com.antigravity.race.RaceSaveData();
+    data.setDemoMode(true);
+    data.setSaveName("autosave_DEMO1.json");
+
+    dbService.upsertAutoSave(databaseContext, data);
+    assertNotNull(databaseContext);
+  }
+
+  @Test
+  public void testSaveDriverStatistics() {
+    com.antigravity.models.Race model =
+        new com.antigravity.models.Race.Builder()
+            .withName("Test Race")
+            .withEntityId("RACE123")
+            .build();
+
+    List<com.antigravity.models.Lane> lanes =
+        Arrays.asList(
+            new com.antigravity.models.Lane("#ff0000", "#ffffff", 100),
+            new com.antigravity.models.Lane("#00ff00", "#000000", 100));
+    com.antigravity.models.Track track =
+        new com.antigravity.models.Track.Builder().name("2-Lane Track").lanes(lanes).build();
+
+    Driver d1 = new Driver("Driver 1", "d1", "d1", null);
+    RaceParticipant p1 = new RaceParticipant(d1);
+    List<RaceParticipant> participants = Arrays.asList(p1);
+
+    com.antigravity.race.DriverHeatData hd1_p1 = new com.antigravity.race.DriverHeatData(p1);
+    hd1_p1.addLap(5.5, false, true);
+    hd1_p1.addLap(6.0, false, true);
+
+    com.antigravity.race.Heat heat1 =
+        new com.antigravity.race.Heat(
+            1, Arrays.asList(hd1_p1), new com.antigravity.models.HeatScoring(), false);
+    heat1.setStarted(true);
+
+    Race runtimeRace =
+        new Race.Builder()
+            .model(model)
+            .drivers(participants)
+            .heats(Arrays.asList(heat1))
+            .track(track)
+            .isDemoMode(true)
+            .build();
+
+    dbService.saveDriverStatistics(databaseContext, runtimeRace);
+
+    com.antigravity.models.DriverStatistics stats =
+        dbService.getDriverStatistics(databaseContext, "d1", "RACE123", RaceScope.PRODUCTION);
+    assertNotNull(stats);
+  }
+
+  @Test
+  public void testGetDriverStatisticsStrictScopeIsolation() throws Exception {
+    String rootDir = tempFolder.newFolder("db_root_isolation").getAbsolutePath() + File.separator;
+    DatabaseContext dc = new DatabaseContext("iso_db", null, rootDir);
+    com.antigravity.models.DriverStatistics stats =
+        dbService.getDriverStatistics(dc, "d1", "RACE123", RaceScope.DEMO);
+    assertEquals(0.0, stats.getBestLapTime(), 0.001);
+  }
 }

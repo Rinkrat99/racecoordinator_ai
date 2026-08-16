@@ -2,8 +2,10 @@ package com.antigravity.race;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.antigravity.models.Driver;
@@ -13,7 +15,9 @@ import com.antigravity.models.Lane;
 import com.antigravity.models.OverallScoring;
 import com.antigravity.models.Race;
 import com.antigravity.models.Track;
+import com.antigravity.proto.DemoConfig;
 import com.antigravity.proto.InterfaceStatus;
+import com.antigravity.proto.RaceFlag;
 import com.antigravity.protocols.ProtocolDelegate;
 import com.antigravity.protocols.arduino.ArduinoConfig;
 import com.antigravity.race.states.HeatOver;
@@ -27,10 +31,11 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-public class RaceHardwareDisconnectTest {
+public class RaceHardwareManagerTest {
 
   private com.antigravity.race.Race race;
   private ProtocolDelegate mockProtocols;
+  private RaceHardwareManager hardwareManager;
 
   @Before
   public void setUp() throws Exception {
@@ -92,6 +97,8 @@ public class RaceHardwareDisconnectTest {
     when(mockProtocols.isHealthy()).thenReturn(true);
     race.injectProtocols(mockProtocols);
     race.init();
+
+    hardwareManager = race.getHardwareManager();
   }
 
   @Test
@@ -152,5 +159,44 @@ public class RaceHardwareDisconnectTest {
     assertTrue("Auto advance should be marked as fired/cancelled", race.isAutoAdvanceFired());
     assertEquals(
         "Auto advance remaining should be reset to 0", 0.0, race.getAutoAdvanceRemaining(), 0.001);
+  }
+
+  @Test
+  public void testCreateProtocolsInDemoMode() {
+    RaceHardwareManager manager = new RaceHardwareManager(race);
+    manager.createProtocols(true, DemoConfig.getDefaultInstance());
+    assertNotNull("Protocols should be created in demo mode", manager.getProtocols());
+  }
+
+  @Test
+  public void testUpdatePowerForFlagStates() {
+    hardwareManager.updatePowerForFlag(RaceFlag.GREEN);
+    assertTrue("Main power should be ON for GREEN flag", race.isMainPower());
+
+    hardwareManager.updatePowerForFlag(RaceFlag.YELLOW);
+    assertFalse("Main power should be OFF for YELLOW flag", race.isMainPower());
+
+    hardwareManager.updatePowerForFlag(RaceFlag.RED);
+    assertFalse("Main power should be OFF for RED flag", race.isMainPower());
+
+    hardwareManager.updatePowerForFlag(RaceFlag.WHITE);
+    assertTrue("Main power should be ON for WHITE flag", race.isMainPower());
+  }
+
+  @Test
+  public void testDelegationMethods() {
+    when(mockProtocols.open()).thenReturn(true);
+    when(mockProtocols.hasMainRelay()).thenReturn(true);
+    when(mockProtocols.hasPerLaneRelays()).thenReturn(false);
+
+    assertTrue(hardwareManager.open());
+    assertTrue(hardwareManager.hasMainRelay());
+    assertFalse(hardwareManager.hasPerLaneRelays());
+
+    hardwareManager.forceMainPowerSync();
+    verify(mockProtocols).setMainPower(race.isMainPower());
+
+    hardwareManager.close();
+    verify(mockProtocols).close();
   }
 }

@@ -368,6 +368,77 @@ public class RaceConverterTest {
     }
   }
 
+  @Test
+  public void testSerializeRaceWithEmptyLanes() {
+    com.antigravity.models.Race raceModel =
+        org.mockito.Mockito.mock(com.antigravity.models.Race.class);
+    Track track = org.mockito.Mockito.mock(Track.class);
+    List<com.antigravity.race.RaceParticipant> drivers = new ArrayList<>();
+
+    // 1 real driver
+    drivers.add(
+        new com.antigravity.race.RaceParticipant(
+            new com.antigravity.models.Driver("Real Driver", "Real Nick", "real1", "1")));
+
+    // 2 lanes
+    List<com.antigravity.models.Lane> lanes = new ArrayList<>();
+    lanes.add(new com.antigravity.models.Lane("Red", "red", 1));
+    lanes.add(new com.antigravity.models.Lane("Blue", "blue", 2));
+    org.mockito.Mockito.when(track.getLanes()).thenReturn(lanes);
+    org.mockito.Mockito.when(track.getArduinoConfigs()).thenReturn(new ArrayList<>());
+    org.mockito.Mockito.when(track.getEntityId()).thenReturn("track1");
+    org.mockito.Mockito.when(track.getObjectId()).thenReturn("track1");
+    org.mockito.Mockito.when(track.getName()).thenReturn("Track 1");
+
+    org.mockito.Mockito.when(raceModel.getHeatRotationType())
+        .thenReturn(HeatRotationType.RoundRobin);
+    org.mockito.Mockito.when(raceModel.getHeatScoring()).thenReturn(new HeatScoring());
+    org.mockito.Mockito.when(raceModel.getOverallScoring())
+        .thenReturn(new com.antigravity.models.OverallScoring());
+    org.mockito.Mockito.when(raceModel.getTrackEntityId()).thenReturn("track1");
+    org.mockito.Mockito.when(raceModel.getEntityId()).thenReturn("race1");
+    org.mockito.Mockito.when(raceModel.getObjectId()).thenReturn("race1");
+    org.mockito.Mockito.when(raceModel.getName()).thenReturn("Race 1");
+
+    com.antigravity.race.Race race =
+        new com.antigravity.race.Race.Builder()
+            .model(raceModel)
+            .drivers(drivers)
+            .track(track)
+            .isDemoMode(true)
+            .build();
+
+    Set<String> sentObjectIds = new HashSet<>();
+    com.antigravity.proto.Race proto = RaceConverter.toProto(race, sentObjectIds);
+
+    assertNotNull(proto);
+    assertEquals(2, proto.getDriversCount());
+
+    com.antigravity.proto.RaceParticipant emptyParticipant = null;
+    com.antigravity.proto.RaceParticipant realParticipant = null;
+
+    for (com.antigravity.proto.RaceParticipant p : proto.getDriversList()) {
+      if ("Real Driver".equals(p.getDriver().getName())) {
+        realParticipant = p;
+      } else if ("Empty".equals(p.getDriver().getName())) {
+        emptyParticipant = p;
+      }
+    }
+
+    assertNotNull(realParticipant);
+    assertNotNull(emptyParticipant);
+
+    assertEquals("Empty", emptyParticipant.getDriver().getName());
+    assertEquals("Empty", emptyParticipant.getDriver().getNickname());
+    assertEquals(
+        com.antigravity.models.Driver.EMPTY_DRIVER_ID,
+        emptyParticipant.getDriver().getModel().getEntityId());
+
+    org.junit.Assert.assertTrue(proto.getHeatsCount() > 0);
+    com.antigravity.proto.Heat heat0 = proto.getHeats(0);
+    assertEquals(2, heat0.getHeatDriversCount());
+  }
+
   private void assertNotNull(Object obj) {
     org.junit.Assert.assertNotNull(obj);
   }
