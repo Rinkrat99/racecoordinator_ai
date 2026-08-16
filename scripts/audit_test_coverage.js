@@ -253,9 +253,36 @@ function run() {
 
   console.log(`${colors.gray}Run with --verbose to view individual file paths.${colors.reset}\n`);
 
-  if (CI_MODE && (server.missingTests.length > 0 || compWithSpec < client.components.length)) {
-    console.log(`${colors.red}❌ Audit check failed: Untested files detected.${colors.reset}\n`);
-    process.exit(1);
+  if (CI_MODE) {
+    let failed = false;
+    if (server.orphanedOrScenarioTests.length > 0) {
+      console.log(
+        `${colors.red}❌ Audit check failed: Found ${server.orphanedOrScenarioTests.length} fragmented/orphaned test file(s). All server tests must strictly follow 1:1 class architecture.${colors.reset}`
+      );
+      server.orphanedOrScenarioTests.forEach(t => console.log(`   - ${t.relPath}`));
+      failed = true;
+    }
+
+    if (server.missingTests.length > 61) {
+      console.log(
+        `${colors.red}❌ Audit check failed: Server 1:1 test coverage regressed (${server.missingTests.length} untested classes, baseline max allowed: 61).${colors.reset}`
+      );
+      failed = true;
+    }
+
+    if (compWithSpec < 96) {
+      console.log(
+        `${colors.red}❌ Audit check failed: Client component unit test coverage regressed (${compWithSpec} components tested, baseline min allowed: 96).${colors.reset}`
+      );
+      failed = true;
+    }
+
+    if (failed) {
+      console.log(`\n${colors.red}Audit gate failed. Please resolve the issues above.${colors.reset}\n`);
+      process.exit(1);
+    } else {
+      console.log(`${colors.green}✅ All architecture & test coverage baseline gates passed!${colors.reset}\n`);
+    }
   }
 }
 

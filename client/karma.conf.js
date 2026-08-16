@@ -90,6 +90,14 @@ module.exports = function (config) {
         { type: "text-summary" },
         { type: "lcovonly" },
       ],
+      check: {
+        global: {
+          statements: 48,
+          lines: 49,
+          functions: 58,
+          branches: 27,
+        },
+      },
     },
     port: 9888,
     hostname: "127.0.0.1",
