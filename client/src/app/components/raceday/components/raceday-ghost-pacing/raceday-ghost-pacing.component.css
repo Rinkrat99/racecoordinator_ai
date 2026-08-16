@@ -1,0 +1,131 @@
+.ghost-pacing-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  color: #e2e8f0;
+  transition: all 0.25s ease;
+}
+
+.ghost-pacing-widget.compact {
+  padding: 3px 6px;
+  gap: 2px;
+  border-radius: 6px;
+}
+
+.pacing-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.benchmark-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0.02em;
+}
+
+.ghost-icon {
+  font-size: 0.85rem;
+  filter: drop-shadow(0 0 4px rgba(148, 163, 184, 0.4));
+}
+
+.delta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: all 0.2s ease;
+}
+
+.delta-badge.ahead {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+.delta-badge.behind {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+}
+
+.delta-arrow {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.pacing-track {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  background: rgba(30, 41, 59, 0.8);
+  border-radius: 9999px;
+  overflow: visible;
+  margin-top: 2px;
+}
+
+.pacing-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 9999px;
+  transition: width 0.1s linear;
+}
+
+.pacing-bar-fill.ahead {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.ghost-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.marker-dot {
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+  border: 2px solid #3b82f6;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
+}
+
+.pacing-bar-fill.ahead + .ghost-marker .marker-dot {
+  border-color: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+}
+
+.pacing-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.ghost-icon-dim {
+  opacity: 0.5;
+}

@@ -124,6 +124,31 @@
   font-size: 24px;
 }
 
+.ghost-trajectory-btn {
+  background: transparent;
+  border: none;
+  color: #a78bfa;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease-in-out;
+  outline: none;
+}
+
+.ghost-trajectory-btn:hover {
+  background: rgba(167, 139, 250, 0.18);
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.4);
+  transform: scale(1.08);
+}
+
+.ghost-trajectory-btn .ghost-icon {
+  font-size: 20px;
+}
+
 /* Standings Grid Glass Overlay */
 .results-container {
   background: rgba(8, 14, 24, 0.72);

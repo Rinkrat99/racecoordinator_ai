@@ -1,0 +1,54 @@
+<div
+  class="ghost-pacing-widget"
+  [class.compact]="compact()"
+  [class.has-data]="targetGhostLapTime() > 0"
+>
+  @if (targetGhostLapTime() > 0) {
+    <div class="pacing-header">
+      <span class="benchmark-tag">
+        <span class="ghost-icon">👻</span>
+        <span class="benchmark-name"
+          >{{ benchmarkLabel() }} ({{ targetGhostLapTime().toFixed(2) }}s)</span
+        >
+      </span>
+
+      <div
+        class="delta-badge"
+        [class.ahead]="ghostGap().isAhead && formattedDelta() !== '--'"
+        [class.behind]="!ghostGap().isAhead && formattedDelta() !== '--'"
+      >
+        <span class="delta-arrow">
+          @if (formattedDelta() === "--") {
+            ●
+          } @else if (ghostGap().isAhead) {
+            ▲
+          } @else {
+            ▼
+          }
+        </span>
+        <span class="delta-value">{{ formattedDelta() }}</span>
+      </div>
+    </div>
+
+    <!-- Live vs Ghost Progress Bar -->
+    <div class="pacing-track">
+      <div
+        class="pacing-bar-fill"
+        [style.width.%]="progressWidthPct()"
+        [class.ahead]="ghostGap().isAhead"
+      ></div>
+      <div
+        class="ghost-marker"
+        [style.left.%]="progressWidthPct()"
+        title="Live Telemetry Position"
+      >
+        <div class="marker-dot"></div>
+      </div>
+    </div>
+  } @else {
+    <div class="pacing-empty">
+      <span class="ghost-icon-dim">👻</span>
+      <span class="no-benchmark-text">No ghost benchmark</span>
+    </div>
+  }
+</div>

@@ -13,6 +13,7 @@ import {
   ViewEncapsulation,
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { RacedayGhostPacingComponent } from "@app/components/raceday/components/raceday-ghost-pacing/raceday-ghost-pacing.component";
 import { AbsoluteWidgetNode } from "@app/models/settings";
 import { TranslatePipe } from "@app/pipes/translate.pipe";
 
@@ -29,6 +30,7 @@ import { TranslatePipe } from "@app/pipes/translate.pipe";
     CdkDragHandle,
     TranslatePipe,
     FormsModule,
+    RacedayGhostPacingComponent,
   ],
 })
 export class RacedayLaneViewComponent implements AfterViewInit, OnDestroy {

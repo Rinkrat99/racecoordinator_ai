@@ -1,0 +1,99 @@
+import { CommonModule } from "@angular/common";
+import { Component, computed, inject, input } from "@angular/core";
+import { DriverHeatData } from "@app/race/driver_heat_data";
+import {
+  GhostBenchmarkType,
+  GhostGapResult,
+  GhostPacingService,
+} from "@app/services/ghost-pacing.service";
+
+@Component({
+  standalone: true,
+  selector: "app-raceday-ghost-pacing",
+  templateUrl: "./raceday-ghost-pacing.component.html",
+  styleUrls: ["./raceday-ghost-pacing.component.css"],
+  imports: [CommonModule],
+})
+export class RacedayGhostPacingComponent {
+  private ghostPacingService = inject(GhostPacingService);
+
+  driverHeatData = input<DriverHeatData | null>(null);
+  laneRecord = input<number>(0);
+  personalBest = input<number>(0);
+  heatLeaderBest = input<number>(0);
+  benchmarkType = input<GhostBenchmarkType>("LANE_RECORD");
+  compact = input<boolean>(false);
+  lapProgress = input<number | null>(null);
+
+  // Effective benchmark ghost lap time in seconds
+  targetGhostLapTime = computed(() => {
+    const hd = this.driverHeatData();
+    const laneIndex = hd?.laneIndex ?? 0;
+    return this.ghostPacingService.resolveGhostBenchmarkTime(
+      this.benchmarkType(),
+      laneIndex,
+      this.laneRecord(),
+      this.personalBest(),
+      this.heatLeaderBest(),
+    );
+  });
+
+  // Real-time calculated ghost gap delta & progress
+  ghostGap = computed<GhostGapResult>(() => {
+    const hd = this.driverHeatData();
+    const ghostLap = this.targetGhostLapTime();
+
+    if (!hd || ghostLap <= 0) {
+      return {
+        deltaSeconds: 0,
+        isAhead: false,
+        progressPct: 0,
+        liveProjectedLapTime: 0,
+        ghostLapTime: ghostLap,
+      };
+    }
+
+    const currentLapTime = (hd as any).currentLapTime ?? hd.lastLapTime ?? 0;
+    const customProgress = this.lapProgress();
+    const progress =
+      customProgress !== null
+        ? customProgress
+        : ((hd as any).lapProgress ??
+          (hd.currentLocation >= 0 ? hd.currentLocation / 100 : 1.0));
+
+    return this.ghostPacingService.calculateGhostGap(
+      progress,
+      currentLapTime,
+      ghostLap,
+    );
+  });
+
+  // Human-readable benchmark label
+  benchmarkLabel = computed(() => {
+    switch (this.benchmarkType()) {
+      case "PERSONAL_BEST":
+        return "Personal Best";
+      case "HEAT_LEADER":
+        return "Heat Leader";
+      case "LANE_RECORD":
+      default:
+        return "Lane Record";
+    }
+  });
+
+  // Percentage formatted for progress indicator (0 to 100%)
+  progressWidthPct = computed(() => {
+    const pct = this.ghostGap().progressPct;
+    return Math.min(100, Math.max(0, Math.round(pct * 100)));
+  });
+
+  // Formatted delta string: e.g. "+0.34s" or "-0.52s"
+  formattedDelta = computed(() => {
+    const gap = this.ghostGap();
+    if (gap.ghostLapTime <= 0 || gap.progressPct <= 0.02) {
+      return "--";
+    }
+    const sign = gap.deltaSeconds > 0 ? "+" : "";
+    return `${sign}${gap.deltaSeconds.toFixed(2)}s`;
+  });
+}

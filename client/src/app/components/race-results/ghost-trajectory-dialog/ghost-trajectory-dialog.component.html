@@ -1,0 +1,112 @@
+@if (visible()) {
+  <div class="trajectory-modal-backdrop" (click)="onDismiss()">
+    <div class="trajectory-modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-title">
+          <span class="ghost-icon">👻</span>
+          <h3>Pacing & Trajectory Comparison</h3>
+        </div>
+        <button
+          class="close-btn"
+          (click)="onDismiss()"
+          aria-label="Close dialog"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Drivers Banner -->
+        <div class="driver-matchup-bar">
+          <div class="driver-card driver-a">
+            <span class="driver-role">Live Driver</span>
+            <span class="driver-name">{{ driverAName() }}</span>
+          </div>
+          <div class="vs-badge">VS</div>
+          <div class="driver-card driver-b">
+            <span class="driver-role">Ghost / Reference</span>
+            <span class="driver-name">{{ driverBName() }}</span>
+          </div>
+        </div>
+
+        <!-- Metrics Overview -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Lead Changes</span>
+            <span class="metric-value">{{ comparison().leadChanges }}</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Max Advantage</span>
+            <span class="metric-value text-emerald"
+              >+{{ comparison().maxAdvantageLive.toFixed(2) }}s</span
+            >
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Max Deficit</span>
+            <span class="metric-value text-rose"
+              >-{{ comparison().maxAdvantageGhost.toFixed(2) }}s</span
+            >
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Avg Delta / Lap</span>
+            <span class="metric-value"
+              >{{ comparison().avgDeltaPerLap.toFixed(2) }}s</span
+            >
+          </div>
+        </div>
+
+        <!-- Lap-by-Lap Trajectory Table -->
+        <div class="table-container">
+          <table class="trajectory-table">
+            <thead>
+              <tr>
+                <th>Lap</th>
+                <th>{{ driverAName() }} (Cum.)</th>
+                <th>{{ driverBName() }} (Cum.)</th>
+                <th>Delta</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (pt of comparison().points; track pt.lapNumber) {
+                <tr
+                  [class.row-ahead]="pt.isAhead"
+                  [class.row-behind]="!pt.isAhead"
+                >
+                  <td class="lap-col">L{{ pt.lapNumber }}</td>
+                  <td>{{ pt.liveCumulative.toFixed(3) }}s</td>
+                  <td>{{ pt.ghostCumulative.toFixed(3) }}s</td>
+                  <td class="delta-col">
+                    <span
+                      class="delta-tag"
+                      [class.ahead]="pt.isAhead"
+                      [class.behind]="!pt.isAhead"
+                    >
+                      {{ pt.delta > 0 ? "+" : "" }}{{ pt.delta.toFixed(3) }}s
+                    </span>
+                  </td>
+                  <td>
+                    <span class="status-badge" [class.lead]="pt.isAhead">
+                      {{ pt.isAhead ? "Ahead" : "Behind" }}
+                    </span>
+                  </td>
+                </tr>
+              }
+              @if (comparison().points.length === 0) {
+                <tr>
+                  <td colspan="5" class="empty-row">
+                    No lap data available for trajectory comparison
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="onDismiss()">Close</button>
+      </div>
+    </div>
+  </div>
+}

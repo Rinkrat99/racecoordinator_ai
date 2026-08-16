@@ -1,0 +1,190 @@
+import { Injectable } from "@angular/core";
+
+export type GhostBenchmarkType =
+  | "LANE_RECORD"
+  | "PERSONAL_BEST"
+  | "HEAT_LEADER"
+  | "CUSTOM";
+
+export interface GhostGapResult {
+  deltaSeconds: number;
+  isAhead: boolean;
+  progressPct: number;
+  liveProjectedLapTime: number;
+  ghostLapTime: number;
+}
+
+export interface TrajectoryPoint {
+  lapNumber: number;
+  liveCumulative: number;
+  ghostCumulative: number;
+  delta: number;
+  isAhead: boolean;
+}
+
+export interface HeatTrajectoryComparison {
+  points: TrajectoryPoint[];
+  leadChanges: number;
+  maxAdvantageLive: number;
+  maxAdvantageGhost: number;
+  avgDeltaPerLap: number;
+}
+
+@Injectable({
+  providedIn: "root",
+})
+export class GhostPacingService {
+  /**
+   * Calculates the real-time gap delta in seconds and progress percentage
+   * between the live driver and a ghost benchmark lap.
+   */
+  calculateGhostGap(
+    progressPct: number,
+    liveDriverElapsedSeconds: number,
+    ghostLapTime: number,
+  ): GhostGapResult {
+    const clampedProgress = Math.max(0.0, Math.min(1.0, progressPct || 0.0));
+    const safeGhostLap = ghostLapTime > 0 ? ghostLapTime : 0.0;
+    const safeLiveElapsed = Math.max(0.0, liveDriverElapsedSeconds || 0.0);
+
+    if (safeGhostLap <= 0 || safeLiveElapsed <= 0) {
+      return {
+        deltaSeconds: 0.0,
+        isAhead: false,
+        progressPct: clampedProgress,
+        liveProjectedLapTime: 0.0,
+        ghostLapTime: safeGhostLap,
+      };
+    }
+
+    const expectedGhostElapsed = safeGhostLap * clampedProgress;
+    // Delta: positive if live driver has completed the segment in less time (ahead of ghost pace)
+    const deltaSeconds = expectedGhostElapsed - safeLiveElapsed;
+    const isAhead = deltaSeconds > 0.001;
+
+    const liveProjectedLapTime =
+      clampedProgress > 0.01
+        ? Number((safeLiveElapsed / clampedProgress).toFixed(3))
+        : safeGhostLap;
+
+    return {
+      deltaSeconds: Number(deltaSeconds.toFixed(3)),
+      isAhead,
+      progressPct: clampedProgress,
+      liveProjectedLapTime,
+      ghostLapTime: safeGhostLap,
+    };
+  }
+
+  /**
+   * Resolves the effective target ghost benchmark time based on preference and available records.
+   */
+  resolveGhostBenchmarkTime(
+    benchmarkType: GhostBenchmarkType,
+    laneIndex: number,
+    laneRecord?: number,
+    personalBest?: number,
+    heatLeaderBest?: number,
+    customPace?: number,
+  ): number {
+    switch (benchmarkType) {
+      case "PERSONAL_BEST":
+        if (personalBest && personalBest > 0) return personalBest;
+        if (laneRecord && laneRecord > 0) return laneRecord;
+        if (heatLeaderBest && heatLeaderBest > 0) return heatLeaderBest;
+        break;
+      case "HEAT_LEADER":
+        if (heatLeaderBest && heatLeaderBest > 0) return heatLeaderBest;
+        if (laneRecord && laneRecord > 0) return laneRecord;
+        break;
+      case "CUSTOM":
+        if (customPace && customPace > 0) return customPace;
+        break;
+      case "LANE_RECORD":
+      default:
+        if (laneRecord && laneRecord > 0) return laneRecord;
+        if (personalBest && personalBest > 0) return personalBest;
+        if (heatLeaderBest && heatLeaderBest > 0) return heatLeaderBest;
+        break;
+    }
+    return customPace && customPace > 0 ? customPace : 0.0;
+  }
+
+  /**
+   * Compares two lap series (live driver vs ghost/benchmark driver) to produce
+   * point-by-point cumulative trajectory analysis.
+   */
+  compareTrajectories(
+    liveLaps: number[],
+    ghostLaps: number[],
+  ): HeatTrajectoryComparison {
+    const validLive = (liveLaps || []).filter((l) => l > 0);
+    const validGhost = (ghostLaps || []).filter((l) => l > 0);
+    const lapCount = Math.min(validLive.length, validGhost.length);
+
+    if (lapCount === 0) {
+      return {
+        points: [],
+        leadChanges: 0,
+        maxAdvantageLive: 0.0,
+        maxAdvantageGhost: 0.0,
+        avgDeltaPerLap: 0.0,
+      };
+    }
+
+    const points: TrajectoryPoint[] = [];
+    let liveCum = 0.0;
+    let ghostCum = 0.0;
+    let leadChanges = 0;
+    let prevLead: "live" | "ghost" | "tied" = "tied";
+    let maxAdvantageLive = 0.0;
+    let maxAdvantageGhost = 0.0;
+    let totalDelta = 0.0;
+
+    for (let i = 0; i < lapCount; i++) {
+      liveCum += validLive[i];
+      ghostCum += validGhost[i];
+
+      // Delta: positive if live driver cumulative time is lower (ahead)
+      const delta = ghostCum - liveCum;
+      totalDelta += delta;
+
+      const currentLead: "live" | "ghost" | "tied" =
+        delta > 0.005 ? "live" : delta < -0.005 ? "ghost" : "tied";
+
+      if (
+        prevLead !== "tied" &&
+        currentLead !== "tied" &&
+        prevLead !== currentLead
+      ) {
+        leadChanges++;
+      }
+      if (currentLead !== "tied") {
+        prevLead = currentLead;
+      }
+
+      if (delta > maxAdvantageLive) {
+        maxAdvantageLive = delta;
+      }
+      if (-delta > maxAdvantageGhost) {
+        maxAdvantageGhost = -delta;
+      }
+
+      points.push({
+        lapNumber: i + 1,
+        liveCumulative: Number(liveCum.toFixed(3)),
+        ghostCumulative: Number(ghostCum.toFixed(3)),
+        delta: Number(delta.toFixed(3)),
+        isAhead: delta > 0.001,
+      });
+    }
+
+    return {
+      points,
+      leadChanges,
+      maxAdvantageLive: Number(maxAdvantageLive.toFixed(3)),
+      maxAdvantageGhost: Number(maxAdvantageGhost.toFixed(3)),
+      avgDeltaPerLap: Number((totalDelta / lapCount).toFixed(3)),
+    };
+  }
+}
