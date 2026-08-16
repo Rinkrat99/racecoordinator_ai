@@ -230,7 +230,7 @@ jobs:
           path: release/RaceCoordinatorAI-Linux-ARM64.tar.gz
 
   publish-release:
-    needs: [check-changes, build-windows, build-mac, build-linux, build-artifacts]
+    needs: [check-changes, run-tests, build-windows, build-mac, build-linux, build-artifacts]
     if: ${{ needs.check-changes.outputs.should_run == 'true' && github.event.inputs.skip_release != 'true' }}
     runs-on: ubuntu-latest
     steps:
@@ -251,6 +251,20 @@ jobs:
         with:
           name: linux-package
           path: final-release/
+
+      - name: Download Client Coverage Report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: client-coverage-report
+          path: final-release/coverage/client/
+
+      - name: Download Server Coverage Report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: server-coverage-report
+          path: final-release/coverage/server/
 
       - name: Determine Tags and Prerelease
         id: vars
@@ -285,6 +299,9 @@ jobs:
           mv final-release/RaceCoordinatorAI_Offline_Setup.exe "final-release/RaceCoordinatorAI_Offline_Setup_${TAG}.exe" || true
           mv final-release/RaceCoordinator_Mac.dmg "final-release/RaceCoordinator_Mac_${TAG}.dmg" || true
           mv final-release/RaceCoordinatorAI-Linux-ARM64.tar.gz "final-release/RaceCoordinatorAI-Linux-ARM64_${TAG}.tar.gz" || true
+          if [ -d "final-release/coverage" ]; then
+            (cd final-release && zip -r "RaceCoordinatorAI_Coverage_Reports_${TAG}.zip" coverage && rm -rf coverage) || true
+          fi
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
