@@ -56,7 +56,7 @@ jobs:
       - name: Generate Protobufs
         run: cd server && chmod +x generate_protos.sh && ./generate_protos.sh
       - name: Run client tests
-        run: cd client && npm run test --watch=false
+        run: cd client && npx ng test --no-watch --no-progress --browsers=ChromeHeadlessWithCustomConfig --code-coverage
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
       - name: Upload client test coverage

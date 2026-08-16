@@ -300,6 +300,7 @@ jobs:
           mv final-release/RaceCoordinator_Mac.dmg "final-release/RaceCoordinator_Mac_${TAG}.dmg" || true
           mv final-release/RaceCoordinatorAI-Linux-ARM64.tar.gz "final-release/RaceCoordinatorAI-Linux-ARM64_${TAG}.tar.gz" || true
           if [ -d "final-release/coverage" ]; then
+            node scripts/generate_coverage_portal.js final-release/coverage final-release/coverage/client final-release/coverage/server || true
             (cd final-release && zip -r "RaceCoordinatorAI_Coverage_Reports_${TAG}.zip" coverage && rm -rf coverage) || true
           fi
 
@@ -309,5 +310,13 @@ jobs:
           tag_name: ${{ env.TAG }}
           name: ${{ env.TAG }}
           prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+          body: |
+            ### 🏎️ Race Coordinator AI Release ${{ env.TAG }}
+
+            #### 📦 Release Assets & Downloads
+            - **Windows**: `RaceCoordinatorAI_Online_Setup_${{ env.TAG }}.exe` / `RaceCoordinatorAI_Offline_Setup_${{ env.TAG }}.exe`
+            - **macOS**: `RaceCoordinator_Mac_${{ env.TAG }}.dmg`
+            - **Linux (ARM64)**: `RaceCoordinatorAI-Linux-ARM64_${{ env.TAG }}.tar.gz`
+            - **Test Coverage**: `RaceCoordinatorAI_Coverage_Reports_${{ env.TAG }}.zip` *(Unzip and open `index.html` to view the unified Client & Server coverage dashboard)*
           files: |
             final-release/*
