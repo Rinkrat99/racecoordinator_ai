@@ -184,6 +184,7 @@ public class GlobalStatistics {
     return id;
   }
 
+  @com.fasterxml.jackson.annotation.JsonIgnore
   public String getEntityId() {
     return raceEntityId != null ? raceEntityId : id;
   }

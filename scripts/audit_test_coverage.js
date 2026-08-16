@@ -73,14 +73,32 @@ function auditServer() {
   const matched = [];
   const missingTests = [];
   const matchedTestRelPaths = new Set();
+  let concreteClassesCount = 0;
+  let concreteClassesTested = 0;
+  const missingConcreteClasses = [];
 
   for (const src of sourceFiles) {
     const expectedTestRelPath = src.relPath.replace(/\.java$/, 'Test.java');
+    const content = fs.readFileSync(src.fullPath, 'utf8');
+    const isInterface = /\bpublic\s+interface\b/.test(content);
+    const isEnum = /\bpublic\s+enum\b/.test(content);
+    const isConcreteClass = !isInterface && !isEnum;
+
+    if (isConcreteClass) {
+      concreteClassesCount++;
+    }
+
     if (testFileMap.has(expectedTestRelPath)) {
       matched.push({ source: src, test: testFileMap.get(expectedTestRelPath) });
       matchedTestRelPaths.add(expectedTestRelPath);
+      if (isConcreteClass) {
+        concreteClassesTested++;
+      }
     } else {
       missingTests.push(src);
+      if (isConcreteClass) {
+        missingConcreteClasses.push(src);
+      }
     }
   }
 
@@ -92,6 +110,9 @@ function auditServer() {
   return {
     totalSources: sourceFiles.length,
     totalTests: testFiles.length,
+    concreteClassesCount,
+    concreteClassesTested,
+    missingConcreteClasses,
     matched,
     missingTests,
     orphanedOrScenarioTests,
@@ -208,15 +229,15 @@ function run() {
   const client = auditClient();
 
   console.log(`${colors.bold}🔹 SERVER (Java 1:1 Test Architecture)${colors.reset}`);
-  printScore('1:1 Matched Class Tests', server.matched.length, server.totalSources);
+  printScore('1:1 Concrete Classes Tested', server.concreteClassesTested, server.concreteClassesCount);
+  printScore('Total Matched Source Files', server.matched.length, server.totalSources);
   console.log(`  ${'Total Java Unit Test Files'.padEnd(35)}: ${server.totalTests}`);
   console.log(`  ${'Scenario / Fragmented Test Files'.padEnd(35)}: ${colors.yellow}${server.orphanedOrScenarioTests.length}${colors.reset}`);
-  console.log(`  ${'Missing 1:1 Test Files'.padEnd(35)}: ${server.missingTests.length === 0 ? colors.green + '0' : colors.red + server.missingTests.length}${colors.reset}\n`);
+  console.log(`  ${'Missing Concrete Class Tests'.padEnd(35)}: ${server.missingConcreteClasses.length === 0 ? colors.green + '0' : colors.yellow + server.missingConcreteClasses.length}${colors.reset}\n`);
 
-  if (VERBOSE && server.missingTests.length > 0) {
-    console.log(`${colors.yellow}  Untested / Unmatched Server Classes:${colors.reset}`);
-    server.missingTests.slice(0, 15).forEach(s => console.log(`    - ${s.relPath}`));
-    if (server.missingTests.length > 15) console.log(`    ... and ${server.missingTests.length - 15} more`);
+  if (VERBOSE && server.missingConcreteClasses.length > 0) {
+    console.log(`${colors.yellow}  Untested Concrete Server Classes:${colors.reset}`);
+    server.missingConcreteClasses.forEach(s => console.log(`    - ${s.relPath}`));
     console.log('');
   }
 
@@ -263,16 +284,31 @@ function run() {
       failed = true;
     }
 
-    if (server.missingTests.length > 61) {
+    if (server.missingConcreteClasses.length > 1) {
       console.log(
-        `${colors.red}❌ Audit check failed: Server 1:1 test coverage regressed (${server.missingTests.length} untested classes, baseline max allowed: 61).${colors.reset}`
+        `${colors.red}❌ Audit check failed: Server concrete class test coverage regressed (${server.missingConcreteClasses.length} untested concrete classes, baseline max allowed: 1).${colors.reset}`
+      );
+      server.missingConcreteClasses.forEach(s => console.log(`   - ${s.relPath}`));
+      failed = true;
+    }
+
+    if (compWithSpec < 100) {
+      console.log(
+        `${colors.red}❌ Audit check failed: Client component unit test coverage regressed (${compWithSpec}/100 components tested).${colors.reset}`
       );
       failed = true;
     }
 
-    if (compWithSpec < 96) {
+    if (servicesWithSpec < 22) {
       console.log(
-        `${colors.red}❌ Audit check failed: Client component unit test coverage regressed (${compWithSpec} components tested, baseline min allowed: 96).${colors.reset}`
+        `${colors.red}❌ Audit check failed: Client service unit test coverage regressed (${servicesWithSpec}/22 services tested).${colors.reset}`
+      );
+      failed = true;
+    }
+
+    if (convertersWithSpec < 13) {
+      console.log(
+        `${colors.red}❌ Audit check failed: Client converter unit test coverage regressed (${convertersWithSpec}/13 converters tested).${colors.reset}`
       );
       failed = true;
     }
