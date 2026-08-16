@@ -65,7 +65,7 @@ module.exports = function (config) {
   config.set({
     basePath: "",
     frameworks: ["jasmine", "@angular-devkit/build-angular"],
-    reporters: ["progress", "kjhtml"],
+    reporters: ["progress", "kjhtml", "coverage"],
     plugins: [
       require("karma-jasmine"),
       require("karma-chrome-launcher"),
@@ -85,7 +85,11 @@ module.exports = function (config) {
     coverageReporter: {
       dir: require("path").join(__dirname, "./coverage/client"),
       subdir: ".",
-      reporters: [{ type: "html" }, { type: "text-summary" }],
+      reporters: [
+        { type: "html" },
+        { type: "text-summary" },
+        { type: "lcovonly" },
+      ],
     },
     port: 9888,
     hostname: "127.0.0.1",

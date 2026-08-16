@@ -14,7 +14,7 @@
     <generated.sources.dir>${build.dist.dir}/generated-sources/protobuf/java</generated.sources.dir>
     <protobuf.java.version>3.25.1</protobuf.java.version>
     <skipProtobuf>false</skipProtobuf>
-    <argLine></argLine>
+    <jacocoArgLine></jacocoArgLine>
   </properties>
   <repositories>
     <repository>
@@ -165,7 +165,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
         <configuration>
-          <argLine>-XX:TieredStopAtLevel=1 ${argLine}</argLine>
+          <argLine>-XX:TieredStopAtLevel=1 ${jacocoArgLine}</argLine>
           <systemPropertyVariables>
             <skip.jni.load>true</skip.jni.load>
           </systemPropertyVariables>
@@ -261,6 +261,68 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.6.3</version>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.11</version>
+        <configuration>
+          <propertyName>jacocoArgLine</propertyName>
+          <excludes>
+            <exclude>com/antigravity/proto/**</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.pitest</groupId>
+        <artifactId>pitest-maven</artifactId>
+        <version>1.15.8</version>
+        <configuration>
+          <useSurefireArgLine>false</useSurefireArgLine>
+          <jvmArgs>
+            <value>-XX:TieredStopAtLevel=1</value>
+            <value>-Djdk.attach.allowAttachSelf=true</value>
+            <value>-Dskip.jni.load=true</value>
+            <value>--add-opens=java.base/java.lang=ALL-UNNAMED</value>
+            <value>--add-opens=java.base/java.lang.reflect=ALL-UNNAMED</value>
+            <value>--add-opens=java.base/java.io=ALL-UNNAMED</value>
+            <value>--add-opens=java.base/java.util=ALL-UNNAMED</value>
+          </jvmArgs>
+          <targetClasses>
+            <param>com.antigravity.*</param>
+          </targetClasses>
+          <targetTests>
+            <param>com.antigravity.*</param>
+          </targetTests>
+          <excludedClasses>
+            <param>com.antigravity.proto.*</param>
+          </excludedClasses>
+          <mutators>
+            <mutator>DEFAULTS</mutator>
+            <mutator>STRONGER</mutator>
+          </mutators>
+          <outputFormats>
+            <outputFormat>HTML</outputFormat>
+            <outputFormat>XML</outputFormat>
+            <outputFormat>CSV</outputFormat>
+          </outputFormats>
+          <threads>4</threads>
+        </configuration>
       </plugin>
     </plugins>
   </build>
