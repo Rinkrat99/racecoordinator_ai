@@ -246,36 +246,34 @@ gitGraph
 6. Automated nightly CI triggers the daily alpha release (`v0.0.0-alpha.YYYYMMDD`) from `develop`.
 
 ##### B. Creating a Beta Release (Milestone Stabilization)
-When planned features for a release (e.g., `v1.1.0`) are merged into `develop` and ready for beta testing:
-1. Cut the release branch from `develop`:
+When planned features for a milestone (e.g., `v1.0.0`) are merged into `develop` and ready for beta testing:
+1. Cut the release branch from `develop` using the target version in the branch name:
    ```bash
    git checkout develop
    git pull origin develop
-   git checkout -b release/v1.1.0
-   git push -u origin release/v1.1.0
+   git checkout -b release/v1.0.0
+   git push -u origin release/v1.0.0
    ```
-2. Tag and publish Beta 1:
-   ```bash
-   git tag -a v1.1.0-beta.1 -m "Release v1.1.0-beta.1"
-   git push origin v1.1.0-beta.1
-   ```
-3. Beta fixes are committed directly to `release/v1.1.0` (or via PR targeting `release/v1.1.0`). Subsequent betas are tagged `v1.1.0-beta.2`, etc.
-4. **Sync fixes to develop**: Periodically merge `release/v1.1.0` back into `develop` so ongoing development receives all bug fixes.
+2. **Automated Beta Release**: Pushing the branch automatically triggers the release CI/CD pipeline, which calculates the next beta tag (`v1.0.0-beta.1`) and publishes the beta release with all platform installer assets.
+3. If bugs are found in beta, commit fixes to `release/v1.0.0` and push. Each subsequent push to `release/v1.0.0` automatically publishes `v1.0.0-beta.2`, `v1.0.0-beta.3`, etc.
+4. **Sync fixes to develop**: Periodically merge `release/v1.0.0` back into `develop` so ongoing development receives all bug fixes.
 
 ##### C. Promoting Beta to Official Release (`main`)
 When the beta is verified and ready for general release:
-1. Open a PR from `release/v1.1.0` into `main` (or merge directly if repository admin):
+1. Ensure the root `VERSION` file has the desired release major/minor version (e.g., `1.0` or `1.0.0`):
+   ```bash
+   echo "1.0.0" > VERSION
+   git commit -am "chore: set release version to 1.0.0"
+   ```
+2. Open a PR from `release/v1.0.0` into `main` (or merge directly if repository admin):
    ```bash
    git checkout main
    git pull origin main
-   git merge --no-ff release/v1.1.0 -m "Release v1.1.0"
+   git merge --no-ff release/v1.0.0 -m "Release v1.0.0"
+   git push origin main
    ```
-2. Tag the production release on `main`:
-   ```bash
-   git tag -a v1.1.0 -m "Official Release 1.1.0"
-   git push origin main --tags
-   ```
-3. Sync release commits back to `develop`:
+3. **Automated Production Release**: Pushing to `main` automatically triggers the release CI/CD pipeline, calculates the next official tag (`v1.0.0`), and publishes the official release. Subsequent pushes to `main` with the same base version in `VERSION` will automatically increment the patch number (`v1.0.1`, `v1.0.2`, etc.).
+4. Sync `main` back into `develop`:
    ```bash
    git checkout develop
    git pull origin develop
@@ -291,15 +289,15 @@ If a critical issue is discovered in an official release on `main`:
    git pull origin main
    git checkout -b hotfix/v1.0.1-fix-crash
    ```
-2. Fix and verify the issue.
-3. Merge `hotfix/*` into `main` and tag the patch release:
+2. Fix and verify the issue locally.
+3. Merge `hotfix/*` into `main` and push:
    ```bash
    git checkout main
    git merge --no-ff hotfix/v1.0.1-fix-crash
-   git tag -a v1.0.1 -m "Hotfix Release 1.0.1"
-   git push origin main --tags
+   git push origin main
    ```
-4. **Merge hotfix into develop** (and any active `release/*` branches):
+4. **Automated Hotfix Release**: Pushing to `main` automatically detects the existing `v1.0.0` tag, calculates `v1.0.1`, and publishes the official hotfix release.
+5. **Merge hotfix into develop** (and any active `release/*` branches):
    ```bash
    git checkout develop
    git pull origin develop
