@@ -17,6 +17,10 @@ export abstract class DriverResultsHarnessBase {
     tooltipVal: ".total-row .tooltip-val",
     teamDriverBadge: ".team-driver-badge",
     tooltipDriver: ".tooltip-row.driver-row .text-driver",
+    overallTrajectoryButton: ".section-title-row .trajectory-btn",
+    trajectoryModal: "app-ghost-trajectory-dialog .trajectory-modal-container",
+    trajectoryTable: ".trajectory-table",
+    trajectoryReferenceSelect: ".reference-select",
   };
 
   abstract hasHeaderBar(): Promise<boolean>;
@@ -30,4 +34,7 @@ export abstract class DriverResultsHarnessBase {
   abstract getTeamDriverBadgeCount(): Promise<number>;
   abstract hasTooltipDriver(): Promise<boolean>;
   abstract getTooltipDriverText(): Promise<string>;
+  abstract hasOverallTrajectoryButton(): Promise<boolean>;
+  abstract hasTrajectoryModal(): Promise<boolean>;
+  abstract clickOverallTrajectoryButton(): Promise<void>;
 }

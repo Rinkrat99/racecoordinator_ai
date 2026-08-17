@@ -765,5 +765,183 @@ describe("DefaultDriverResultsComponent", () => {
       expect(component["showTrajectoryModal"]).toBeTrue();
       expect(component["trajectoryDriverAName"]).toBe("SpeedyDave");
     });
+
+    it("should exclude live team and default to highest ranked other team in overall pacing in a team race", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const driver3 = createDriver("d3", "Chloe", "Chlo");
+      const team1 = new Team("t1", "Team Speed", "", ["d1"]);
+      const team2 = new Team("t2", "Team Fast", "", ["d2"]);
+      const team3 = new Team("t3", "Team Turbo", "", ["d3"]);
+
+      const mockHeat1 = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: driver2, laps: [3.9, 4.1] },
+        { driver: driver3, laps: [4.2, 4.3] },
+      ]);
+      (mockHeat1.heatDrivers[0].participant as any).team = team1;
+      (mockHeat1.heatDrivers[1].participant as any).team = team2;
+      (mockHeat1.heatDrivers[2].participant as any).team = team3;
+
+      const pTeam1 = new RaceParticipant(
+        "p-team1",
+        driver1,
+        1,
+        2,
+        7.8,
+        3.8,
+        3.9,
+        3.9,
+        0,
+        1,
+        100,
+        0,
+        0,
+        team1,
+      );
+      const pTeam2 = new RaceParticipant(
+        "p-team2",
+        driver2,
+        2,
+        2,
+        8.0,
+        3.9,
+        4.0,
+        4.0,
+        0,
+        2,
+        100,
+        0,
+        0,
+        team2,
+      );
+      const pTeam3 = new RaceParticipant(
+        "p-team3",
+        driver3,
+        3,
+        2,
+        8.5,
+        4.2,
+        4.25,
+        4.25,
+        0,
+        3,
+        100,
+        0,
+        0,
+        team3,
+      );
+
+      // Navigate as driver d1 (member of team1, rank 1)
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat1]);
+      participantsSubject.next([pTeam1, pTeam2, pTeam3]);
+      fixture.detectChanges();
+
+      (component as any).openOverallTrajectory();
+
+      // Team Speed (t1) should NOT be in options
+      expect(
+        component["trajectoryReferenceOptions"].some((opt) => opt.id === "t1"),
+      ).toBeFalse();
+      expect(
+        component["trajectoryReferenceOptions"].some((opt) => opt.id === "d1"),
+      ).toBeFalse();
+      expect(component["trajectoryReferenceOptions"].length).toBe(2);
+      expect(component["trajectoryReferenceOptions"][0].id).toBe("t2");
+      expect(component["trajectoryReferenceOptions"][0].name).toBe("Team Fast");
+      expect(component["trajectoryReferenceOptions"][1].id).toBe("t3");
+      expect(component["trajectoryReferenceOptions"][1].name).toBe(
+        "Team Turbo",
+      );
+
+      // Default should be rank 2 (highest ranked non-live team)
+      expect(component["trajectoryInitialReferenceId"]).toBe("t2");
+    });
+
+    it("should exclude live team and default to highest ranked other team in heat pacing in a team race", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const driver3 = createDriver("d3", "Chloe", "Chlo");
+      const team1 = new Team("t1", "Team Speed", "", ["d1"]);
+      const team2 = new Team("t2", "Team Fast", "", ["d2"]);
+      const team3 = new Team("t3", "Team Turbo", "", ["d3"]);
+
+      const mockHeat1 = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: driver2, laps: [3.9, 4.1] },
+        { driver: driver3, laps: [3.7, 3.8] },
+      ]);
+      (mockHeat1.heatDrivers[0].participant as any).team = team1;
+      mockHeat1.heatDrivers[0].rank = 2;
+      (mockHeat1.heatDrivers[1].participant as any).team = team2;
+      mockHeat1.heatDrivers[1].rank = 3;
+      (mockHeat1.heatDrivers[2].participant as any).team = team3;
+      mockHeat1.heatDrivers[2].rank = 1;
+
+      // Navigate as driver d1 (member of team1)
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat1]);
+      fixture.detectChanges();
+
+      const heatData = {
+        heat: mockHeat1,
+        heatDriver: mockHeat1.heatDrivers[0],
+      };
+
+      (component as any).openHeatTrajectory(heatData);
+
+      // Team Speed (t1/d1) must NOT be in reference options
+      expect(
+        component["trajectoryReferenceOptions"].some((opt) => opt.id === "t1"),
+      ).toBeFalse();
+      expect(
+        component["trajectoryReferenceOptions"].some((opt) => opt.id === "d1"),
+      ).toBeFalse();
+      expect(component["trajectoryReferenceOptions"].length).toBe(2);
+
+      // In heat 1, team3 is rank 1 and team2 is rank 3. Team 3 should be first and default
+      expect(component["trajectoryReferenceOptions"][0].id).toBe("t3");
+      expect(component["trajectoryReferenceOptions"][0].name).toBe(
+        "Team Turbo",
+      );
+      expect(component["trajectoryReferenceOptions"][1].id).toBe("t2");
+      expect(component["trajectoryReferenceOptions"][1].name).toBe("Team Fast");
+      expect(component["trajectoryInitialReferenceId"]).toBe("t3");
+    });
+
+    it("should default to rank 1 competitor in overall pacing when live driver is rank 2 or lower", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const driver3 = createDriver("d3", "Chloe", "Chlo");
+
+      const mockHeat = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [4.0, 4.1] },
+        { driver: driver2, laps: [3.7, 3.8] },
+        { driver: driver3, laps: [4.2, 4.3] },
+      ]);
+
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat]);
+      participantsSubject.next([
+        createParticipant("p2", driver2, 1, 2, 7.5, 3.7, 3.75, 3.75, 0, 1),
+        createParticipant("p1", driver1, 2, 2, 8.1, 4.0, 4.05, 4.05, 0, 2),
+        createParticipant("p3", driver3, 3, 2, 8.5, 4.2, 4.25, 4.25, 0, 3),
+      ]);
+      fixture.detectChanges();
+
+      (component as any).openOverallTrajectory();
+
+      expect(
+        component["trajectoryReferenceOptions"].some((opt) => opt.id === "d1"),
+      ).toBeFalse();
+      expect(component["trajectoryReferenceOptions"].length).toBe(2);
+      // Rank 1 (Abby) must be first and default
+      expect(component["trajectoryReferenceOptions"][0].id).toBe("d2");
+      expect(component["trajectoryReferenceOptions"][0].name).toBe("Abs");
+      expect(component["trajectoryReferenceOptions"][1].id).toBe("d3");
+      expect(component["trajectoryReferenceOptions"][1].name).toBe("Chlo");
+      expect(component["trajectoryInitialReferenceId"]).toBe("d2");
+    });
   });
 });

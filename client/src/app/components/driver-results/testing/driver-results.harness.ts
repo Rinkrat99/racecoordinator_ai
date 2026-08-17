@@ -38,6 +38,12 @@ export class DriverResultsHarness
   protected getTooltipDriverEl = this.locatorForOptional(
     DriverResultsHarnessBase.selectors.tooltipDriver,
   );
+  protected getOverallTrajectoryButtonEl = this.locatorForOptional(
+    DriverResultsHarnessBase.selectors.overallTrajectoryButton,
+  );
+  protected getTrajectoryModalEl = this.locatorForOptional(
+    DriverResultsHarnessBase.selectors.trajectoryModal,
+  );
 
   async hasHeaderBar(): Promise<boolean> {
     return (await this.getHeaderBarEl()) !== null;
@@ -82,5 +88,20 @@ export class DriverResultsHarness
   async getTooltipDriverText(): Promise<string> {
     const el = await this.getTooltipDriverEl();
     return el ? await el.text() : "";
+  }
+
+  async hasOverallTrajectoryButton(): Promise<boolean> {
+    return (await this.getOverallTrajectoryButtonEl()) !== null;
+  }
+
+  async hasTrajectoryModal(): Promise<boolean> {
+    return (await this.getTrajectoryModalEl()) !== null;
+  }
+
+  async clickOverallTrajectoryButton(): Promise<void> {
+    const btn = await this.getOverallTrajectoryButtonEl();
+    if (btn) {
+      await btn.click();
+    }
   }
 }

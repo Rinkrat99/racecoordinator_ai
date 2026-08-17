@@ -53,6 +53,16 @@ export class DriverResultsHarnessE2e implements DriverResultsHarnessBase {
     return this.locator.locator(this.base.selectors.tooltipDriver).first();
   }
 
+  private get overallTrajectoryButton() {
+    return this.locator
+      .locator(this.base.selectors.overallTrajectoryButton)
+      .first();
+  }
+
+  private get trajectoryModal() {
+    return this.locator.locator(this.base.selectors.trajectoryModal).first();
+  }
+
   async hasHeaderBar(): Promise<boolean> {
     return await this.headerBar.isVisible();
   }
@@ -97,6 +107,18 @@ export class DriverResultsHarnessE2e implements DriverResultsHarnessBase {
     return await this.tooltipDriver.innerText();
   }
 
+  async hasOverallTrajectoryButton(): Promise<boolean> {
+    return await this.overallTrajectoryButton.isVisible();
+  }
+
+  async hasTrajectoryModal(): Promise<boolean> {
+    return await this.trajectoryModal.isVisible();
+  }
+
+  async clickOverallTrajectoryButton(): Promise<void> {
+    await this.overallTrajectoryButton.click();
+  }
+
   // Playwright specific interaction/locator methods
   getLapBar(index: number): Locator {
     return this.lapBars.nth(index);
@@ -124,6 +146,14 @@ export class DriverResultsHarnessE2e implements DriverResultsHarnessBase {
 
   getExpandedHeatCardLocator(): Locator {
     return this.expandedHeatCard;
+  }
+
+  getOverallTrajectoryButtonLocator(): Locator {
+    return this.overallTrajectoryButton;
+  }
+
+  getTrajectoryModal(): Locator {
+    return this.trajectoryModal;
   }
 
   async hoverLapBar(index: number): Promise<void> {

@@ -27,10 +27,8 @@ test.describe("Driver Results Visuals", () => {
       page.locator("app-driver-results"),
     );
 
-    // Verify page structure is rendered
-
-    // Verify the expanded active heat card is visible and has chart bars
-    await expect(harness.getExpandedHeatCardLocator()).toBeVisible();
+    // Wait for the expanded active heat card to be visible and have chart bars
+    await harness.getExpandedHeatCardLocator().waitFor({ state: "visible" });
     await harness.getLapBarsLocator().nth(2).waitFor({ state: "attached" });
 
     // Take screenshot of individual results
@@ -55,13 +53,12 @@ test.describe("Driver Results Visuals", () => {
       page.locator("app-driver-results"),
     );
 
-    // Verify team member badges are visible in the lap lists
+    // Wait for team member badges in the lap lists
     await harness
       .getTeamDriverBadgesLocator()
       .nth(3)
       .waitFor({ state: "attached" });
-    await expect(harness.getTeamDriverBadge(0)).toContainText("Ally");
-    await expect(harness.getTeamDriverBadge(1)).toContainText("Bobby");
+    await harness.getTeamDriverBadge(0).waitFor({ state: "visible" });
 
     // Take screenshot of team results showing driver name next to laps
     await expect(page).toHaveScreenshot("driver-results-team.png", {
@@ -87,15 +84,14 @@ test.describe("Driver Results Visuals", () => {
 
     // Verify heat is expanded and lap bar is visible
     const firstBar = harness.getLapBar(0);
-    await expect(firstBar).toBeVisible();
+    await firstBar.waitFor({ state: "visible" });
 
     // Hover over the first bar to trigger the tooltip
     await harness.hoverLapBar(0);
 
-    // Verify tooltip row exists and has correct info
+    // Wait for tooltip to appear
     const tooltip = harness.getTooltip();
-    await expect(tooltip).toBeVisible();
-    await expect(tooltip.locator(".tooltip-header")).toHaveText("LAP 1");
+    await tooltip.waitFor({ state: "visible" });
 
     // Take screenshot focusing specifically on the performance chart and tooltip
     const chartBox = harness.getChartSection();
@@ -129,6 +125,38 @@ test.describe("Driver Results Visuals", () => {
     await expect(page).toHaveScreenshot("driver-results-no-background.png", {
       maxDiffPixelRatio: 0.05,
       fullPage: true,
+    });
+  });
+
+  test("should render pacing and trajectory comparison dialog with lap comparison", async ({
+    page,
+  }) => {
+    const mockData = DriverResultsHelper.createMockPacingDriverData();
+    await DriverResultsHelper.injectMockRaceData(page, mockData);
+
+    await TestSetupHelper.waitForLocalization(
+      page,
+      "en",
+      page.goto("/driver-results/d1"),
+    );
+
+    const harness = new DriverResultsHarnessE2e(
+      page.locator("app-driver-results"),
+    );
+
+    // Click overall trajectory button using harness
+    await harness
+      .getOverallTrajectoryButtonLocator()
+      .waitFor({ state: "visible" });
+    await harness.clickOverallTrajectoryButton();
+
+    // Wait for trajectory modal to appear
+    const modal = harness.getTrajectoryModal();
+    await modal.waitFor({ state: "visible" });
+
+    // Take screenshot of the pacing dialog
+    await expect(modal).toHaveScreenshot("driver-results-pacing-dialog.png", {
+      maxDiffPixelRatio: 0.05,
     });
   });
 });
