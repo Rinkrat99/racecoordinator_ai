@@ -15,13 +15,19 @@ import com.antigravity.proto.SaveImageSetRequest;
 import com.antigravity.proto.SaveImageSetResponse;
 import com.antigravity.proto.UploadAssetRequest;
 import com.antigravity.proto.UploadAssetResponse;
+import com.antigravity.service.AssetDefaultsInitializer;
 import com.antigravity.service.AssetService;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class AssetTaskHandler {
@@ -44,11 +50,11 @@ public class AssetTaskHandler {
 
   protected AssetService getAssetService() {
     String currentDbName = databaseContext.getCurrentDatabaseName();
-    if (currentDbName == null) {
-      currentDbName = "Race Coordinator AI DB";
+    if (currentDbName == null || currentDbName.trim().isEmpty()) {
+      currentDbName = "RaceCoordinator_AI_DB";
     }
-    return new AssetService(
-        databaseContext, databaseContext.getDataRoot() + currentDbName + "/assets");
+    File assetsDir = new File(new File(databaseContext.getDataRoot(), currentDbName), "assets");
+    return new AssetService(databaseContext, assetsDir.getAbsolutePath());
   }
 
   void setStatus(Context ctx, int status) {
@@ -113,6 +119,161 @@ public class AssetTaskHandler {
     serveFile(ctx, filename);
   }
 
+  public static String detectContentType(String filename, byte[] headerBytes) {
+    String lowerName = (filename != null) ? filename.toLowerCase() : "";
+    if (lowerName.endsWith(".png")) return "image/png";
+    if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) return "image/jpeg";
+    if (lowerName.endsWith(".gif")) return "image/gif";
+    if (lowerName.endsWith(".svg")) return "image/svg+xml";
+    if (lowerName.endsWith(".webp")) return "image/webp";
+    if (lowerName.endsWith(".ico")) return "image/x-icon";
+    if (lowerName.endsWith(".mp3")) return "audio/mpeg";
+    if (lowerName.endsWith(".wav")) return "audio/wav";
+    if (lowerName.endsWith(".ogg")) return "audio/ogg";
+
+    // Magic bytes detection
+    if (headerBytes != null && headerBytes.length >= 4) {
+      // PNG: 89 50 4E 47
+      if ((headerBytes[0] & 0xFF) == 0x89
+          && headerBytes[1] == 'P'
+          && headerBytes[2] == 'N'
+          && headerBytes[3] == 'G') {
+        return "image/png";
+      }
+      // JPEG: FF D8 FF
+      if ((headerBytes[0] & 0xFF) == 0xFF
+          && (headerBytes[1] & 0xFF) == 0xD8
+          && (headerBytes[2] & 0xFF) == 0xFF) {
+        return "image/jpeg";
+      }
+      // GIF: GIF8
+      if (headerBytes[0] == 'G'
+          && headerBytes[1] == 'I'
+          && headerBytes[2] == 'F'
+          && headerBytes[3] == '8') {
+        return "image/gif";
+      }
+      // RIFF header (WAV or WEBP)
+      if (headerBytes.length >= 12
+          && headerBytes[0] == 'R'
+          && headerBytes[1] == 'I'
+          && headerBytes[2] == 'F'
+          && headerBytes[3] == 'F') {
+        if (headerBytes[8] == 'W'
+            && headerBytes[9] == 'A'
+            && headerBytes[10] == 'V'
+            && headerBytes[11] == 'E') {
+          return "audio/wav";
+        }
+        if (headerBytes[8] == 'W'
+            && headerBytes[9] == 'E'
+            && headerBytes[10] == 'B'
+            && headerBytes[11] == 'P') {
+          return "image/webp";
+        }
+      }
+      // ID3 or MP3 sync word
+      if (headerBytes[0] == 'I' && headerBytes[1] == 'D' && headerBytes[2] == '3') {
+        return "audio/mpeg";
+      }
+      if ((headerBytes[0] & 0xFF) == 0xFF && (headerBytes[1] & 0xE0) == 0xE0) {
+        return "audio/mpeg";
+      }
+      // OggS
+      if (headerBytes[0] == 'O'
+          && headerBytes[1] == 'g'
+          && headerBytes[2] == 'g'
+          && headerBytes[3] == 'S') {
+        return "audio/ogg";
+      }
+      // SVG text check
+      String start =
+          new String(headerBytes, 0, Math.min(headerBytes.length, 64), StandardCharsets.UTF_8)
+              .trim()
+              .toLowerCase();
+      if (start.startsWith("<svg") || start.contains("<svg") || start.startsWith("<?xml")) {
+        return "image/svg+xml";
+      }
+    }
+
+    return "application/octet-stream";
+  }
+
+  private void servePhysicalFile(Context ctx, File file) {
+    try {
+      byte[] header = new byte[64];
+      int bytesRead;
+      try (FileInputStream headerIs = new FileInputStream(file)) {
+        bytesRead = headerIs.read(header);
+      }
+      String contentType = detectContentType(file.getName(), bytesRead > 0 ? header : null);
+      setContentType(ctx, contentType);
+      setStream(ctx, new FileInputStream(file));
+    } catch (FileNotFoundException e) {
+      setStatus(ctx, 404);
+      setResult(ctx, "Not Found");
+    } catch (IOException e) {
+      setStatus(ctx, 500);
+      setResult(ctx, "Error reading file: " + e.getMessage());
+    }
+  }
+
+  private boolean serveDefaultResourceFallback(Context ctx, String filename, File assetsDir) {
+    String resourcePath = AssetDefaultsInitializer.getDefaultResourcePath(filename);
+    if (resourcePath == null) {
+      return false;
+    }
+    try (InputStream is = getClass().getResourceAsStream(resourcePath)) {
+      if (is == null) {
+        return false;
+      }
+      ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+      byte[] data = new byte[8192];
+      int nRead;
+      while ((nRead = is.read(data, 0, data.length)) != -1) {
+        buffer.write(data, 0, nRead);
+      }
+      byte[] bytes = buffer.toByteArray();
+      String contentType = detectContentType(resourcePath, bytes);
+      setContentType(ctx, contentType);
+      setStream(ctx, new ByteArrayInputStream(bytes));
+
+      // Self-heal: persist to assetsDir on disk
+      try {
+        if (!assetsDir.exists()) {
+          assetsDir.mkdirs();
+        }
+        File targetFile = new File(assetsDir, filename);
+        if (!targetFile.exists()) {
+          try (FileOutputStream fos = new FileOutputStream(targetFile)) {
+            fos.write(bytes);
+          }
+        }
+      } catch (Exception ignored) {
+      }
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  private boolean serveWebStaticFallback(Context ctx, String filename) {
+    String[] possiblePaths = {"client/dist/client", "../client/dist/client", "web", "server/web"};
+    for (String basePath : possiblePaths) {
+      File staticAsset = new File(basePath + "/assets", filename);
+      if (staticAsset.exists() && staticAsset.isFile()) {
+        servePhysicalFile(ctx, staticAsset);
+        return true;
+      }
+      File directAsset = new File(basePath, filename);
+      if (directAsset.exists() && directAsset.isFile()) {
+        servePhysicalFile(ctx, directAsset);
+        return true;
+      }
+    }
+    return false;
+  }
+
   private void serveFile(Context ctx, String filename) {
     // Security check: prevent directory traversal
     if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
@@ -122,16 +283,16 @@ public class AssetTaskHandler {
     }
 
     String currentDbName = databaseContext.getCurrentDatabaseName();
-    if (currentDbName == null) {
-      currentDbName = "Race Coordinator AI DB";
+    if (currentDbName == null || currentDbName.trim().isEmpty()) {
+      currentDbName = "RaceCoordinator_AI_DB";
     }
-    File file = new File(databaseContext.getDataRoot() + currentDbName + "/assets", filename);
+    File assetsDir = new File(new File(databaseContext.getDataRoot(), currentDbName), "assets");
+    File file = new File(assetsDir, filename);
     if (!file.exists() || !file.isFile()) {
       // Try fallback: Case-insensitive search or common misspellings for default assets
-      File dir = new File(databaseContext.getDataRoot() + currentDbName + "/assets");
-      if (dir.exists() && dir.isDirectory()) {
+      if (assetsDir.exists() && assetsDir.isDirectory()) {
         File[] matchingFiles =
-            dir.listFiles(
+            assetsDir.listFiles(
                 (d, name) -> {
                   String target = filename.toLowerCase();
                   String candidate = name.toLowerCase();
@@ -152,31 +313,20 @@ public class AssetTaskHandler {
     }
 
     if (file.exists() && file.isFile()) {
-      try {
-        setStream(ctx, new FileInputStream(file));
-        // Simple content type mapping
-        String lowerName = file.getName().toLowerCase();
-        if (lowerName.endsWith(".png")) {
-          setContentType(ctx, "image/png");
-        } else if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
-          setContentType(ctx, "image/jpeg");
-        } else if (lowerName.endsWith(".gif")) {
-          setContentType(ctx, "image/gif");
-        } else if (lowerName.endsWith(".mp3")) {
-          setContentType(ctx, "audio/mpeg");
-        } else if (lowerName.endsWith(".wav")) {
-          setContentType(ctx, "audio/wav");
-        } else {
-          setContentType(ctx, "application/octet-stream");
-        }
-      } catch (FileNotFoundException e) {
-        setStatus(ctx, 404);
-        setResult(ctx, "Not Found");
-      }
-    } else {
-      setStatus(ctx, 404);
-      setResult(ctx, "Not Found");
+      servePhysicalFile(ctx, file);
+      return;
     }
+
+    if (serveDefaultResourceFallback(ctx, filename, assetsDir)) {
+      return;
+    }
+
+    if (serveWebStaticFallback(ctx, filename)) {
+      return;
+    }
+
+    setStatus(ctx, 404);
+    setResult(ctx, "Not Found");
   }
 
   private void listAssets(Context ctx) {

@@ -245,14 +245,74 @@ public class AssetDefaultsInitializer {
         new DefaultAsset("default_race_over", "audio/english/woman/w_raceover.wav", "Race Over"));
   }
 
+  private static final Map<String, String> RESOURCE_MAP = new HashMap<>();
+
+  static {
+    for (DefaultAsset asset : DEFAULT_IMAGE_ASSETS) {
+      RESOURCE_MAP.put(asset.id.toLowerCase(), "/defaults/" + asset.filename);
+      RESOURCE_MAP.put(asset.filename.toLowerCase(), "/defaults/" + asset.filename);
+      String safeName = asset.displayName.replaceAll("[^a-zA-Z0-9.-]", "_");
+      RESOURCE_MAP.put((asset.id + "_" + safeName).toLowerCase(), "/defaults/" + asset.filename);
+    }
+    for (FuelDefaultAsset asset : DEFAULT_FUEL_IMAGE_ASSETS) {
+      RESOURCE_MAP.put(asset.id.toLowerCase(), "/defaults/" + asset.filename);
+      RESOURCE_MAP.put(asset.filename.toLowerCase(), "/defaults/" + asset.filename);
+      String safeName = asset.displayName.replaceAll("[^a-zA-Z0-9.-]", "_");
+      RESOURCE_MAP.put((asset.id + "_" + safeName).toLowerCase(), "/defaults/" + asset.filename);
+    }
+    for (DefaultAsset asset : DEFAULT_AUDIO_ASSETS) {
+      RESOURCE_MAP.put(asset.id.toLowerCase(), "/defaults/" + asset.filename);
+      RESOURCE_MAP.put(asset.filename.toLowerCase(), "/defaults/" + asset.filename);
+      String safeName = asset.displayName.replaceAll("[^a-zA-Z0-9.-]", "_");
+      RESOURCE_MAP.put((asset.id + "_" + safeName).toLowerCase(), "/defaults/" + asset.filename);
+    }
+  }
+
+  public static String getDefaultResourcePath(String nameOrId) {
+    if (nameOrId == null || nameOrId.trim().isEmpty()) {
+      return null;
+    }
+    String key = nameOrId.trim().toLowerCase();
+    if (RESOURCE_MAP.containsKey(key)) {
+      return RESOURCE_MAP.get(key);
+    }
+    String directPath = "/defaults/" + nameOrId.trim();
+    if (AssetDefaultsInitializer.class.getResource(directPath) != null) {
+      return directPath;
+    }
+    return null;
+  }
+
   public AssetDefaultsInitializer(AssetService assetService, DatabaseContext databaseContext) {
     this.assetService = assetService;
     this.databaseContext = databaseContext;
   }
 
+  private boolean isAssetMissingOrFileMissing(String id, String displayName) {
+    AssetMessage existing = assetService.getAssetById(id);
+    if (existing == null) {
+      return true;
+    }
+    String url = existing.getUrl();
+    String filename = null;
+    if (url != null && url.startsWith("/assets/")) {
+      filename = url.substring("/assets/".length());
+    } else if (displayName != null) {
+      String safeName = displayName.replaceAll("[^a-zA-Z0-9.-]", "_");
+      filename = id + "_" + safeName;
+    }
+    if (filename != null) {
+      java.io.File file = new java.io.File(assetService.getAssetDir(), filename);
+      if (!file.exists() || !file.isFile() || file.length() == 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public void backfillDefaults() {
     for (DefaultAsset asset : DEFAULT_IMAGE_ASSETS) {
-      if (assetService.getAssetById(asset.id) == null) {
+      if (isAssetMissingOrFileMissing(asset.id, asset.displayName)) {
         try {
           byte[] data = readResource("/defaults/" + asset.filename);
           assetService.saveAsset(asset.id, asset.displayName, "image", data);
@@ -263,7 +323,7 @@ public class AssetDefaultsInitializer {
     }
     Map<String, String> audioUrls = new HashMap<>();
     for (DefaultAsset asset : DEFAULT_AUDIO_ASSETS) {
-      if (assetService.getAssetById(asset.id) == null) {
+      if (isAssetMissingOrFileMissing(asset.id, asset.displayName)) {
         try {
           byte[] data = readResource("/defaults/" + asset.filename);
           AssetMessage saved = assetService.saveAsset(asset.id, asset.displayName, "audio", data);
@@ -354,7 +414,7 @@ public class AssetDefaultsInitializer {
   private void backfillFuelGaugeDefaults() {
     List<SaveImageSetEntry> fuelSetEntries = new ArrayList<>();
     for (FuelDefaultAsset asset : DEFAULT_FUEL_IMAGE_ASSETS) {
-      if (assetService.getAssetById(asset.id) == null) {
+      if (isAssetMissingOrFileMissing(asset.id, asset.displayName)) {
         try {
           byte[] data = readResource("/defaults/" + asset.filename);
           AssetMessage saved = assetService.saveAsset(asset.id, asset.displayName, "image", data);

@@ -74,6 +74,36 @@ public class AssetDefaultsInitializerTest {
   }
 
   @Test
+  public void testBackfillDefaults_RecreatesMissingPhysicalFiles() {
+    initializer.backfillDefaults();
+
+    File helmetFile = new File(assetsDir, "default_black-blue_Helmet_Black-Blue");
+    assertTrue("Default helmet file should exist on disk", helmetFile.exists());
+
+    // Simulate accidental deletion / missing physical file on disk
+    assertTrue("Should successfully delete physical file", helmetFile.delete());
+    assertTrue("Physical file should now be deleted", !helmetFile.exists());
+
+    // Running backfillDefaults again should self-heal and restore the physical file
+    initializer.backfillDefaults();
+    assertTrue("Physical file should be recreated by backfillDefaults", helmetFile.exists());
+    assertTrue("Recreated file should have non-zero size", helmetFile.length() > 0);
+  }
+
+  @Test
+  public void testDefaultResourcePathHelper() {
+    String path1 = AssetDefaultsInitializer.getDefaultResourcePath("default_black-blue");
+    assertNotNull("Should find resource for default_black-blue", path1);
+
+    String path2 =
+        AssetDefaultsInitializer.getDefaultResourcePath("default_black-blue_Helmet_Black-Blue");
+    assertNotNull("Should find resource for default_black-blue_Helmet_Black-Blue", path2);
+
+    String path3 = AssetDefaultsInitializer.getDefaultResourcePath("beep.wav");
+    assertNotNull("Should find direct resource beep.wav", path3);
+  }
+
+  @Test
   public void testBackfillDefaultTheme() {
     initializer.backfillDefaultTheme();
 
