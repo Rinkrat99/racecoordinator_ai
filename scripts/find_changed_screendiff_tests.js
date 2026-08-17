@@ -75,8 +75,11 @@ function getChangedFiles(baseRef) {
         return Array.from(changedFiles);
     }
 
-    // 1. Check all changes on current branch compared to origin/main or origin/master merge-base
-    let baseDiff = runGit('git diff --name-only origin/main...');
+    // 1. Check all changes on current branch compared to origin/develop, origin/main, or origin/master merge-base
+    let baseDiff = runGit('git diff --name-only origin/develop...');
+    if (baseDiff.length === 0) {
+        baseDiff = runGit('git diff --name-only origin/main...');
+    }
     if (baseDiff.length === 0) {
         baseDiff = runGit('git diff --name-only origin/master...');
     }

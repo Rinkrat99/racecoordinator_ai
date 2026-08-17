@@ -176,12 +176,174 @@ The server manages the application logic, databases, and connection ports. The c
 
 ### Developers
 
-> [!NOTE]
-> **TODO**: Add instructions for contributing code, running tests, writing code, and code formatting rules.  This will require forking the repository and doing pull requests.
+#### 1. Branch Strategy & Release Workflow
+
+Race Coordinator AI uses a GitFlow-style branching model designed for daily alpha builds, milestone beta testing, official production releases, and emergency production hotfixes.
+
+```mermaid
+gitGraph
+   commit id: "v1.0.0" tag: "v1.0.0"
+   branch develop
+   commit id: "Daily Alpha 1" tag: "alpha.1"
+   branch feature/telemetry
+   commit id: "telemetry work"
+   checkout develop
+   merge feature/telemetry id: "PR: telemetry"
+   commit id: "Daily Alpha 2" tag: "alpha.2"
+   
+   branch release/v1.1.0
+   commit id: "Beta 1" tag: "v1.1.0-beta.1"
+   checkout develop
+   commit id: "next version feature"
+   
+   checkout release/v1.1.0
+   commit id: "beta bugfix" tag: "v1.1.0-beta.2"
+   checkout main
+   merge release/v1.1.0 id: "Release v1.1.0" tag: "v1.1.0"
+   
+   checkout develop
+   merge release/v1.1.0 id: "sync beta fixes"
+   
+   checkout main
+   branch hotfix/v1.1.1-crash
+   commit id: "fix crash"
+   checkout main
+   merge hotfix/v1.1.1-crash id: "Hotfix v1.1.1" tag: "v1.1.1"
+   
+   checkout develop
+   merge main id: "sync hotfix"
+```
+
+##### Branch Roles
+
+| Branch | Base Branch | Target PR Branch | Purpose |
+| :--- | :--- | :--- | :--- |
+| **`main`** | — | — | **Official Releases Only** (`v1.0.0`, `v1.0.1`). Protected; only receives merges from release and hotfix branches. |
+| **`develop`** | `main` | — | **Active Integration & Daily Alphas**. All feature and bugfix PRs merge here. Nightly automated alpha builds run from this branch. |
+| **`feature/*`** | `develop` | `develop` | New features or non-critical enhancements (e.g., `feature/custom-sounds`). |
+| **`bugfix/*`** | `develop` | `develop` | Bug fixes for development (e.g., `bugfix/123-lap-counter-offset`). |
+| **`release/vX.Y.Z`** | `develop` | `main` & `develop` | **Beta testing & stabilization** (e.g., `release/v1.1.0`). Prerelease beta tags (`v1.1.0-beta.1`) are cut from here. |
+| **`hotfix/*`** | `main` | `main` & `develop` | Urgent production fixes (e.g., `hotfix/v1.0.1-crash`). Merged into `main` and synced down to `develop`. |
+
+---
+
+#### 2. Developer Workflows
+
+##### A. Day-to-Day Feature or Bugfix Development
+1. Always start from the latest `develop` branch:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/my-feature-name
+   ```
+2. Write code, add tests, and verify locally (see [Running Tests](#3-running-tests-locally)).
+3. Commit and push your branch:
+   ```bash
+   git push -u origin feature/my-feature-name
+   ```
+4. Open a Pull Request on GitHub targeting **`develop`** (not `main`).
+5. Once CI checks pass and the PR is approved, it is merged into `develop`.
+6. Automated nightly CI triggers the daily alpha release (`v0.0.0-alpha.YYYYMMDD`) from `develop`.
+
+##### B. Creating a Beta Release (Milestone Stabilization)
+When planned features for a release (e.g., `v1.1.0`) are merged into `develop` and ready for beta testing:
+1. Cut the release branch from `develop`:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b release/v1.1.0
+   git push -u origin release/v1.1.0
+   ```
+2. Tag and publish Beta 1:
+   ```bash
+   git tag -a v1.1.0-beta.1 -m "Release v1.1.0-beta.1"
+   git push origin v1.1.0-beta.1
+   ```
+3. Beta fixes are committed directly to `release/v1.1.0` (or via PR targeting `release/v1.1.0`). Subsequent betas are tagged `v1.1.0-beta.2`, etc.
+4. **Sync fixes to develop**: Periodically merge `release/v1.1.0` back into `develop` so ongoing development receives all bug fixes.
+
+##### C. Promoting Beta to Official Release (`main`)
+When the beta is verified and ready for general release:
+1. Open a PR from `release/v1.1.0` into `main` (or merge directly if repository admin):
+   ```bash
+   git checkout main
+   git pull origin main
+   git merge --no-ff release/v1.1.0 -m "Release v1.1.0"
+   ```
+2. Tag the production release on `main`:
+   ```bash
+   git tag -a v1.1.0 -m "Official Release 1.1.0"
+   git push origin main --tags
+   ```
+3. Sync release commits back to `develop`:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git merge main
+   git push origin develop
+   ```
+
+##### D. Emergency Production Hotfixes
+If a critical issue is discovered in an official release on `main`:
+1. Branch directly from `main`:
+   ```bash
+   git checkout main
+   git pull origin main
+   git checkout -b hotfix/v1.0.1-fix-crash
+   ```
+2. Fix and verify the issue.
+3. Merge `hotfix/*` into `main` and tag the patch release:
+   ```bash
+   git checkout main
+   git merge --no-ff hotfix/v1.0.1-fix-crash
+   git tag -a v1.0.1 -m "Hotfix Release 1.0.1"
+   git push origin main --tags
+   ```
+4. **Merge hotfix into develop** (and any active `release/*` branches):
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git merge main
+   git push origin develop
+   ```
+
+---
+
+#### 3. Running Tests Locally
+
+Before pushing changes or opening a PR, run the automated test suite locally.
+
+##### Client Unit Tests (Angular / Jasmine)
+```bash
+cd client
+npm test
+```
+
+##### Server Unit Tests (Java / JUnit)
+```bash
+./run_server_tests.sh
+```
+*(On Windows: Run in PowerShell or Git Bash)*
+
+##### Visual & Screendiff Tests (Playwright)
+```bash
+npm run test:screendiff:changed
+```
+*(To run the full visual test suite: `cd client && npx playwright test`)*
+
+##### Linting & Formatting
+```bash
+npm run lint
+```
 
 ---
 
 ## macOS
 
-> [!NOTE]
-> **TODO**: Add macOS setup and development instructions.
+macOS development setup is identical to Windows with the following tools installed via Homebrew:
+1. **Java 17+**: `brew install openjdk@17`
+2. **Node.js 20+**: `brew install node@20`
+3. **Protobuf Compiler**: `brew install protobuf`
+4. **Google Antigravity IDE**: [Antigravity IDE](https://antigravity.google/product/antigravity-ide)
+5. Run the server using: `./run_server.sh`
+

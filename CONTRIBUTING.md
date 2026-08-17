@@ -24,23 +24,28 @@ cd racecoordinator_ai
 ```
 
 ### 2. Create a Branch
-Create a new local branch for your work. We have strict branch naming conventions enforced by the server. Your branch **must** start with one of the following prefixes:
+Create a new local branch for your work. Branch off **`develop`** for all new features and routine bug fixes, or off **`main`** for urgent production hotfixes.
 
-* `feature/` (For new features)
-* `bugfix/` (For bug fixes - **Must include the Issue number**, e.g., `bugfix/123-fix-crash`)
-* `hotfix/` (For urgent production fixes)
-* `docs/` (For documentation updates)
-* `test/` (For adding or updating tests)
+Your branch **must** start with one of the following prefixes:
+
+* `feature/` (For new features, branched from `develop`)
+* `bugfix/` (For bug fixes - **Must include the Issue number**, e.g., `bugfix/123-fix-crash`, branched from `develop`)
+* `hotfix/` (For urgent production fixes, branched from `main`)
+* `release/` (For beta stabilization branches, e.g., `release/v1.0.0`, branched from `develop`)
+* `docs/` (For documentation updates, branched from `develop`)
+* `test/` (For adding or updating tests, branched from `develop`)
 
 **Example:**
 ```bash
+git checkout develop
+git pull origin develop
 git checkout -b feature/new-telemetry-ui
 ```
 
 *Note: If your branch name does not match these rules, the GitHub server will reject your `git push` command.*
 
 ### 3. Make Changes and Commit
-Write your code, ensure any relevant tests pass, and commit your changes with clear, descriptive commit messages.
+Write your code, ensure any relevant tests pass locally, and commit your changes with clear, descriptive commit messages.
 
 ### 4. Push Your Branch
 Push your branch directly to this repository:
@@ -52,11 +57,16 @@ git push -u origin feature/new-telemetry-ui
 Once your work is ready for review:
 1. Go to the repository on GitHub.
 2. You will see a banner prompting you to open a Pull Request for your recently pushed branch. Click **Compare & pull request**.
-3. Ensure the base branch is set to `main` (or the appropriate release branch).
+3. **Select the base branch:**
+   - Set base to **`develop`** for feature, bugfix, docs, and test branches.
+   - Set base to **`release/vX.Y.Z`** for fixes targeting an active beta.
+   - Set base to **`main`** for hotfix branches.
 4. Fill out the PR description with details about your changes.
 5. Submit the PR for review.
 
 ### 6. Review and Merge
-The `main` branch is protected. You cannot push directly to it. All changes must go through a Pull Request and pass any required status checks or reviews before a repository administrator merges it.
+Both the `main` and `develop` branches are protected. You cannot push directly to them. All changes must go through a Pull Request and pass all automated CI status checks (linting, client tests, server tests, visual screendiff tests) before being merged.
+
+For more details on the complete branching strategy and release lifecycles, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 Thank you for contributing!
