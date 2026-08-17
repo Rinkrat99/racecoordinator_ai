@@ -245,6 +245,21 @@ popd
 '@
     $WinScript | Out-File -FilePath "$Dest\start_win.bat" -Encoding ascii
 
+    # Windows VBS Script (Headless Launcher)
+    $VbsScript = @'
+Set WshShell = CreateObject("WScript.Shell")
+Dim args, i
+args = ""
+If WScript.Arguments.Count > 0 Then
+    For i = 0 To WScript.Arguments.Count - 1
+        args = args & " " & Chr(34) & WScript.Arguments(i) & Chr(34)
+    Next
+End If
+WshShell.Run Chr(34) & CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName) & "\start_win.bat" & Chr(34) & args, 0, False
+Set WshShell = Nothing
+'@
+    $VbsScript | Out-File -FilePath "$Dest\start_win.vbs" -Encoding ascii
+
     # Windows Setup Script
     $SetupScript = @'
 @echo off

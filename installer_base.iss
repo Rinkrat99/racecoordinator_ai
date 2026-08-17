@@ -24,6 +24,7 @@ WizardStyle=modern
 PrivilegesRequired=admin
 SetupIconFile=client\src\favicon.ico
 ArchitecturesInstallIn64BitMode=x64
+ChangesAssociations=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
