@@ -5623,4 +5623,87 @@ describe("DefaultRacedayComponent", () => {
       expect(component.raceHasEnded).toBeTrue();
     });
   });
+
+  describe("Heat Leader Metrics Resolution", () => {
+    it("should resolve leader using driverRankings and return leader average and median times", () => {
+      const mockDriver1 = {
+        objectId: "d1",
+        laneIndex: 0,
+        driver: { name: "Driver 1" },
+        averageLapTime: 4.41,
+        medianLapTime: 4.35,
+        bestLapTime: 3.8,
+        lapTimes: [4.41],
+        isEmpty: false,
+      } as any;
+
+      const mockDriver2 = {
+        objectId: "d2",
+        laneIndex: 1,
+        driver: { name: "Driver 2" },
+        averageLapTime: 3.9,
+        medianLapTime: 3.88,
+        bestLapTime: 3.25,
+        lapTimes: [3.9],
+        isEmpty: false,
+      } as any;
+
+      (component as any).heat = {
+        heatDrivers: [mockDriver1, mockDriver2],
+        standings: ["d2", "d1"],
+      } as any;
+
+      (component as any).driverRankings.set("d2", 1);
+      (component as any).driverRankings.set("d1", 2);
+
+      const leader = component.getLeaderHeatDriver();
+      expect(leader).toBe(mockDriver2);
+      expect(component.heatLeaderAvgTime).toBe(3.9);
+      expect(component.heatLeaderMedianTime).toBe(3.88);
+      expect(component.heatLeaderBestTime).toBe(3.25);
+      expect(component.getPersonalBest(mockDriver2)).toBe(3.25);
+      expect(component.getPersonalBest(mockDriver1)).toBe(3.8);
+      expect(component.getPersonalBest(undefined)).toBe(0);
+    });
+
+    it("should fallback to heat.standings when driverRankings is not set", () => {
+      const mockDriver1 = {
+        objectId: "d1",
+        laneIndex: 0,
+        driver: { name: "Driver 1" },
+        averageLapTime: 4.5,
+        medianLapTime: 4.4,
+        bestLapTime: 4.0,
+        isEmpty: false,
+      } as any;
+
+      const mockDriver2 = {
+        objectId: "d2",
+        laneIndex: 1,
+        driver: { name: "Driver 2" },
+        averageLapTime: 3.75,
+        medianLapTime: 3.7,
+        bestLapTime: 3.5,
+        isEmpty: false,
+      } as any;
+
+      (component as any).heat = {
+        heatDrivers: [mockDriver1, mockDriver2],
+        standings: ["d2", "d1"],
+      } as any;
+      (component as any).driverRankings.clear();
+
+      expect(component.getLeaderHeatDriver()).toBe(mockDriver2);
+      expect(component.heatLeaderAvgTime).toBe(3.75);
+    });
+
+    it("should check if a property is a pacing property via isPacingProperty", () => {
+      expect(component.isPacingProperty("ghostPacing")).toBe(true);
+      expect(component.isPacingProperty("ghostPacingPB")).toBe(true);
+      expect(component.isPacingProperty("ghostPacingPersonalAvg")).toBe(true);
+      expect(component.isPacingProperty("ghostPacingLeaderBest")).toBe(true);
+      expect(component.isPacingProperty("lapCount")).toBe(false);
+      expect(component.isPacingProperty("")).toBe(false);
+    });
+  });
 });

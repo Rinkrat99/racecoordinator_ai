@@ -15,7 +15,12 @@ describe("RacedayGhostPacingComponent", () => {
         const map: Record<string, string> = {
           RD_GHOST_LANE_RECORD: "Lane Record",
           RD_GHOST_PERSONAL_BEST: "Personal Best",
-          RD_GHOST_HEAT_LEADER: "Heat Leader",
+          RD_GHOST_PERSONAL_AVG: "Personal Avg",
+          RD_GHOST_PERSONAL_MEDIAN: "Personal Median",
+          RD_GHOST_HEAT_LEADER: "Leader Best",
+          RD_GHOST_LEADER_BEST: "Leader Best",
+          RD_GHOST_LEADER_AVG: "Leader Avg",
+          RD_GHOST_LEADER_MEDIAN: "Leader Median",
           RD_GHOST_NO_BENCHMARK: "No ghost benchmark",
           RD_GHOST_TELEMETRY_POSITION: "Live Telemetry Position",
         };
@@ -120,10 +125,13 @@ describe("RacedayGhostPacingComponent", () => {
     expect(compiled.textContent).toContain("--");
   });
 
-  it("should support Personal Best and Heat Leader benchmark types", () => {
+  it("should support Personal Best and Leader benchmarks", () => {
     const mockHd = {
       laneIndex: 0,
       driver: { name: "Driver 1" },
+      averageLapTime: 4.6,
+      medianLapTime: 4.55,
+      bestLapTime: 4.4,
     } as unknown as DriverHeatData;
     fixture.componentRef.setInput("driverHeatData", mockHd);
     fixture.componentRef.setInput("benchmarkType", "PERSONAL_BEST");
@@ -132,10 +140,32 @@ describe("RacedayGhostPacingComponent", () => {
     expect(component.benchmarkLabel()).toBe("Personal Best");
     expect(component.targetGhostLapTime()).toBe(4.8);
 
-    fixture.componentRef.setInput("benchmarkType", "HEAT_LEADER");
-    fixture.componentRef.setInput("heatLeaderBest", 4.5);
+    fixture.componentRef.setInput("benchmarkType", "PERSONAL_AVG");
     fixture.detectChanges();
-    expect(component.benchmarkLabel()).toBe("Heat Leader");
-    expect(component.targetGhostLapTime()).toBe(4.5);
+    expect(component.benchmarkLabel()).toBe("Personal Avg");
+    expect(component.targetGhostLapTime()).toBe(4.6);
+
+    fixture.componentRef.setInput("benchmarkType", "PERSONAL_MEDIAN");
+    fixture.detectChanges();
+    expect(component.benchmarkLabel()).toBe("Personal Median");
+    expect(component.targetGhostLapTime()).toBe(4.55);
+
+    fixture.componentRef.setInput("benchmarkType", "HEAT_LEADER_AVG");
+    fixture.componentRef.setInput("heatLeaderAvg", 4.3);
+    fixture.detectChanges();
+    expect(component.benchmarkLabel()).toBe("Leader Avg");
+    expect(component.targetGhostLapTime()).toBe(4.3);
+
+    fixture.componentRef.setInput("benchmarkType", "HEAT_LEADER_MEDIAN");
+    fixture.componentRef.setInput("heatLeaderMedian", 4.25);
+    fixture.detectChanges();
+    expect(component.benchmarkLabel()).toBe("Leader Median");
+    expect(component.targetGhostLapTime()).toBe(4.25);
+
+    fixture.componentRef.setInput("benchmarkType", "HEAT_LEADER_BEST");
+    fixture.componentRef.setInput("heatLeaderBest", 4.1);
+    fixture.detectChanges();
+    expect(component.benchmarkLabel()).toBe("Leader Best");
+    expect(component.targetGhostLapTime()).toBe(4.1);
   });
 });

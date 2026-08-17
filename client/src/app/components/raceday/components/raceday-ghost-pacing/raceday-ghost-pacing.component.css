@@ -1,3 +1,9 @@
+:host {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .ghost-pacing-widget {
   display: flex;
   flex-direction: column;
@@ -9,6 +15,7 @@
   border-radius: 8px;
   padding: 6px 10px;
   box-sizing: border-box;
+  width: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   color: #e2e8f0;
   transition: all 0.25s ease;
@@ -18,6 +25,7 @@
   padding: 3px 6px;
   gap: 2px;
   border-radius: 6px;
+  width: 100%;
 }
 
 .pacing-header {
@@ -25,6 +33,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  width: 100%;
   white-space: nowrap;
 }
 
@@ -40,7 +49,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  flex-shrink: 1;
+  flex: 1 1 auto;
 }
 
 .benchmark-name {
@@ -52,6 +61,7 @@
 .delta-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   padding: 2px 7px;
   border-radius: 9999px;
@@ -64,6 +74,8 @@
   transition: all 0.2s ease;
   white-space: nowrap;
   flex-shrink: 0;
+  min-width: 58px;
+  box-sizing: border-box;
 }
 
 .delta-badge.ahead {

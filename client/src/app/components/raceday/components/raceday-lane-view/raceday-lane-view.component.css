@@ -260,6 +260,56 @@
   word-break: break-word;
 }
 
+/* Full-width container styling for pacing entries regardless of anchor slot */
+.body-cell .pacing-entry {
+  position: absolute;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  transform: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: stretch;
+  padding: 2px 6px !important;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.body-cell .pacing-entry.anchor-top-left,
+.body-cell .pacing-entry.anchor-top-center,
+.body-cell .pacing-entry.anchor-top-right {
+  top: 0;
+  bottom: auto;
+  height: 33.33%;
+}
+
+.body-cell .pacing-entry.anchor-center-left,
+.body-cell .pacing-entry.anchor-center-center,
+.body-cell .pacing-entry.anchor-center-right {
+  top: 33.33%;
+  bottom: auto;
+  height: 33.33%;
+}
+
+.body-cell .pacing-entry.anchor-center-center:only-child {
+  top: 0;
+  height: 100%;
+}
+
+.body-cell .pacing-entry.anchor-bottom-left,
+.body-cell .pacing-entry.anchor-bottom-center,
+.body-cell .pacing-entry.anchor-bottom-right {
+  top: auto;
+  bottom: 0;
+  height: 33.33%;
+}
+
+.body-cell app-raceday-ghost-pacing {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .body-cell img {
   max-height: 80%;
   max-width: 90%;

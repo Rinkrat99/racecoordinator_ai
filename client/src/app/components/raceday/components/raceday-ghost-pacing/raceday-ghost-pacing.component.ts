@@ -25,6 +25,10 @@ export class RacedayGhostPacingComponent {
   laneRecord = input<number>(0);
   personalBest = input<number>(0);
   heatLeaderBest = input<number>(0);
+  heatLeaderAvg = input<number>(0);
+  heatLeaderMedian = input<number>(0);
+  personalAvg = input<number>(0);
+  personalMedian = input<number>(0);
   benchmarkType = input<GhostBenchmarkType>("LANE_RECORD");
   compact = input<boolean>(false);
   lapProgress = input<number | null>(null);
@@ -40,12 +44,35 @@ export class RacedayGhostPacingComponent {
     const hd = this.driverHeatData();
     if (!hd || this.isEmptyDriver()) return 0;
     const laneIndex = hd?.laneIndex ?? 0;
+    const pAvg =
+      this.personalAvg() > 0
+        ? this.personalAvg()
+        : hd.averageLapTime > 0
+          ? hd.averageLapTime
+          : 0;
+    const pMed =
+      this.personalMedian() > 0
+        ? this.personalMedian()
+        : hd.medianLapTime > 0
+          ? hd.medianLapTime
+          : 0;
+    const pBest =
+      this.personalBest() > 0
+        ? this.personalBest()
+        : hd.bestLapTime > 0
+          ? hd.bestLapTime
+          : 0;
+
     return this.ghostPacingService.resolveGhostBenchmarkTime(
       this.benchmarkType(),
       laneIndex,
       this.laneRecord(),
-      this.personalBest(),
+      pBest,
       this.heatLeaderBest(),
+      this.heatLeaderAvg(),
+      this.heatLeaderMedian(),
+      pAvg,
+      pMed,
     );
   });
 
@@ -83,8 +110,17 @@ export class RacedayGhostPacingComponent {
     switch (this.benchmarkType()) {
       case "PERSONAL_BEST":
         return "RD_GHOST_PERSONAL_BEST";
+      case "PERSONAL_AVG":
+        return "RD_GHOST_PERSONAL_AVG";
+      case "PERSONAL_MEDIAN":
+        return "RD_GHOST_PERSONAL_MEDIAN";
       case "HEAT_LEADER":
-        return "RD_GHOST_HEAT_LEADER";
+      case "HEAT_LEADER_BEST":
+        return "RD_GHOST_LEADER_BEST";
+      case "HEAT_LEADER_AVG":
+        return "RD_GHOST_LEADER_AVG";
+      case "HEAT_LEADER_MEDIAN":
+        return "RD_GHOST_LEADER_MEDIAN";
       case "LANE_RECORD":
       default:
         return "RD_GHOST_LANE_RECORD";

@@ -3,7 +3,12 @@ import { Injectable } from "@angular/core";
 export type GhostBenchmarkType =
   | "LANE_RECORD"
   | "PERSONAL_BEST"
+  | "PERSONAL_AVG"
+  | "PERSONAL_MEDIAN"
   | "HEAT_LEADER"
+  | "HEAT_LEADER_BEST"
+  | "HEAT_LEADER_AVG"
+  | "HEAT_LEADER_MEDIAN"
   | "CUSTOM";
 
 export interface GhostGapResult {
@@ -85,6 +90,10 @@ export class GhostPacingService {
     laneRecord?: number,
     personalBest?: number,
     heatLeaderBest?: number,
+    heatLeaderAvg?: number,
+    heatLeaderMedian?: number,
+    personalAvg?: number,
+    personalMedian?: number,
     customPace?: number,
   ): number {
     switch (benchmarkType) {
@@ -93,7 +102,32 @@ export class GhostPacingService {
         if (laneRecord && laneRecord > 0) return laneRecord;
         if (heatLeaderBest && heatLeaderBest > 0) return heatLeaderBest;
         break;
+      case "PERSONAL_AVG":
+        if (personalAvg && personalAvg > 0) return personalAvg;
+        if (personalMedian && personalMedian > 0) return personalMedian;
+        if (personalBest && personalBest > 0) return personalBest;
+        if (laneRecord && laneRecord > 0) return laneRecord;
+        break;
+      case "PERSONAL_MEDIAN":
+        if (personalMedian && personalMedian > 0) return personalMedian;
+        if (personalAvg && personalAvg > 0) return personalAvg;
+        if (personalBest && personalBest > 0) return personalBest;
+        if (laneRecord && laneRecord > 0) return laneRecord;
+        break;
       case "HEAT_LEADER":
+      case "HEAT_LEADER_BEST":
+        if (heatLeaderBest && heatLeaderBest > 0) return heatLeaderBest;
+        if (laneRecord && laneRecord > 0) return laneRecord;
+        break;
+      case "HEAT_LEADER_AVG":
+        if (heatLeaderAvg && heatLeaderAvg > 0) return heatLeaderAvg;
+        if (heatLeaderMedian && heatLeaderMedian > 0) return heatLeaderMedian;
+        if (heatLeaderBest && heatLeaderBest > 0) return heatLeaderBest;
+        if (laneRecord && laneRecord > 0) return laneRecord;
+        break;
+      case "HEAT_LEADER_MEDIAN":
+        if (heatLeaderMedian && heatLeaderMedian > 0) return heatLeaderMedian;
+        if (heatLeaderAvg && heatLeaderAvg > 0) return heatLeaderAvg;
         if (heatLeaderBest && heatLeaderBest > 0) return heatLeaderBest;
         if (laneRecord && laneRecord > 0) return laneRecord;
         break;
@@ -105,6 +139,8 @@ export class GhostPacingService {
         if (laneRecord && laneRecord > 0) return laneRecord;
         if (personalBest && personalBest > 0) return personalBest;
         if (heatLeaderBest && heatLeaderBest > 0) return heatLeaderBest;
+        if (heatLeaderAvg && heatLeaderAvg > 0) return heatLeaderAvg;
+        if (personalAvg && personalAvg > 0) return personalAvg;
         break;
     }
     return customPace && customPace > 0 ? customPace : 0.0;

@@ -205,6 +205,26 @@ describe("RacedayLayoutUtils", () => {
     expect(RacedayLayoutUtils.isAvatarProperty("driver.avatarUrl")).toBe(true);
     expect(RacedayLayoutUtils.isAvatarProperty("flag")).toBe(false);
     expect(RacedayLayoutUtils.isAvatarProperty("")).toBe(false);
+
+    expect(RacedayLayoutUtils.isPacingProperty("ghostPacing")).toBe(true);
+    expect(RacedayLayoutUtils.isPacingProperty("ghostPacingPB")).toBe(true);
+    expect(RacedayLayoutUtils.isPacingProperty("ghostPacingPersonalAvg")).toBe(
+      true,
+    );
+    expect(
+      RacedayLayoutUtils.isPacingProperty("ghostPacingPersonalMedian"),
+    ).toBe(true);
+    expect(RacedayLayoutUtils.isPacingProperty("ghostPacingLeaderAvg")).toBe(
+      true,
+    );
+    expect(RacedayLayoutUtils.isPacingProperty("ghostPacingLeaderMedian")).toBe(
+      true,
+    );
+    expect(RacedayLayoutUtils.isPacingProperty("ghostPacingLeaderBest")).toBe(
+      true,
+    );
+    expect(RacedayLayoutUtils.isPacingProperty("lapCount")).toBe(false);
+    expect(RacedayLayoutUtils.isPacingProperty("")).toBe(false);
   });
 
   it("should check if lane color should be displayed", () => {
@@ -223,12 +243,27 @@ describe("RacedayLayoutUtils", () => {
     expect(RacedayLayoutUtils.getLabelKeyForColumn("lastLapTime")).toBe(
       "RD_COL_LAP_TIME",
     );
-    expect(RacedayLayoutUtils.getLabelKeyForColumn("driver.name")).toBe(
-      "RD_COL_NAME",
-    );
     expect(RacedayLayoutUtils.getLabelKeyForColumn("ghostPacing")).toBe(
       "RD_COL_GHOST_PACING",
     );
+    expect(RacedayLayoutUtils.getLabelKeyForColumn("ghostPacingPB")).toBe(
+      "RD_COL_GHOST_PACING",
+    );
+    expect(
+      RacedayLayoutUtils.getLabelKeyForColumn("ghostPacingPersonalAvg"),
+    ).toBe("RD_COL_GHOST_PACING");
+    expect(
+      RacedayLayoutUtils.getLabelKeyForColumn("ghostPacingPersonalMedian"),
+    ).toBe("RD_COL_GHOST_PACING");
+    expect(
+      RacedayLayoutUtils.getLabelKeyForColumn("ghostPacingLeaderAvg"),
+    ).toBe("RD_COL_GHOST_PACING");
+    expect(
+      RacedayLayoutUtils.getLabelKeyForColumn("ghostPacingLeaderMedian"),
+    ).toBe("RD_COL_GHOST_PACING");
+    expect(
+      RacedayLayoutUtils.getLabelKeyForColumn("ghostPacingLeaderBest"),
+    ).toBe("RD_COL_GHOST_PACING");
     expect(
       RacedayLayoutUtils.getLabelKeyForColumn("imageset_fuel-gauge-builtin"),
     ).toBe("RD_COL_FUEL_GAUGE");

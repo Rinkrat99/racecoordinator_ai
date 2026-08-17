@@ -422,4 +422,34 @@ describe("RacedayLaneViewComponent", () => {
     // Row 2 is empty driver, so it renders --
     expect(rows[1].textContent).toContain("--");
   });
+
+  it("should map pacing property names to correct GhostBenchmarkType", () => {
+    expect(component.getPacingBenchmarkType("ghostPacing")).toBe("LANE_RECORD");
+    expect(component.getPacingBenchmarkType("ghostPacingPB")).toBe(
+      "PERSONAL_BEST",
+    );
+    expect(component.getPacingBenchmarkType("ghostPacingPersonalAvg")).toBe(
+      "PERSONAL_AVG",
+    );
+    expect(component.getPacingBenchmarkType("ghostPacingPersonalMedian")).toBe(
+      "PERSONAL_MEDIAN",
+    );
+    expect(component.getPacingBenchmarkType("ghostPacingLeaderAvg")).toBe(
+      "HEAT_LEADER_AVG",
+    );
+    expect(component.getPacingBenchmarkType("ghostPacingLeaderMedian")).toBe(
+      "HEAT_LEADER_MEDIAN",
+    );
+    expect(component.getPacingBenchmarkType("ghostPacingLeaderBest")).toBe(
+      "HEAT_LEADER",
+    );
+    expect(component.getPacingBenchmarkType(undefined)).toBe("LANE_RECORD");
+  });
+
+  it("should check if property is a pacing property", () => {
+    expect(component.isPacingProperty("ghostPacing")).toBe(true);
+    expect(component.isPacingProperty("ghostPacingPB")).toBe(true);
+    expect(component.isPacingProperty("driver.name")).toBe(false);
+    expect(component.isPacingProperty(undefined)).toBe(false);
+  });
 });

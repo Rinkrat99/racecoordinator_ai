@@ -207,6 +207,21 @@ export class RacedayLayoutUtils {
     return prop.split("_")[0] === "driver.avatarUrl";
   }
 
+  static isPacingProperty(prop: string): boolean {
+    if (!prop) return false;
+    const base = prop.split("_")[0];
+    return (
+      base === "ghostPacing" ||
+      base === "ghostPacingPB" ||
+      base === "ghostPacingPersonalAvg" ||
+      base === "ghostPacingPersonalMedian" ||
+      base === "ghostPacingLeaderAvg" ||
+      base === "ghostPacingLeaderMedian" ||
+      base === "ghostPacingLeaderBest" ||
+      base.startsWith("ghostPacing")
+    );
+  }
+
   static shouldShowLaneColor(col: ColumnDefinition): boolean {
     if (!col) return false;
     const nameKeys = ["driver.name", "driver.nickname"];
@@ -267,12 +282,23 @@ export class RacedayLayoutUtils {
       "driver.avatarUrl": "RD_COL_AVATAR",
       flag: "",
       qrCode: "RD_COL_LANE_QR",
-      driverViewQrCode: "RD_COL_DRIVER_VIEW_QR",
       laneNumber: "RD_COL_LANE",
       ghostPacing: "RD_COL_GHOST_PACING",
+      ghostPacingPB: "RD_COL_GHOST_PACING",
+      ghostPacingPersonalAvg: "RD_COL_GHOST_PACING",
+      ghostPacingPersonalMedian: "RD_COL_GHOST_PACING",
+      ghostPacingLeaderAvg: "RD_COL_GHOST_PACING",
+      ghostPacingLeaderMedian: "RD_COL_GHOST_PACING",
+      ghostPacingLeaderBest: "RD_COL_GHOST_PACING",
     };
     if (typeof propertyKey === "string" && labels[propertyKey]) {
       return labels[propertyKey];
+    }
+    if (
+      typeof propertyKey === "string" &&
+      propertyKey.startsWith("ghostPacing")
+    ) {
+      return "RD_COL_GHOST_PACING";
     }
     if (
       typeof propertyKey === "string" &&

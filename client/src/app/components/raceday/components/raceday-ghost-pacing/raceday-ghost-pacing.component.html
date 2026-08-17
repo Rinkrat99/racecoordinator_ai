@@ -9,7 +9,15 @@
     </div>
   } @else if (targetGhostLapTime() > 0) {
     <div class="pacing-header">
-      <span class="benchmark-tag">
+      <span
+        class="benchmark-tag"
+        [title]="
+          (benchmarkLabelKey() | translate) +
+          ' (' +
+          targetGhostLapTime().toFixed(2) +
+          's)'
+        "
+      >
         <span class="benchmark-name"
           >{{ benchmarkLabelKey() | translate }} ({{
             targetGhostLapTime().toFixed(2)

@@ -66,7 +66,18 @@ describe("GhostPacingService", () => {
         service.resolveGhostBenchmarkTime("LANE_RECORD", 0, 0, 0, 4.8),
       ).toBe(4.8);
       expect(
-        service.resolveGhostBenchmarkTime("LANE_RECORD", 0, 0, 0, 0, 5.0),
+        service.resolveGhostBenchmarkTime(
+          "LANE_RECORD",
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          5.0,
+        ),
       ).toBe(5.0);
       expect(
         service.resolveGhostBenchmarkTime("LANE_RECORD", 0, 0, 0, 0, 0),
@@ -94,12 +105,112 @@ describe("GhostPacingService", () => {
       ).toBe(4.2);
     });
 
+    it("should resolve PERSONAL_AVG and PERSONAL_MEDIAN preferences with fallbacks", () => {
+      expect(
+        service.resolveGhostBenchmarkTime(
+          "PERSONAL_AVG",
+          0,
+          4.5,
+          4.2,
+          4.0,
+          0,
+          0,
+          4.35,
+          4.3,
+        ),
+      ).toBe(4.35);
+      expect(
+        service.resolveGhostBenchmarkTime(
+          "PERSONAL_MEDIAN",
+          0,
+          4.5,
+          4.2,
+          4.0,
+          0,
+          0,
+          4.35,
+          4.3,
+        ),
+      ).toBe(4.3);
+      expect(
+        service.resolveGhostBenchmarkTime(
+          "PERSONAL_AVG",
+          0,
+          4.5,
+          4.2,
+          4.0,
+          0,
+          0,
+          0,
+          0,
+        ),
+      ).toBe(4.2);
+    });
+
+    it("should resolve HEAT_LEADER_AVG and HEAT_LEADER_MEDIAN preferences with fallbacks", () => {
+      expect(
+        service.resolveGhostBenchmarkTime(
+          "HEAT_LEADER_AVG",
+          0,
+          4.5,
+          4.2,
+          4.0,
+          4.12,
+          4.15,
+        ),
+      ).toBe(4.12);
+      expect(
+        service.resolveGhostBenchmarkTime(
+          "HEAT_LEADER_MEDIAN",
+          0,
+          4.5,
+          4.2,
+          4.0,
+          4.12,
+          4.15,
+        ),
+      ).toBe(4.15);
+      expect(
+        service.resolveGhostBenchmarkTime(
+          "HEAT_LEADER_AVG",
+          0,
+          4.5,
+          4.2,
+          4.0,
+          0,
+          0,
+        ),
+      ).toBe(4.0);
+    });
+
     it("should resolve CUSTOM preference", () => {
       expect(
-        service.resolveGhostBenchmarkTime("CUSTOM", 0, 4.2, 4.0, 3.9, 5.5),
+        service.resolveGhostBenchmarkTime(
+          "CUSTOM",
+          0,
+          4.2,
+          4.0,
+          3.9,
+          0,
+          0,
+          0,
+          0,
+          5.5,
+        ),
       ).toBe(5.5);
       expect(
-        service.resolveGhostBenchmarkTime("CUSTOM", 0, 4.2, 4.0, 3.9, 0),
+        service.resolveGhostBenchmarkTime(
+          "CUSTOM",
+          0,
+          4.2,
+          4.0,
+          3.9,
+          0,
+          0,
+          0,
+          0,
+          0,
+        ),
       ).toBe(0.0);
     });
   });

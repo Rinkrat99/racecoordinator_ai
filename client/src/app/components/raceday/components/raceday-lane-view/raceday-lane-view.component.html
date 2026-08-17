@@ -264,6 +264,7 @@
                   <div
                     #fitTextTarget
                     [class]="parent().getAnchorClass(entry.anchor)"
+                    [class.pacing-entry]="isPacingProperty(entry.property)"
                     [style.word-break]="
                       ['rankHeat', 'rankOverall', 'rankGroup'].includes(
                         entry.property
@@ -432,7 +433,17 @@
                         <span class="material-icons">drag_indicator</span>
                       </div>
                     }
-                    @if (entry.property === "ghostPacing") {
+                    @if (
+                      entry.property === "ghostPacing" ||
+                      entry.property === "ghostPacingPB" ||
+                      entry.property === "ghostPacingPersonalAvg" ||
+                      entry.property === "ghostPacingPersonalMedian" ||
+                      entry.property === "ghostPacingLeaderAvg" ||
+                      entry.property === "ghostPacingLeaderMedian" ||
+                      entry.property === "ghostPacingLeaderBest" ||
+                      (entry.property &&
+                        entry.property.startsWith("ghostPacing"))
+                    ) {
                       @if (
                         parent()?.isEmptyDriver
                           ? parent().isEmptyDriver(hd)
@@ -443,12 +454,28 @@
                         <app-raceday-ghost-pacing
                           [driverHeatData]="hd"
                           [compact]="true"
+                          [benchmarkType]="
+                            getPacingBenchmarkType(entry.property)
+                          "
                           [laneRecord]="
                             parent()?.getLaneRecord
                               ? parent().getLaneRecord(hd)
                               : 0
                           "
-                          [heatLeaderBest]="parent()?.heatBestTime || 0"
+                          [personalBest]="
+                            parent()?.getPersonalBest
+                              ? parent().getPersonalBest(hd)
+                              : 0
+                          "
+                          [heatLeaderBest]="
+                            parent()?.heatLeaderBestTime ||
+                            parent()?.heatBestTime ||
+                            0
+                          "
+                          [heatLeaderAvg]="parent()?.heatLeaderAvgTime || 0"
+                          [heatLeaderMedian]="
+                            parent()?.heatLeaderMedianTime || 0
+                          "
                         ></app-raceday-ghost-pacing>
                       }
                     } @else if (entry.property === "lastLaps") {

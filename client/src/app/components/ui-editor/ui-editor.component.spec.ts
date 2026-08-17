@@ -639,12 +639,37 @@ describe("UIEditorComponent", () => {
     expect(lapsLed?.label).toBe("RD_COL_LAPS_LED");
   });
 
-  it("should include ghostPacing column in availableColumns", () => {
-    const ghostCol = component.availableColumns.find(
-      (c) => c.key === "ghostPacing",
-    );
-    expect(ghostCol).toBeTruthy();
-    expect(ghostCol?.label).toBe("RD_COL_GHOST_PACING");
+  it("should include all 7 pacing columns in availableColumns", () => {
+    const pacingCols = [
+      { key: "ghostPacing", label: "RD_COL_GHOST_PACING_LANE_RECORD" },
+      { key: "ghostPacingPB", label: "RD_COL_GHOST_PACING_PERSONAL_BEST" },
+      {
+        key: "ghostPacingPersonalAvg",
+        label: "RD_COL_GHOST_PACING_PERSONAL_AVG",
+      },
+      {
+        key: "ghostPacingPersonalMedian",
+        label: "RD_COL_GHOST_PACING_PERSONAL_MEDIAN",
+      },
+      {
+        key: "ghostPacingLeaderAvg",
+        label: "RD_COL_GHOST_PACING_LEADER_AVG",
+      },
+      {
+        key: "ghostPacingLeaderMedian",
+        label: "RD_COL_GHOST_PACING_LEADER_MEDIAN",
+      },
+      {
+        key: "ghostPacingLeaderBest",
+        label: "RD_COL_GHOST_PACING_LEADER_BEST",
+      },
+    ];
+
+    pacingCols.forEach(({ key, label }) => {
+      const col = component.availableColumns.find((c) => c.key === key);
+      expect(col).toBeTruthy(`Expected column with key ${key} to exist`);
+      expect(col?.label).toBe(label);
+    });
   });
 
   describe("expander behavior", () => {

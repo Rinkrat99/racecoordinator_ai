@@ -14,8 +14,10 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { RacedayGhostPacingComponent } from "@app/components/raceday/components/raceday-ghost-pacing/raceday-ghost-pacing.component";
+import { RacedayLayoutUtils } from "@app/components/raceday/utils/raceday-layout.utils";
 import { AbsoluteWidgetNode } from "@app/models/settings";
 import { TranslatePipe } from "@app/pipes/translate.pipe";
+import { GhostBenchmarkType } from "@app/services/ghost-pacing.service";
 
 @Component({
   standalone: true,
@@ -178,5 +180,29 @@ export class RacedayLaneViewComponent implements AfterViewInit, OnDestroy {
       return customLabels[col.propertyName];
     }
     return this.parent().getColumnLabel(col);
+  }
+
+  getPacingBenchmarkType(property?: string): GhostBenchmarkType {
+    switch (property) {
+      case "ghostPacingPB":
+        return "PERSONAL_BEST";
+      case "ghostPacingPersonalAvg":
+        return "PERSONAL_AVG";
+      case "ghostPacingPersonalMedian":
+        return "PERSONAL_MEDIAN";
+      case "ghostPacingLeaderAvg":
+        return "HEAT_LEADER_AVG";
+      case "ghostPacingLeaderMedian":
+        return "HEAT_LEADER_MEDIAN";
+      case "ghostPacingLeaderBest":
+        return "HEAT_LEADER";
+      case "ghostPacing":
+      default:
+        return "LANE_RECORD";
+    }
+  }
+
+  isPacingProperty(property?: string): boolean {
+    return RacedayLayoutUtils.isPacingProperty(property || "");
   }
 }

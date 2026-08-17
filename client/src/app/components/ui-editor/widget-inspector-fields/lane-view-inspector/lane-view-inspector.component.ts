@@ -86,6 +86,18 @@ export class LaneViewInspectorComponent {
     ) {
       return "RD_COL_FUEL_GAUGE";
     }
+    const pacingMap: Record<string, string> = {
+      ghostPacing: "RD_COL_GHOST_PACING_LANE_RECORD",
+      ghostPacingPB: "RD_COL_GHOST_PACING_PERSONAL_BEST",
+      ghostPacingPersonalAvg: "RD_COL_GHOST_PACING_PERSONAL_AVG",
+      ghostPacingPersonalMedian: "RD_COL_GHOST_PACING_PERSONAL_MEDIAN",
+      ghostPacingLeaderAvg: "RD_COL_GHOST_PACING_LEADER_AVG",
+      ghostPacingLeaderMedian: "RD_COL_GHOST_PACING_LEADER_MEDIAN",
+      ghostPacingLeaderBest: "RD_COL_GHOST_PACING_LEADER_BEST",
+    };
+    if (pacingMap[key]) {
+      return pacingMap[key];
+    }
     const col = this.availableColumns().find((c) => c.key === key);
     if (col) {
       if (

@@ -481,6 +481,10 @@ export class DefaultRacedayComponent
     return RacedayLayoutUtils.isAvatarProperty(prop);
   }
 
+  public isPacingProperty(prop: string): boolean {
+    return RacedayLayoutUtils.isPacingProperty(prop);
+  }
+
   public shouldShowLaneColor(col: ColumnDefinition): boolean {
     return RacedayLayoutUtils.shouldShowLaneColor(col);
   }
@@ -1479,6 +1483,69 @@ export class DefaultRacedayComponent
       return laneFastestLap[laneIndex].value;
     }
     return this.raceRecordLapTime || this.currentRaceBestTime || 0;
+  }
+
+  getPersonalBest(hd?: DriverHeatData): number {
+    if (!hd) return 0;
+    return hd.bestLapTime > 0 ? hd.bestLapTime : 0;
+  }
+
+  getLeaderHeatDriver(): DriverHeatData | undefined {
+    const drivers = (this.heat?.heatDrivers || []).filter(
+      (d) => !this.isEmptyDriver(d),
+    );
+    if (drivers.length === 0) return undefined;
+
+    // 1. Check driverRankings map (populated from standingsUpdate$ / heat.standings)
+    for (const d of drivers) {
+      if (this.driverRankings.get(d.objectId) === 1) {
+        return d;
+      }
+    }
+
+    // 2. Check heat.standings array
+    if (this.heat?.standings && this.heat.standings.length > 0) {
+      const leaderId = this.heat.standings[0];
+      const leader = drivers.find((d) => d.objectId === leaderId);
+      if (leader) return leader;
+    }
+
+    // 3. Check for 0 gap to leader with completed laps
+    const zeroGap = drivers.find(
+      (d) =>
+        (d as any).gapLeader === 0 &&
+        (d as any).lapsDownLeader === 0 &&
+        (d.lapTimes?.length > 0 || d.bestLapTime > 0),
+    );
+    if (zeroGap) return zeroGap;
+
+    // 4. Sort by lapCount descending, then totalTime / lastLapTime ascending
+    const sorted = [...drivers].sort((a, b) => {
+      const lapsA = a.lapCount ?? 0;
+      const lapsB = b.lapCount ?? 0;
+      if (lapsA !== lapsB) return lapsB - lapsA;
+      const timeA = a.totalTime ?? a.lastLapTime ?? 0;
+      const timeB = b.totalTime ?? b.lastLapTime ?? 0;
+      return timeA - timeB;
+    });
+
+    return sorted[0] || drivers[0];
+  }
+
+  get heatLeaderAvgTime(): number {
+    const leader = this.getLeaderHeatDriver();
+    return leader && leader.averageLapTime > 0 ? leader.averageLapTime : 0;
+  }
+
+  get heatLeaderMedianTime(): number {
+    const leader = this.getLeaderHeatDriver();
+    return leader && leader.medianLapTime > 0 ? leader.medianLapTime : 0;
+  }
+
+  get heatLeaderBestTime(): number {
+    const leader = this.getLeaderHeatDriver();
+    if (leader && leader.bestLapTime > 0) return leader.bestLapTime;
+    return this.heatBestTime || 0;
   }
 
   private leaderBoardWindow: Window | null = null;

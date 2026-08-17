@@ -867,9 +867,29 @@ export class UIEditorComponent implements OnInit, OnDestroy, DirtyComponent {
           { key: "segmentTime", label: "RD_COL_SEGMENT_TIME" },
           { key: "flag", label: "RD_COL_DRIVER_STATE" },
           { key: "qrCode", label: "RD_COL_LANE_QR" },
-          { key: "driverViewQrCode", label: "RD_COL_DRIVER_VIEW_QR" },
           { key: "laneNumber", label: "RD_COL_LANE" },
-          { key: "ghostPacing", label: "RD_COL_GHOST_PACING" },
+          { key: "ghostPacing", label: "RD_COL_GHOST_PACING_LANE_RECORD" },
+          { key: "ghostPacingPB", label: "RD_COL_GHOST_PACING_PERSONAL_BEST" },
+          {
+            key: "ghostPacingPersonalAvg",
+            label: "RD_COL_GHOST_PACING_PERSONAL_AVG",
+          },
+          {
+            key: "ghostPacingPersonalMedian",
+            label: "RD_COL_GHOST_PACING_PERSONAL_MEDIAN",
+          },
+          {
+            key: "ghostPacingLeaderAvg",
+            label: "RD_COL_GHOST_PACING_LEADER_AVG",
+          },
+          {
+            key: "ghostPacingLeaderMedian",
+            label: "RD_COL_GHOST_PACING_LEADER_MEDIAN",
+          },
+          {
+            key: "ghostPacingLeaderBest",
+            label: "RD_COL_GHOST_PACING_LEADER_BEST",
+          },
           ...imageSetColumns,
         ];
         this.sortAvailableColumns();

@@ -151,6 +151,27 @@ describe("LaneViewInspectorComponent", () => {
     expect(component.getColumnLabel("Default Fuel Gauge")).toBe(
       "RD_COL_FUEL_GAUGE",
     );
+    expect(component.getColumnLabel("ghostPacing")).toBe(
+      "RD_COL_GHOST_PACING_LANE_RECORD",
+    );
+    expect(component.getColumnLabel("ghostPacingPB")).toBe(
+      "RD_COL_GHOST_PACING_PERSONAL_BEST",
+    );
+    expect(component.getColumnLabel("ghostPacingPersonalAvg")).toBe(
+      "RD_COL_GHOST_PACING_PERSONAL_AVG",
+    );
+    expect(component.getColumnLabel("ghostPacingPersonalMedian")).toBe(
+      "RD_COL_GHOST_PACING_PERSONAL_MEDIAN",
+    );
+    expect(component.getColumnLabel("ghostPacingLeaderAvg")).toBe(
+      "RD_COL_GHOST_PACING_LEADER_AVG",
+    );
+    expect(component.getColumnLabel("ghostPacingLeaderMedian")).toBe(
+      "RD_COL_GHOST_PACING_LEADER_MEDIAN",
+    );
+    expect(component.getColumnLabel("ghostPacingLeaderBest")).toBe(
+      "RD_COL_GHOST_PACING_LEADER_BEST",
+    );
     expect(component.getColumnLabel("unknown")).toBe("unknown");
   });
 
