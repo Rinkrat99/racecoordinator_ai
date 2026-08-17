@@ -222,12 +222,8 @@ test.describe("UI Editor Visuals", () => {
         animations: "disabled",
       },
     );
-    await page.waitForTimeout(300);
-    await resolutionSelect.evaluate((el: HTMLSelectElement) => {
-      el.value = "1920x1080";
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    });
-    await page.waitForTimeout(2000); // Wait for scaling animation
+    await resolutionSelect.selectOption("1920x1080");
+    await page.waitForTimeout(1000); // Wait for scaling animation
 
     const previewScaler = page.locator(".raceday-preview-scaler").first();
     await previewScaler.scrollIntoViewIfNeeded();
