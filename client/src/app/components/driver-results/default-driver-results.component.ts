@@ -48,6 +48,10 @@ interface StandingsRow {
 }
 
 import {
+  GhostTrajectoryDialogComponent,
+  TrajectoryReferenceOption,
+} from "@app/components/shared/ghost-trajectory-dialog/ghost-trajectory-dialog.component";
+import {
   PdfExportDialogComponent,
   PdfExportOptions,
 } from "@app/components/shared/pdf-export-dialog/pdf-export-dialog.component";
@@ -60,6 +64,7 @@ import { SettingsService } from "@app/services/settings.service";
   styleUrls: ["./default-driver-results.component.css"],
   imports: [
     HeatDriverExpanderComponent,
+    GhostTrajectoryDialogComponent,
     CommonModule,
     DecimalPipe,
     TranslatePipe,
@@ -73,6 +78,12 @@ export class DefaultDriverResultsComponent implements OnInit, OnDestroy {
   protected driver?: Driver;
   protected race?: Race;
   protected overallRow?: StandingsRow;
+  protected showTrajectoryModal = false;
+  protected trajectoryDriverAName = "";
+  protected trajectoryDriverALapTimes: number[] = [];
+  protected trajectoryReferenceOptions: TrajectoryReferenceOption[] = [];
+  protected trajectoryInitialReferenceId = "";
+  protected trajectoryBenchmarkLapTime = 0;
   protected driverHeats: {
     heat: Heat;
     heatDriver: DriverHeatData;
@@ -541,5 +552,197 @@ export class DefaultDriverResultsComponent implements OnInit, OnDestroy {
       return this.driverStats.lane_best_lap_times;
     }
     return [];
+  }
+
+  openHeatTrajectory(data: any) {
+    const currentDriverName =
+      this.driver?.nickname || this.driver?.name || "Driver";
+    const heat = data.heat;
+    const heatDriver = data.heatDriver;
+    this.trajectoryDriverAName = currentDriverName;
+    this.trajectoryDriverALapTimes =
+      heatDriver?.lapTimes || (heatDriver as any)?.laps || [];
+
+    const currentId =
+      (this.driver as any)?.entity_id ||
+      (this.driver as any)?.id ||
+      this.driverId;
+
+    const refOptions: TrajectoryReferenceOption[] = [];
+    if (heat?.heatDrivers) {
+      for (const hd of heat.heatDrivers) {
+        // Resolve competitor: prefer team if present, else driver
+        const competitor =
+          hd.participant?.team ||
+          hd.driver ||
+          hd.actualDriver ||
+          hd.participant?.driver;
+
+        if (!competitor || Driver.isEmpty(competitor)) {
+          continue;
+        }
+
+        const compName = (competitor.nickname || competitor.name || "").trim();
+        if (
+          !compName ||
+          compName.toLowerCase() === "empty" ||
+          compName.toLowerCase() === "empty lane" ||
+          compName.toLowerCase() === "(empty)"
+        ) {
+          continue;
+        }
+
+        const compId =
+          (competitor as any)?.entity_id ||
+          (competitor as any)?.id ||
+          hd.objectId;
+
+        if (compId && compId !== currentId) {
+          refOptions.push({
+            id: compId,
+            name: competitor.nickname || competitor.name || hd.objectId,
+            lapTimes: hd.lapTimes || (hd as any)?.laps || [],
+          });
+        }
+      }
+    }
+    this.trajectoryReferenceOptions = refOptions;
+    this.trajectoryInitialReferenceId =
+      refOptions.length > 0 ? refOptions[0].id : "";
+    this.trajectoryBenchmarkLapTime = 0;
+    this.showTrajectoryModal = true;
+    this.cdr.detectChanges();
+  }
+
+  openOverallTrajectory() {
+    const currentDriverName =
+      this.driver?.nickname || this.driver?.name || "Driver";
+    const currentId =
+      (this.driver as any)?.entity_id ||
+      (this.driver as any)?.id ||
+      this.driverId;
+    this.trajectoryDriverAName = currentDriverName;
+    this.trajectoryDriverALapTimes = this.getOverallDriverLapTimes(currentId);
+
+    const refOptions: TrajectoryReferenceOption[] = [];
+    const seenCompetitorIds = new Set<string>();
+    if (currentId) {
+      seenCompetitorIds.add(currentId);
+    }
+
+    // 1. Collect from participants (prefer team if team participant)
+    for (const p of this.participants) {
+      const competitor = p.team || p.driver;
+      if (!competitor || Driver.isEmpty(competitor)) {
+        continue;
+      }
+      const compName = (
+        (competitor as any)?.nickname ||
+        competitor.name ||
+        ""
+      ).trim();
+      if (
+        !compName ||
+        compName.toLowerCase() === "empty" ||
+        compName.toLowerCase() === "empty lane" ||
+        compName.toLowerCase() === "(empty)"
+      ) {
+        continue;
+      }
+      const compId = (competitor as any)?.entity_id || (competitor as any)?.id;
+      if (compId && !seenCompetitorIds.has(compId)) {
+        seenCompetitorIds.add(compId);
+        refOptions.push({
+          id: compId,
+          name: (competitor as any)?.nickname || competitor.name,
+          lapTimes: this.getOverallDriverLapTimes(compId),
+        });
+      }
+    }
+
+    // 2. Collect any other competitors across all heats (in case participants list wasn't populated)
+    for (const heat of this.heats) {
+      if (heat?.heatDrivers) {
+        for (const hd of heat.heatDrivers) {
+          const competitor =
+            hd.participant?.team ||
+            hd.driver ||
+            hd.actualDriver ||
+            hd.participant?.driver;
+
+          if (!competitor || Driver.isEmpty(competitor)) {
+            continue;
+          }
+          const compName = (
+            (competitor as any)?.nickname ||
+            competitor.name ||
+            ""
+          ).trim();
+          if (
+            !compName ||
+            compName.toLowerCase() === "empty" ||
+            compName.toLowerCase() === "empty lane" ||
+            compName.toLowerCase() === "(empty)"
+          ) {
+            continue;
+          }
+          const compId =
+            (competitor as any)?.entity_id ||
+            (competitor as any)?.id ||
+            hd.objectId;
+          if (compId && !seenCompetitorIds.has(compId)) {
+            seenCompetitorIds.add(compId);
+            refOptions.push({
+              id: compId,
+              name:
+                (competitor as any)?.nickname || competitor.name || hd.objectId,
+              lapTimes: this.getOverallDriverLapTimes(compId),
+            });
+          }
+        }
+      }
+    }
+
+    this.trajectoryReferenceOptions = refOptions;
+    this.trajectoryInitialReferenceId =
+      refOptions.length > 0 ? refOptions[0].id : "";
+    this.trajectoryBenchmarkLapTime = 0;
+    this.showTrajectoryModal = true;
+    this.cdr.detectChanges();
+  }
+
+  private getOverallDriverLapTimes(competitorId: string): number[] {
+    const allLaps: number[] = [];
+    for (const heat of this.heats) {
+      if (heat?.heatDrivers) {
+        const hd = heat.heatDrivers.find((d) => {
+          const teamId =
+            (d.participant?.team as any)?.entity_id ||
+            (d.participant?.team as any)?.id;
+          if (teamId && teamId === competitorId) {
+            return true;
+          }
+          const driverId =
+            (d.driver as any)?.entity_id ||
+            (d.driver as any)?.id ||
+            (d.actualDriver as any)?.entity_id ||
+            (d.actualDriver as any)?.id ||
+            (d.participant?.driver as any)?.entity_id ||
+            (d.participant?.driver as any)?.id ||
+            d.objectId;
+          return driverId === competitorId;
+        });
+        const laps = hd?.lapTimes || (hd as any)?.laps;
+        if (laps && Array.isArray(laps)) {
+          allLaps.push(...laps);
+        }
+      }
+    }
+    return allLaps;
+  }
+
+  closeTrajectoryDialog() {
+    this.showTrajectoryModal = false;
+    this.cdr.detectChanges();
   }
 }

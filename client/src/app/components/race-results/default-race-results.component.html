@@ -24,13 +24,6 @@
           >
             <span class="material-icons">picture_as_pdf</span>
           </button>
-          <button
-            class="ghost-trajectory-btn no-print"
-            (click)="openTrajectoryDialog()"
-            [title]="'RD_GHOST_TRAJECTORY_TOOLTIP' | translate"
-          >
-            <span class="ghost-icon">👻</span>
-          </button>
         </div>
       }
     </div>
@@ -508,11 +501,3 @@
   (cancel)="onPdfExportCancel()"
 >
 </app-pdf-export-dialog>
-
-<app-ghost-trajectory-dialog
-  [visible]="showTrajectoryModal"
-  [driverA]="selectedTrajectoryDriverA"
-  [driverB]="selectedTrajectoryDriverB"
-  [benchmarkLapTime]="selectedTrajectoryBenchmarkTime"
-  (close)="closeTrajectoryDialog()"
-/>

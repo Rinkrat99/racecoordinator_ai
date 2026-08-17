@@ -35,9 +35,19 @@
     <div class="heat-card-content">
       <!-- Standard Stats Table specific to this heat -->
       <div class="heat-stats-table-wrapper">
-        <h3 class="subsection-title">
-          {{ customStatsTitle || ("DR_HEAT_STATS" | translate) }}
-        </h3>
+        <div class="heat-stats-title-row">
+          <h3 class="subsection-title">
+            {{ customStatsTitle || ("DR_HEAT_STATS" | translate) }}
+          </h3>
+          <button
+            type="button"
+            class="trajectory-btn no-print"
+            (click)="onOpenTrajectory($event)"
+            [title]="'GTD_TOOLTIP' | translate"
+          >
+            <span class="material-icons">insights</span>
+          </button>
+        </div>
         <div class="results-table">
           <div class="results-table-header heat-table-header heat-grid">
             <div class="header-cell">{{ "DR_HEADER_POS" | translate }}</div>

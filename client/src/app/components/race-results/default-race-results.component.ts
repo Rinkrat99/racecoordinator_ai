@@ -24,7 +24,6 @@ import { RaceParticipant } from "@app/models/race_participant";
 import { AvatarUrlPipe } from "@app/pipes/avatar-url.pipe";
 import { TranslatePipe } from "@app/pipes/translate.pipe";
 import { IRecordData, IRecordEntry } from "@app/proto/antigravity";
-import { DriverHeatData } from "@app/race/driver_heat_data";
 import { Heat } from "@app/race/heat";
 import { AuthService } from "@app/services/auth.service";
 import { PrintService } from "@app/services/print.service";
@@ -32,8 +31,6 @@ import { RaceService } from "@app/services/race.service";
 import { RaceConnectionService } from "@app/services/race-connection.service";
 import { TranslationService } from "@app/services/translation.service";
 import { ViewerRaceEndedHandler } from "@app/utils/viewer-race-ended-handler";
-
-import { GhostTrajectoryDialogComponent } from "./ghost-trajectory-dialog/ghost-trajectory-dialog.component";
 
 interface StandingsRow {
   rank: number;
@@ -104,7 +101,6 @@ import { SettingsService } from "@app/services/settings.service";
     RouterModule,
     AcknowledgementModalComponent,
     PdfExportDialogComponent,
-    GhostTrajectoryDialogComponent,
   ],
 })
 export class DefaultRaceResultsComponent implements OnInit, OnDestroy {
@@ -117,47 +113,6 @@ export class DefaultRaceResultsComponent implements OnInit, OnDestroy {
 
   showPdfExportDialog = false;
   defaultIncludeBackground = true;
-
-  showTrajectoryModal = false;
-  selectedTrajectoryDriverA: DriverHeatData | null = null;
-  selectedTrajectoryDriverB: DriverHeatData | null = null;
-  selectedTrajectoryBenchmarkTime = 0;
-
-  openTrajectoryDialog(
-    driverA?: DriverHeatData | null,
-    driverB?: DriverHeatData | null,
-    benchmarkTime?: number,
-  ) {
-    if (driverA) {
-      this.selectedTrajectoryDriverA = driverA;
-    } else {
-      const heats = this.raceService.getHeats() || [];
-      if (
-        heats.length > 0 &&
-        heats[0].heatDrivers &&
-        heats[0].heatDrivers.length > 0
-      ) {
-        this.selectedTrajectoryDriverA = heats[0].heatDrivers[0] as any;
-        if (heats[0].heatDrivers.length > 1) {
-          this.selectedTrajectoryDriverB = heats[0].heatDrivers[1] as any;
-        }
-      }
-    }
-    if (driverB !== undefined) {
-      this.selectedTrajectoryDriverB = driverB;
-    }
-    if (benchmarkTime !== undefined) {
-      this.selectedTrajectoryBenchmarkTime = benchmarkTime;
-    } else if (this.recordData?.overall?.fastestLap?.value) {
-      this.selectedTrajectoryBenchmarkTime =
-        this.recordData.overall.fastestLap.value;
-    }
-    this.showTrajectoryModal = true;
-  }
-
-  closeTrajectoryDialog() {
-    this.showTrajectoryModal = false;
-  }
 
   protected getGridColumns(): string {
     const baseColumns =

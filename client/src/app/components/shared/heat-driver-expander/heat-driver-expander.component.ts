@@ -60,6 +60,12 @@ export class HeatDriverExpanderComponent {
   }
 
   @Output() toggle = new EventEmitter<void>();
+  @Output() openTrajectory = new EventEmitter<HeatExpanderData>();
+
+  onOpenTrajectory(event: Event) {
+    event.stopPropagation();
+    this.openTrajectory.emit(this.heatData);
+  }
 
   activeTooltip: {
     lap: any;

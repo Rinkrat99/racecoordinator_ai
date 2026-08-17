@@ -148,4 +148,21 @@ describe("HeatDriverExpanderComponent Analysis Section", () => {
     expect(groupBadge).not.toBeNull();
     expect(groupBadge.textContent.trim()).toBe("Beta Group");
   });
+
+  it("should emit openTrajectory when trajectory button is clicked", () => {
+    const mockData = createMockHeatData([4.2, 4.3]);
+    component.heatData = mockData;
+    component.isExpanded = true;
+    fixture.detectChanges();
+
+    const trajectorySpy = jasmine.createSpy("openTrajectory");
+    component.openTrajectory.subscribe(trajectorySpy);
+
+    const mockEvent = new MouseEvent("click");
+    spyOn(mockEvent, "stopPropagation");
+    component.onOpenTrajectory(mockEvent);
+
+    expect(mockEvent.stopPropagation).toHaveBeenCalled();
+    expect(trajectorySpy).toHaveBeenCalledWith(mockData);
+  });
 });

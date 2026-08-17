@@ -528,4 +528,242 @@ describe("DefaultDriverResultsComponent", () => {
       expect(values[1].textContent.trim()).toBe("--");
     });
   });
+
+  describe("Pacing & Trajectory Dialog", () => {
+    it("should open heat trajectory dialog with heat-specific lap data and competitor options", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const mockHeat = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: driver2, laps: [3.9, 4.1] },
+      ]);
+
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat]);
+      fixture.detectChanges();
+
+      const heatData = {
+        heat: mockHeat,
+        heatDriver: mockHeat.heatDrivers[0],
+      };
+
+      (component as any).openHeatTrajectory(heatData);
+
+      expect(component["showTrajectoryModal"]).toBeTrue();
+      expect(component["trajectoryDriverAName"]).toBe("SpeedyDave");
+      expect(component["trajectoryDriverALapTimes"]).toEqual([3.8, 4.0]);
+      expect(component["trajectoryReferenceOptions"].length).toBe(1);
+      expect(component["trajectoryReferenceOptions"][0]).toEqual({
+        id: "d2",
+        name: "Abs",
+        lapTimes: [3.9, 4.1],
+      });
+      expect(component["trajectoryInitialReferenceId"]).toBe("d2");
+
+      (component as any).closeTrajectoryDialog();
+      expect(component["showTrajectoryModal"]).toBeFalse();
+    });
+
+    it("should open overall trajectory dialog with aggregated laps across all heats", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const mockHeat1 = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: driver2, laps: [3.9, 4.1] },
+      ]);
+      const mockHeat2 = createHeatWithLaps("h2", 2, [
+        { driver: driver1, laps: [3.7, 3.9] },
+        { driver: driver2, laps: [4.0, 4.2] },
+      ]);
+
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat1, mockHeat2]);
+      participantsSubject.next([
+        createParticipant("p1", driver1, 1, 4, 15.4, 3.7, 3.85, 3.85, 0, 1),
+        createParticipant("p2", driver2, 2, 4, 16.2, 3.9, 4.05, 4.05, 0, 2),
+      ]);
+      fixture.detectChanges();
+
+      (component as any).openOverallTrajectory();
+
+      expect(component["showTrajectoryModal"]).toBeTrue();
+      expect(component["trajectoryDriverAName"]).toBe("SpeedyDave");
+      // All laps from heat 1 + heat 2 for Dave
+      expect(component["trajectoryDriverALapTimes"]).toEqual([
+        3.8, 4.0, 3.7, 3.9,
+      ]);
+      expect(component["trajectoryReferenceOptions"].length).toBe(1);
+      expect(component["trajectoryReferenceOptions"][0]).toEqual({
+        id: "d2",
+        name: "Abs",
+        lapTimes: [3.9, 4.1, 4.0, 4.2],
+      });
+      expect(component["trajectoryInitialReferenceId"]).toBe("d2");
+    });
+
+    it("should filter out empty lanes/drivers from comparison options", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const emptyDriver = createDriver("EMPTY_LANE", "Empty", "Empty");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const mockHeat = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: emptyDriver, laps: [] },
+        { driver: driver2, laps: [3.9, 4.1] },
+      ]);
+
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat]);
+      fixture.detectChanges();
+
+      const heatData = {
+        heat: mockHeat,
+        heatDriver: mockHeat.heatDrivers[0],
+      };
+
+      (component as any).openHeatTrajectory(heatData);
+
+      // Only Abby, not Empty
+      expect(component["trajectoryReferenceOptions"].length).toBe(1);
+      expect(component["trajectoryReferenceOptions"][0].id).toBe("d2");
+      expect(component["trajectoryReferenceOptions"][0].name).toBe("Abs");
+    });
+
+    it("should show team name instead of individual driver in comparison selector when participant is a team", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const team = new Team("t1", "The Girls", "", ["d2"]);
+
+      const mockHeat = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: driver2, laps: [3.9, 4.1] },
+      ]);
+
+      // Assign team to driver2's participant
+      (mockHeat.heatDrivers[1].participant as any).team = team;
+
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat]);
+      fixture.detectChanges();
+
+      const heatData = {
+        heat: mockHeat,
+        heatDriver: mockHeat.heatDrivers[0],
+      };
+
+      (component as any).openHeatTrajectory(heatData);
+
+      expect(component["trajectoryReferenceOptions"].length).toBe(1);
+      expect(component["trajectoryReferenceOptions"][0].id).toBe("t1");
+      expect(component["trajectoryReferenceOptions"][0].name).toBe("The Girls");
+    });
+
+    it("should show team name and aggregate team laps in overall trajectory when participant is a team", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const driver3 = createDriver("d3", "Chloe", "Chlo");
+      const team = new Team("t1", "The Girls", "", ["d2", "d3"]);
+
+      const mockHeat1 = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: driver2, laps: [3.9, 4.1] },
+      ]);
+      const mockHeat2 = createHeatWithLaps("h2", 2, [
+        { driver: driver1, laps: [3.7, 3.9] },
+        { driver: driver3, laps: [4.0, 4.2] },
+      ]);
+
+      (mockHeat1.heatDrivers[1].participant as any).team = team;
+      (mockHeat2.heatDrivers[1].participant as any).team = team;
+
+      const pTeam = new RaceParticipant(
+        "p-team",
+        null as any,
+        2,
+        4,
+        16.2,
+        3.9,
+        4.05,
+        4.05,
+        0,
+        2,
+        100,
+        0,
+        0,
+        team,
+      );
+
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat1, mockHeat2]);
+      participantsSubject.next([
+        createParticipant("p1", driver1, 1, 4, 15.4, 3.7, 3.85, 3.85, 0, 1),
+        pTeam,
+      ]);
+      fixture.detectChanges();
+
+      (component as any).openOverallTrajectory();
+
+      expect(component["trajectoryReferenceOptions"].length).toBe(1);
+      expect(component["trajectoryReferenceOptions"][0].id).toBe("t1");
+      expect(component["trajectoryReferenceOptions"][0].name).toBe("The Girls");
+      // Aggregated laps for team across heat 1 + heat 2
+      expect(component["trajectoryReferenceOptions"][0].lapTimes).toEqual([
+        3.9, 4.1, 4.0, 4.2,
+      ]);
+    });
+
+    it("should filter out empty participants in overall trajectory", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const emptyDriver = createDriver("EMPTY_LANE", "Empty", "Empty");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+
+      const mockHeat = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: emptyDriver, laps: [] },
+        { driver: driver2, laps: [3.9, 4.1] },
+      ]);
+
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat]);
+      participantsSubject.next([
+        createParticipant("p1", driver1, 1, 2, 7.8, 3.8, 3.9, 3.9, 0, 1),
+        createParticipant("pEmpty", emptyDriver, 3, 0, 0, 0, 0, 0, 0, 3),
+        createParticipant("p2", driver2, 2, 2, 8.0, 3.9, 4.0, 4.0, 0, 2),
+      ]);
+      fixture.detectChanges();
+
+      (component as any).openOverallTrajectory();
+
+      expect(component["trajectoryReferenceOptions"].length).toBe(1);
+      expect(component["trajectoryReferenceOptions"][0].id).toBe("d2");
+      expect(component["trajectoryReferenceOptions"][0].name).toBe("Abs");
+    });
+
+    it("should trigger openOverallTrajectory when trajectory button in overall standings is clicked", () => {
+      const driver1 = createDriver("d1", "Dave", "SpeedyDave");
+      const driver2 = createDriver("d2", "Abby", "Abs");
+      const mockHeat = createHeatWithLaps("h1", 1, [
+        { driver: driver1, laps: [3.8, 4.0] },
+        { driver: driver2, laps: [3.9, 4.1] },
+      ]);
+
+      paramsSubject.next({ driverId: "d1" });
+      heatsSubject.next([mockHeat]);
+      participantsSubject.next([
+        createParticipant("p1", driver1, 1, 2, 7.8, 3.8, 3.9, 3.9, 0, 1),
+        createParticipant("p2", driver2, 2, 2, 8.0, 3.9, 4.0, 4.0, 0, 2),
+      ]);
+      fixture.detectChanges();
+
+      const trajectoryBtn = fixture.nativeElement.querySelector(
+        ".section-title-row .trajectory-btn",
+      ) as HTMLButtonElement;
+      expect(trajectoryBtn).toBeTruthy();
+
+      trajectoryBtn.click();
+      fixture.detectChanges();
+
+      expect(component["showTrajectoryModal"]).toBeTrue();
+      expect(component["trajectoryDriverAName"]).toBe("SpeedyDave");
+    });
+  });
 });

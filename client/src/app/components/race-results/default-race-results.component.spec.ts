@@ -1049,37 +1049,5 @@ describe("DefaultRaceResultsComponent", () => {
         expect(routerSpy.navigate).not.toHaveBeenCalled();
       });
     });
-
-    describe("Ghost Trajectory Modal", () => {
-      it("should open and close trajectory modal correctly", () => {
-        const d1 = new DriverHeatData("hd1", {} as any, 0);
-        const d2 = new DriverHeatData("hd2", {} as any, 1);
-
-        expect(component.showTrajectoryModal).toBeFalse();
-        component.openTrajectoryDialog(d1, d2, 4.5);
-
-        expect(component.showTrajectoryModal).toBeTrue();
-        expect(component.selectedTrajectoryDriverA).toBe(d1);
-        expect(component.selectedTrajectoryDriverB).toBe(d2);
-        expect(component.selectedTrajectoryBenchmarkTime).toBe(4.5);
-
-        component.closeTrajectoryDialog();
-        expect(component.showTrajectoryModal).toBeFalse();
-      });
-
-      it("should default drivers from race heats when opened without explicit drivers", () => {
-        const d1 = new DriverHeatData("hd1", {} as any, 0);
-        const d2 = new DriverHeatData("hd2", {} as any, 1);
-        const mockHeat = {
-          heatDrivers: [d1, d2],
-        } as unknown as Heat;
-        mockRaceService.getHeats.and.returnValue([mockHeat]);
-
-        component.openTrajectoryDialog();
-        expect(component.showTrajectoryModal).toBeTrue();
-        expect(component.selectedTrajectoryDriverA).toBe(d1);
-        expect(component.selectedTrajectoryDriverB).toBe(d2);
-      });
-    });
   });
 });

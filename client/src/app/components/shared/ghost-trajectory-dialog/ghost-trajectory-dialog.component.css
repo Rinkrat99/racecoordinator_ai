@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1050;
+  z-index: 9999;
   padding: 16px;
   box-sizing: border-box;
 }
@@ -26,7 +26,8 @@
   display: flex;
   flex-direction: column;
   color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
   overflow: hidden;
 }
 
@@ -45,15 +46,16 @@
   gap: 10px;
 }
 
+.modal-header-icon {
+  font-size: 1.4rem;
+  color: #38bdf8;
+}
+
 .header-title h3 {
   margin: 0;
   font-size: 1.15rem;
   font-weight: 600;
   color: #f1f5f9;
-}
-
-.ghost-icon {
-  font-size: 1.3rem;
 }
 
 .close-btn {
@@ -100,6 +102,7 @@
 
 .driver-card.driver-b {
   text-align: right;
+  align-items: flex-end;
 }
 
 .driver-role {
@@ -117,6 +120,26 @@
 
 .driver-card.driver-b .driver-name {
   color: #a78bfa;
+}
+
+.reference-select {
+  background: #1e293b;
+  color: #a78bfa;
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  max-width: 100%;
+}
+
+.reference-select:hover,
+.reference-select:focus {
+  border-color: #a78bfa;
+  background: #27354f;
 }
 
 .vs-badge {

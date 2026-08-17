@@ -165,7 +165,17 @@
 
     <!-- Overall Standing Data Container -->
     <div class="results-container section-container">
-      <h2 class="section-title">{{ "OR_RANKINGS_HEADER" | translate }}</h2>
+      <div class="section-title-row">
+        <h2 class="section-title">{{ "OR_RANKINGS_HEADER" | translate }}</h2>
+        <button
+          type="button"
+          class="trajectory-btn no-print"
+          (click)="openOverallTrajectory()"
+          [title]="'GTD_TOOLTIP' | translate"
+        >
+          <span class="material-icons">insights</span>
+        </button>
+      </div>
       <div class="results-table-wrapper">
         <div class="results-table overall-table">
           <div class="results-table-header overall-grid">
@@ -391,6 +401,7 @@
           [isGroupRace]="race?.group_options?.enabled ?? false"
           [groupNames]="race?.group_options?.names ?? []"
           (toggle)="toggleHeat(dh.heat.objectId)"
+          (openTrajectory)="openHeatTrajectory($event)"
         ></app-heat-driver-expander>
       }
     </div>
@@ -404,3 +415,13 @@
   (cancel)="onPdfExportCancel()"
 >
 </app-pdf-export-dialog>
+
+<app-ghost-trajectory-dialog
+  [visible]="showTrajectoryModal"
+  [driverAName]="trajectoryDriverAName"
+  [driverALapTimes]="trajectoryDriverALapTimes"
+  [referenceOptions]="trajectoryReferenceOptions"
+  [initialReferenceId]="trajectoryInitialReferenceId"
+  [benchmarkLapTime]="trajectoryBenchmarkLapTime"
+  (close)="closeTrajectoryDialog()"
+/>
