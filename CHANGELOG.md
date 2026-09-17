@@ -1,5 +1,146 @@
 # Changelog
 
+## [v1.0.0-beta.75] - 2026-09-17
+
+### 🚀 New Features
+
+- add fastest/slowest lap times and min/max limits to analog fuel usage calculations https://github.com/daufderheide/racecoordinator_ai/issues/833 ([40476045](https://github.com/daufderheide/racecoordinator_ai/commit/40476045))
+- implement race editor fuel simulation, interactive graphs, documentation, and internationalization https://github.com/daufderheide/racecoordinator_ai/issues/833 ([43b472f4](https://github.com/daufderheide/racecoordinator_ai/commit/43b472f4))
+
+### 🐛 Bug Fixes
+
+- use fixed SVG dimensions in fuel graph helpers and update curve calculations ([fb31c2ad](https://github.com/daufderheide/racecoordinator_ai/commit/fb31c2ad))
+- fixed <hopefully> issues with doing an auto update and the lane-view widget not showing up until a full restart and/or client browser refresh [skip-screendiffs] ([ebac93ee](https://github.com/daufderheide/racecoordinator_ai/commit/ebac93ee))
+
+### ⚡ Improvements & Refactoring
+
+- deprecate legacy fields and constructors in AnalogFuelOptions ([34b9a0b2](https://github.com/daufderheide/racecoordinator_ai/commit/34b9a0b2))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.74...v1.0.0-beta.75">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.74] - 2026-09-16
+
+### 🚀 New Features
+
+- add default auto-start and auto-advance audio announcements with translations and documentation https://github.com/daufderheide/racecoordinator_ai/issues/832 [skip-screendiffs] ([694f263b](https://github.com/daufderheide/racecoordinator_ai/commit/694f263b))
+- Added laps left audio callouts for lap based races https://github.com/daufderheide/racecoordinator_ai/issues/831 [skip-screendiffs] ([221cdeff](https://github.com/daufderheide/racecoordinator_ai/commit/221cdeff))
+- implement milestone audio priority cascade fallback and HeatExecutionManager backend logic ([96726ed9](https://github.com/daufderheide/racecoordinator_ai/commit/96726ed9))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.73...v1.0.0-beta.74">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.73] - 2026-09-16
+
+### 🚀 New Features
+
+- add configurable debounce handling for call button triggers ([17e487e3](https://github.com/daufderheide/racecoordinator_ai/commit/17e487e3))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.72...v1.0.0-beta.73">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.72] - 2026-09-16
+
+### 🚀 New Features
+
+- add auto-select default directive, team-manager component, and driver-editor helper https://github.com/daufderheide/racecoordinator_ai/issues/824 ([5e46c342](https://github.com/daufderheide/racecoordinator_ai/commit/5e46c342))
+- add timer widget inspector and custom formatting options https://github.com/daufderheide/racecoordinator_ai/issues/825 ([aee70520](https://github.com/daufderheide/racecoordinator_ai/commit/aee70520))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.71...v1.0.0-beta.72">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.71] - 2026-09-14
+
+### 🚀 New Features
+
+- add custom fuel curve support with interactive graph editor for race fuel options https://github.com/daufderheide/racecoordinator_ai/issues/822 ([a5d194bb](https://github.com/daufderheide/racecoordinator_ai/commit/a5d194bb))
+
+### 🐛 Bug Fixes
+
+- fix reference time support and dynamically scale analog fuel graph ranges and axes ([db012a40](https://github.com/daufderheide/racecoordinator_ai/commit/db012a40))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.70...v1.0.0-beta.71">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.70] - 2026-09-14
+
+### 🚀 New Features
+
+- add auto-playback for single uploaded audio files and extract help steps https://github.com/daufderheide/racecoordinator_ai/issues/820 [skip-screendiffs] ([23276590](https://github.com/daufderheide/racecoordinator_ai/commit/23276590))
+- add AudioAssociation support, layout-based audio filtering, and FuelAudioTracker utility [skip-screendiffs] ([7ddb5731](https://github.com/daufderheide/racecoordinator_ai/commit/7ddb5731))
+- add driver pit-in and fuel audio configuration options and fallback handling fix: fixed issues with fuel information data transmission ([c9f8cfa8](https://github.com/daufderheide/racecoordinator_ai/commit/c9f8cfa8))
+- add detailed audio configuration options and localization for driver events and lap sounds https://github.com/daufderheide/racecoordinator_ai/issues/803 ([48edc65b](https://github.com/daufderheide/racecoordinator_ai/commit/48edc65b))
+
+### ⚡ Improvements & Refactoring
+
+- box primitive arguments in AnalogFuelOptions and add constructor unit tests ([c9f4306f](https://github.com/daufderheide/racecoordinator_ai/commit/c9f4306f))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.69...v1.0.0-beta.70">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.69] - 2026-09-12
+
+### 🚀 New Features
+
+- add server-backed filesystem integration and native directory chooser for cross-browser support ([89d4ea3f](https://github.com/daufderheide/racecoordinator_ai/commit/89d4ea3f))
+- add custom widgets support with sample widgets, services, UI inspector components, and documentation ([2d40762d](https://github.com/daufderheide/racecoordinator_ai/commit/2d40762d))
+- add custom XLS export template support with backend handlers, sample race factory, and UI editor integration https://github.com/daufderheide/racecoordinator_ai/issues/810 ([2b9d25f8](https://github.com/daufderheide/racecoordinator_ai/commit/2b9d25f8))
+- updated default xls template to support lap breakdowns on the heat tabs feat: add lap segment support to heat data and excel exports fix: fixed incorrect lane background coloring in cells that should not have it. https://github.com/daufderheide/racecoordinator_ai/issues/810 ([7cc75af0](https://github.com/daufderheide/racecoordinator_ai/commit/7cc75af0))
+- enforce three-decimal precision for all numerical race data and exported XLS cells ([a43a7d45](https://github.com/daufderheide/racecoordinator_ai/commit/a43a7d45))
+
+### 🐛 Bug Fixes
+
+- **test**: handle headless linux in NativeDirectoryChooserTest ([d8532572](https://github.com/daufderheide/racecoordinator_ai/commit/d8532572))
+- **server**: allow native directory chooser in headless CI and remove test debug prints ([0c6df01a](https://github.com/daufderheide/racecoordinator_ai/commit/0c6df01a))
+- fixed demo mode auto save feat: implement state-specific timer logic and expand race autosave functionality [skip-screendiffs] ([33db80a5](https://github.com/daufderheide/racecoordinator_ai/commit/33db80a5))
+
+### ⚡ Improvements & Refactoring
+
+- **ui-editor**: extract helpers and reduce ui-editor.component line count below 1000 [skip-screendiff] ([52851716](https://github.com/daufderheide/racecoordinator_ai/commit/52851716))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.68...v1.0.0-beta.69">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.68] - 2026-09-11
+
+### 🚀 New Features
+
+- implement theme sorting by display name fix: trying to resolve legacy name changes causing selctors and custom ui page to show different theme/layout names https://github.com/daufderheide/racecoordinator_ai/issues/816 [skip-screendiffs] ([59ac394f](https://github.com/daufderheide/racecoordinator_ai/commit/59ac394f))
+- add audio settings including master volume control feat: add text-to-speech configuration settings and preview functionality to the UI editor ([d5496a24](https://github.com/daufderheide/racecoordinator_ai/commit/d5496a24))
+- introduce AudioService for managing polyphonic sound effects and prioritized voice callouts with queueing and preemption support [skip-screendiffs] ([a308417d](https://github.com/daufderheide/racecoordinator_ai/commit/a308417d))
+
+### 🐛 Bug Fixes
+
+- move UI editor layout logic to helpers and allow navigation to UI editor when race has ended ([106ba8e9](https://github.com/daufderheide/racecoordinator_ai/commit/106ba8e9))
+- renamed penalty to  false start audio so later we can add new penalty specific audio ([820bdf3a](https://github.com/daufderheide/racecoordinator_ai/commit/820bdf3a))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.67...v1.0.0-beta.68">GitHub</a></p>
+</details>
+
 ## [v1.0.0-beta.67] - 2026-09-10
 
 ### 🚀 New Features
