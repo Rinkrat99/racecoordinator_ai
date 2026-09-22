@@ -1,5 +1,158 @@
 # Changelog
 
+## [v1.0.0-beta.84] - 2026-09-22
+
+### 🚀 New Features
+
+- add browser incompatibility dialog with detection utilities, translations, and updated documentation ([4a33fb05](https://github.com/daufderheide/racecoordinator_ai/commit/4a33fb05))
+
+### 🐛 Bug Fixes
+
+- reduce how often the user sees the splashscreen [skip-screendiffs] ([9ea91d18](https://github.com/daufderheide/racecoordinator_ai/commit/9ea91d18))
+- Fix "select sound" issues causing configuration to appear to be set to no sound but still play the default sounds ([ad983e49](https://github.com/daufderheide/racecoordinator_ai/commit/ad983e49))
+- Fix issue with widgets going out of bounds in the layout editor and then not being able to be selected or moved again.  Now they are restricted the canvas and we've added deletion controls on the widget inspector ([20b613bf](https://github.com/daufderheide/racecoordinator_ai/commit/20b613bf))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.83...v1.0.0-beta.84">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.83] - 2026-09-21
+
+### 🚀 New Features
+
+- Changed default auto-update to be beta only feat: Added learn more for the various beta settings.  The goal is to encourage users to run beta's when they're available. ([7af86b5b](https://github.com/daufderheide/racecoordinator_ai/commit/7af86b5b))
+
+### ⚡ Improvements & Refactoring
+
+- introduce Driver model and converter with refactored audio configurations ([c87cf657](https://github.com/daufderheide/racecoordinator_ai/commit/c87cf657))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.82...v1.0.0-beta.83">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.82] - 2026-09-21
+
+### 🐛 Bug Fixes
+
+- Fixed audio set "mode" save issue.  I think this was just a display problem in the audio set ([41415f3b](https://github.com/daufderheide/racecoordinator_ai/commit/41415f3b))
+- move consistency calculations to the server ([79b8957a](https://github.com/daufderheide/racecoordinator_ai/commit/79b8957a))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.81...v1.0.0-beta.82">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.81] - 2026-09-20
+
+### 🚀 New Features
+
+- implement dual trigger audio modes with new audio management services and UI components ([0c67c703](https://github.com/daufderheide/racecoordinator_ai/commit/0c67c703))
+
+### 🐛 Bug Fixes
+
+- Prevent out of fuel audio from playing on heat restart in non-fuel races https://github.com/daufderheide/racecoordinator_ai/issues/844 [skip-screendiffs] ([2f8775b4](https://github.com/daufderheide/racecoordinator_ai/commit/2f8775b4))
+- Fixed list view spacing when there's only 1 full row and a fraction of the second row filled ([258e9154](https://github.com/daufderheide/racecoordinator_ai/commit/258e9154))
+- updated text on the audio set editor.  It now calls out laps, percent or time as possible values ([49da99e3](https://github.com/daufderheide/racecoordinator_ai/commit/49da99e3))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.80...v1.0.0-beta.81">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.80] - 2026-09-20
+
+### 🐛 Bug Fixes
+
+- restrict undo, redo, and keyboard shortcuts to edit mode across all editors [skip-screendiffs] ([412a7a0b](https://github.com/daufderheide/racecoordinator_ai/commit/412a7a0b))
+- clear list selection on mouse leave when search query is empty [skip-screendiffs] ([08799436](https://github.com/daufderheide/racecoordinator_ai/commit/08799436))
+
+### ⚡ Improvements & Refactoring
+
+- remove automatic scroll to top when navigating editor items [skip-screendiffs] ([c53660e1](https://github.com/daufderheide/racecoordinator_ai/commit/c53660e1))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.79...v1.0.0-beta.80">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.79] - 2026-09-19
+
+### 🚀 New Features
+
+- Added keyboard and scroll interactions to editor pages to make previewing objects much easier feat: Added expand/collapse all to the editor toolbars ([fe2532e3](https://github.com/daufderheide/racecoordinator_ai/commit/fe2532e3))
+- Updated raceday setup available and racing driver selection.  used the new selection to feed into the driver editor selection ([62e8bd65](https://github.com/daufderheide/racecoordinator_ai/commit/62e8bd65))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.78...v1.0.0-beta.79">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.78] - 2026-09-18
+
+### 🚀 New Features
+
+- add ConverterCache and improve race update merging and track subscription handling [skip-screendiffs] ([e40924e2](https://github.com/daufderheide/racecoordinator_ai/commit/e40924e2))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.77...v1.0.0-beta.78">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.77] - 2026-09-18
+
+### 🚀 New Features
+
+- **update**: improve update banner progress and feedback during installation [skip-screendiffs] ([20fee980](https://github.com/daufderheide/racecoordinator_ai/commit/20fee980))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.76...v1.0.0-beta.77">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.76] - 2026-09-18
+
+### 🚀 New Features
+
+- add expandable UI sections and documentation updates for race and arduino editors https://github.com/daufderheide/racecoordinator_ai/issues/838 ([22f788a0](https://github.com/daufderheide/racecoordinator_ai/commit/22f788a0))
+- support zero-laps-left audio callouts for leader finishes and add custom scrollbars to UI editor https://github.com/daufderheide/racecoordinator_ai/issues/837 [skip-screendiffs] ([7f5179cc](https://github.com/daufderheide/racecoordinator_ai/commit/7f5179cc))
+- add track editor components for Phidget, Trakmate, Arduino, and Bart hardware configurations [skip-screendiffs] ([fb2238a2](https://github.com/daufderheide/racecoordinator_ai/commit/fb2238a2))
+
+### 🐛 Bug Fixes
+
+- track focus state in auto-select directive and update editor tests ([6952cbb8](https://github.com/daufderheide/racecoordinator_ai/commit/6952cbb8))
+- guard input selection with active element check and remove redundant season header ([8936e598](https://github.com/daufderheide/racecoordinator_ai/commit/8936e598))
+- extract race connection logic into new RaceConnectionService and add lane view component ([917fd62a](https://github.com/daufderheide/racecoordinator_ai/commit/917fd62a))
+- allow toggling Arduino LED strings and sections in read-only mode [skip-screendiffs] ([d9b952dd](https://github.com/daufderheide/racecoordinator_ai/commit/d9b952dd))
+
+### ⚡ Improvements & Refactoring
+
+- merge feature/unified-editors into release/v1.0.0 [skip-screendiff] ([4a9c3571](https://github.com/daufderheide/racecoordinator_ai/commit/4a9c3571))
+- introduce EditorLifecycleHelper and consolidate shared hardware interface styles [skip-screendiff] ([4a6c2107](https://github.com/daufderheide/racecoordinator_ai/commit/4a6c2107))
+- introduce shared editor components, layout styles, and utility functions across editors ([aed08083](https://github.com/daufderheide/racecoordinator_ai/commit/aed08083))
+- remove unused localization keys from i18n assets ([32d7f701](https://github.com/daufderheide/racecoordinator_ai/commit/32d7f701))
+- unify event and season editor architecture and remove deprecated manager components [skip-screendiffs] ([b5474708](https://github.com/daufderheide/racecoordinator_ai/commit/b5474708))
+- Setup create new and duplicate to immediately go into edit mode after the new object is created [skip-screendiffs] ([d56b82a8](https://github.com/daufderheide/racecoordinator_ai/commit/d56b82a8))
+- **race-editor**: migrate to unified editor and remove race-manager ([10e9d05c](https://github.com/daufderheide/racecoordinator_ai/commit/10e9d05c))
+- **track-editor**: migrate track editor to unified editor and remove track manager ([322fc7e4](https://github.com/daufderheide/racecoordinator_ai/commit/322fc7e4))
+- **team-editor**: migrate team editor to unified editor and remove team manager ([07d6448e](https://github.com/daufderheide/racecoordinator_ai/commit/07d6448e))
+- replace driver-manager with shared toolbar, editor-title, and raceday setup components ([98b62f6e](https://github.com/daufderheide/racecoordinator_ai/commit/98b62f6e))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.75...v1.0.0-beta.76">GitHub</a></p>
+</details>
+
 ## [v1.0.0-beta.75] - 2026-09-17
 
 ### 🚀 New Features
