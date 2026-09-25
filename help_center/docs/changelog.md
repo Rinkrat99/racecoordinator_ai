@@ -1,5 +1,53 @@
 # Changelog
 
+## [v1.0.0-beta.87] - 2026-09-25
+
+### 🚀 New Features
+
+- implement global form security utility to prevent password manager and autofill interference [skip-screendiffs] ([8553370e](https://github.com/daufderheide/racecoordinator_ai/commit/8553370e))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.86...v1.0.0-beta.87">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.86] - 2026-09-25
+
+### 🚀 New Features
+
+- add SingleLapAutoSegments allow finish auto-segements option for races ([592908e1](https://github.com/daufderheide/racecoordinator_ai/commit/592908e1))
+- add expand and collapse  toolbar guided help with translations and documentation [skip-screendiffs] ([bdd25065](https://github.com/daufderheide/racecoordinator_ai/commit/bdd25065))
+
+### 🐛 Bug Fixes
+
+- base auto-calculated lap segments on driver median lap time.  This unifies allow finish single lap and do not allow finish calculations ([a5fc76c0](https://github.com/daufderheide/racecoordinator_ai/commit/a5fc76c0))
+- Fixed team dropdown on the raceday page [skip-screendiffs] ([83569001](https://github.com/daufderheide/racecoordinator_ai/commit/83569001))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.85...v1.0.0-beta.86">GitHub</a></p>
+</details>
+
+## [v1.0.0-beta.85] - 2026-09-23
+
+### 🚀 New Features
+
+- Auto scroll selected element into view for the custom selector pulldown ([57817b69](https://github.com/daufderheide/racecoordinator_ai/commit/57817b69))
+- add getNextSelectionAfterDelete utility and update editors to maintain selection state on delete ([23f7127e](https://github.com/daufderheide/racecoordinator_ai/commit/23f7127e))
+- preserve audio url and text when switching between audio types [skip-screendiffs] ([a514e4ec](https://github.com/daufderheide/racecoordinator_ai/commit/a514e4ec))
+
+### 🐛 Bug Fixes
+
+- only scroll custom select dropdown when scrollHeight exceeds clientHeight ([04f453b9](https://github.com/daufderheide/racecoordinator_ai/commit/04f453b9))
+
+<details>
+<summary>🔍 <b>Full Commit History</b></summary>
+
+<p>View full commit comparison on <a href="https://github.com/daufderheide/racecoordinator_ai/compare/v1.0.0-beta.84...v1.0.0-beta.85">GitHub</a></p>
+</details>
+
 ## [v1.0.0-beta.84] - 2026-09-22
 
 ### 🚀 New Features
